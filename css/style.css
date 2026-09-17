@@ -69,11 +69,23 @@ a:hover { text-decoration: underline; }
 .brand-text strong { font-size: 1.06rem; letter-spacing: .2px; }
 .brand-text small { color: var(--muted); font-size: .74rem; }
 
-.nav { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+.nav { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; align-items: center; }
 .nav a {
   color: var(--muted); padding: 7px 12px; border-radius: 999px; font-size: .93rem;
 }
 .nav a:hover { color: var(--txt); background: var(--card2); text-decoration: none; }
+.nav a.studio-link {
+  color: #fff !important;
+  background: linear-gradient(135deg, #7c5cff, #2563eb);
+  font-weight: 600;
+  border: 1px solid rgba(167, 139, 250, .4);
+  box-shadow: 0 2px 12px rgba(124, 92, 255, .32);
+}
+.nav a.studio-link:hover {
+  background: linear-gradient(135deg, #6d47f8, #1d4ed8);
+  color: #fff !important;
+  box-shadow: 0 4px 16px rgba(124, 92, 255, .45);
+}
 
 .head-actions { display: flex; align-items: center; gap: 10px; }
 

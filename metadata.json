@@ -1,0 +1,6 @@
+{
+  "name": "CutFree Studio",
+  "description": "Free in-browser video factory & editor: auto-generate animated videos with WebCodecs, procedural music, and kinetic typography, plus an offline video trimmer and cutter without server uploads.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -6,8 +6,12 @@
  *   index.html   -> cutfree.html        (video cutter / editor)
  *   studio.html  -> cutfree-studio.html (auto video engine)
  */
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -44,7 +48,7 @@ function inlinePage(srcName, outName) {
   // 2) Scripts preserving data-module hooks
   html = html.replace(SCRIPT_RE, (match, attrs1, src, attrs2) => {
     if (src.startsWith('http')) return match;
-    let attrs = ((attrs1 || '') + (attrs2 || '')).replace(/\s+type="module"/gi, '').trim();
+    let attrs = ((attrs1 || '') + (attrs2 || '')).trim();
     const code = readText(src).trim();
     return attrs ? `<script ${attrs}>\n${code}\n</script>` : `<script>\n${code}\n</script>`;
   });
