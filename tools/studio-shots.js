@@ -115,6 +115,112 @@ Subscribe for the next build.`;
   await page.waitForTimeout(900);
   await page.screenshot({ path: path.join(DOCS, 'studio-shorts.png') });
 
+
+  // ---------------------------------------------------------------- story mode
+  // 1. workbench with a tracked voice (waveform timeline + line chips)
+  await page.goto(`http://127.0.0.1:${PORT}/studio.html`, { waitUntil: 'load' });
+  await page.waitForTimeout(400);
+  const STORY = [
+    'রাত তখন বারোটা। টুকটুক করে বৃষ্টি পড়ছিল টিনের চালে।',
+    '',
+    'শহরের সবচেয়ে পুরনো চায়ের দোকানে বসে ছিল সৌম্য। তার হাতে একটা ভাঁজ করা চিঠি।',
+    '',
+    'উপরের লাইনে লেখা ছিল শুধু একটা নাম — আর নিচে একটা তারিখ।',
+    '',
+    'চিঠিটা বিশ বছর পুরনো।',
+    '',
+    'সৌম্য ভাবল, আজ রাতেই উত্তরটা লিখবে।'
+  ].join('\n');
+  const wav = path.join(require('os').tmpdir(), 'cutfree-story-shot.wav');
+  (() => {
+    const SR = 48000;
+    const blocks = STORY.split(/\n\s*\n+/).filter(Boolean);
+    const parts = [];
+    const sil = (d) => { for (let i = 0; i < Math.round(d * SR); i++) parts.push(0); };
+    const burst = (d) => {
+      for (let i = 0; i < Math.round(d * SR); i++) {
+        const t = i / SR, f = 115 + 18 * Math.sin(2 * Math.PI * 4 * t);
+        parts.push(0.3 * (Math.sin(2 * Math.PI * f * t) * .7 + Math.sin(4 * Math.PI * f * t) * .2) * (.5 + .5 * Math.abs(Math.sin(2 * Math.PI * 6 * t))));
+      }
+    };
+    sil(1.2);
+    blocks.forEach((b, i) => { burst(b.split(/\s+/).length * 0.4); sil(i === 1 ? 1.6 : 0.5); });
+    sil(1.0);
+    const buf = Buffer.alloc(44 + parts.length * 2);
+    buf.write('RIFF', 0); buf.writeUInt32LE(36 + parts.length * 2, 4); buf.write('WAVE', 8);
+    buf.write('fmt ', 12); buf.writeUInt32LE(16, 16); buf.writeUInt16LE(1, 20); buf.writeUInt16LE(1, 22);
+    buf.writeUInt32LE(SR, 24); buf.writeUInt32LE(SR * 2, 28); buf.writeUInt16LE(2, 32); buf.writeUInt16LE(16, 34);
+    buf.write('data', 36); buf.writeUInt32LE(parts.length * 2, 40);
+    parts.forEach((v, i) => buf.writeInt16LE(Math.max(-32767, Math.min(32767, Math.round(v * 32767))), 44 + i * 2));
+    fs.writeFileSync(wav, buf);
+  })();
+  await page.fill('#fTitle', 'বারোটা রাতের চিঠি');
+  await page.fill('#fScript', STORY);
+  await page.check('#fStory');
+  await page.setInputFiles('#fVoice', wav);
+  await page.waitForFunction(() => !document.querySelector('#alignWrap').hidden, null, { timeout: 60000 });
+  await page.click('#btnBuild');
+  await page.waitForFunction(() => document.querySelectorAll('.scene-chip').length > 0, null, { timeout: 90000 });
+  await page.evaluate(() => {
+    const scrub = document.querySelector('#scrub');
+    scrub.value = '120';                       // land inside the second line
+    scrub.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await page.waitForTimeout(700);
+  await page.evaluate(() => document.querySelector('#alignWrap').scrollIntoView({ block: 'center' }));
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: path.join(DOCS, 'studio-story.png') });
+
+  // 2. a montage of real story frames: title card, narration, beat card, end card
+  const storyFrames = await page.evaluate(async (script) => {
+    // reuse the tracked timeline that lives in the page
+    const track = window.CFX ? null : null;
+    const parts = [];
+    // rebuild a matching "voice" so the shot is reproducible from the script alone
+    const SR = 48000;
+    const blocks = script.split(/\n\s*\n+/).filter(Boolean);
+    const sil = (d) => { for (let i = 0; i < Math.round(d * SR); i++) parts.push(0); };
+    const burst = (d) => {
+      for (let i = 0; i < Math.round(d * SR); i++) {
+        const t = i / SR, f = 115 + 18 * Math.sin(2 * Math.PI * 4 * t);
+        parts.push(0.3 * (Math.sin(2 * Math.PI * f * t) * .7 + Math.sin(4 * Math.PI * f * t) * .2) * (.5 + .5 * Math.abs(Math.sin(2 * Math.PI * 6 * t))));
+      }
+    };
+    sil(1.2);
+    blocks.forEach((b, i) => { burst(b.split(/\s+/).length * 0.4); sil(i === 1 ? 1.6 : 0.5); });
+    sil(1.0);
+    const tracked = window.CFX.align.track(Float32Array.from(parts), script, { sampleRate: SR });
+    const spec = window.CFX.story.plan({
+      title: 'বারোটা রাতের চিঠি', script, track: tracked, language: 'bn',
+      quality: '720p', theme: 'neonNoir', mood: 'cinematic', watermark: '@cutfree'
+    });
+    const canvas = document.createElement('canvas');
+    const R = window.CFX.engine.createRenderer(canvas, spec);
+    const wanted = ['storyTitle', 'story'];
+    let acc = 0;
+    const picks = [];
+    spec.scenes.forEach((sc) => {
+      const t = acc + sc.dur * (sc.type === 'storyBeat' ? 0.5 : 0.62);
+      if (sc.type === 'storyTitle') picks.push(['title', t]);
+      else if (sc.type === 'story' && picks.filter(x => x[0] === 'line').length < 2) picks.push(['line', t]);
+      else if (sc.type === 'storyBeat') picks.push(['beat', t]);
+      else if (sc.type === 'storyEnd') picks.push(['end', t]);
+      acc += sc.dur;
+    });
+    const out = {};
+    picks.slice(0, 4).forEach(([name, t]) => { R.renderAt(t); out[name] = canvas.toDataURL('image/png'); });
+    return out;
+  }, STORY);
+  await page.setContent(`<body style="margin:0;background:#05070f;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px">
+    ${Object.entries(storyFrames).map(([k, v]) => `<img src="${v}" style="width:100%;display:block;border-radius:10px">`).join('')}
+  </body>`, { waitUntil: 'load' });
+  await page.waitForTimeout(500);
+  const montageBox = await page.evaluate(() => ({ w: document.body.scrollWidth, h: document.body.scrollHeight }));
+  await page.setViewportSize({ width: Math.min(1600, montageBox.w), height: Math.min(1200, montageBox.h) });
+  await page.screenshot({ path: path.join(DOCS, 'studio-story-frames.png') });
+  console.log('  wrote docs/studio-story.png + docs/studio-story-frames.png');
+  await page.goto(`http://127.0.0.1:${PORT}/studio.html`, { waitUntil: 'load' });
+
   // a real frame montage + a sample thumbnail, rendered by the engine itself
   const shots = await page.evaluate(async (demo) => {
     const spec = CFX.director.build({

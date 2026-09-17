@@ -601,6 +601,23 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
 .wide-btn span { pointer-events: none; }
 
 .two-col > .field.checkbox { align-self: center; }
+
+/* ------------------------------------------------------------------ story mode */
+.align-head { display: flex; align-items: center; gap: 10px; margin: 14px 0 8px; }
+.align-stats { flex: 1; font-size: 12.5px; color: rgba(226,235,255,.72); letter-spacing: .2px; }
+#alignCanvas { width: 100%; height: 130px; display: block; border-radius: 12px;
+  border: 1px solid rgba(150,180,255,.18); background: rgba(8,12,26,.5); cursor: crosshair; }
+.align-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px;
+  max-height: 190px; overflow: auto; }
+.align-chip { display: flex; gap: 10px; align-items: baseline; text-align: left; width: 100%;
+  background: rgba(120,150,230,.07); border: 1px solid rgba(150,180,255,.14); color: inherit;
+  border-radius: 10px; padding: 7px 10px; font: inherit; font-size: 12.5px; cursor: pointer;
+  transition: background .18s, border-color .18s, transform .18s; }
+.align-chip:hover { background: rgba(120,150,230,.16); border-color: rgba(150,180,255,.32); transform: translateX(2px); }
+.align-chip b { color: #7de3cf; font-variant-numeric: tabular-nums; font-weight: 700; }
+.align-chip span { color: rgba(226,235,255,.82); }
+.field.inline { flex-direction: row; align-items: center; gap: 8px; }
+.field.inline select { width: auto; min-width: 150px; }
 </style>
 </head>
 <body class="studio">
@@ -675,6 +692,53 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
           <button class="btn ghost small" type="button" id="btnClearBrief" data-i18n="clearBrief">খালি করুন</button>
         </div>
 
+
+        <h3 class="card-title" data-i18n="storyTitle">২ · স্টোরি মোড — ভয়েস ট্র্যাক</h3>
+        <label class="field checkbox">
+          <input type="checkbox" id="fStory" />
+          <span data-i18n="fStory">স্টোরি মোড (ভয়েস ট্র্যাক করে গল্পের ভিডিও)</span>
+        </label>
+        <p class="hint" data-i18n="storyHint">গল্পের টেক্সট লিখে ভয়েসটা দিন — ভয়েস ট্র্যাক করে প্রতিটা শব্দ কখন বলা হচ্ছে বের করা হয়, তারপর সেই মুহূর্তেই শব্দ ফুটিয়ে তোলে টাইপোগ্রাফি আর কারাওকে ক্যাপশন সাজায়।</p>
+        <div class="field">
+          <span data-i18n="fVoice">গল্পের ভয়েস (mp3 / wav / m4a / webm)</span>
+          <label class="btn ghost small file-btn wide-btn">
+            <input type="file" id="fVoice" accept="audio/*" hidden />
+            <span data-i18n="pickAudio">📁 অডিও ফাইল বাছুন</span>
+          </label>
+        </div>
+        <div class="brief-row wrap">
+          <button class="btn ghost small" id="btnTrack" type="button" data-i18n="ctaTrack">🎧 ভয়েস ট্র্যাক করুন</button>
+          <label class="field inline">
+            <span data-i18n="fStoryStyle">টাইপোগ্রাফি</span>
+            <select id="fStoryStyle">
+              <option value="auto" selected data-i18n="typAuto">অটো (সিন বুঝে)</option>
+              <option value="reveal" data-i18n="typReveal">শব্দ-বাই-শব্দ ফুটে ওঠে</option>
+              <option value="board" data-i18n="typBoard">স্টোরিবুক কার্ড</option>
+              <option value="stack" data-i18n="typStack">টেলিপ্রম্পটার</option>
+              <option value="typewriter" data-i18n="typType">টাইপরাইটার</option>
+            </select>
+          </label>
+        </div>
+        <div class="two-col">
+          <label class="field">
+            <span data-i18n="fKicker">উপরের ছোট লাইন</span>
+            <input type="text" id="fKicker" placeholder="একটি গল্প" />
+          </label>
+          <label class="field">
+            <span data-i18n="fEndCard">শেষ কার্ড</span>
+            <input type="text" id="fEndCard" placeholder="সমাপ্ত" />
+          </label>
+        </div>
+        <div id="alignWrap" hidden>
+          <div class="align-head">
+            <span class="align-stats" id="alignStats"></span>
+            <button class="btn ghost small" id="btnAlignPlay" type="button" title="Track again" data-i18n="ctaEstimate">🎧 আবার ট্র্যাক</button>
+          </div>
+          <canvas id="alignCanvas" height="130"></canvas>
+          <div class="align-list" id="alignList"></div>
+          <p class="hint" data-i18n="stAlignHint">ওয়েভফর্মে ক্লিক করে সেই মুহূর্তে যান · নিচের লাইনে ক্লিক করে লাইন ধরে শুনুন</p>
+        </div>
+
         <h3 class="card-title" data-i18n="lookTitle">২ · লুক ও ফিল</h3>
         <div class="theme-picker" id="themePicker"></div>
 
@@ -743,13 +807,6 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
           <span data-i18n="fProgressBar">নিচে প্রোগ্রেস বার</span>
         </label>
 
-        <div class="field">
-          <span data-i18n="fVoice">ভয়েসওভার (ঐচ্ছিক — mp3/wav)</span>
-          <label class="btn ghost small file-btn wide-btn">
-            <input type="file" id="fVoice" accept="audio/*" hidden />
-            <span data-i18n="pickAudio">📁 অডিও ফাইল বাছুন</span>
-          </label>
-        </div>
         <div class="field">
           <span data-i18n="fLogo">ব্র্যান্ড লোগো (ঐচ্ছিক — png/svg)</span>
           <label class="btn ghost small file-btn wide-btn">
@@ -1214,15 +1271,32 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       srcTitle: '১ · ব্রিফ / স্ক্রিপ্ট', fTitle: 'ভিডিওর টাইটেল',
       fScript: 'স্ক্রিপ্ট (প্রতি প্যারাগ্রাফ = একটা সিন)',
       sampleBatch: 'নমুনা ব্যাচ', clearBrief: 'খালি করুন',
-      lookTitle: '২ · লুক ও ফিল', fMood: 'মিউজিক মুড', fAspect: 'অ্যাসপেক্ট',
+      storyTitle: '২ · স্টোরি মোড — ভয়েস ট্র্যাক',
+      fStory: 'স্টোরি মোড (ভয়েস ট্র্যাক করে গল্পের ভিডিও)',
+      storyHint: 'গল্পের টেক্সট লিখে ভয়েসটা দিন — ভয়েস ট্র্যাক করে প্রতিটা শব্দ কখন বলা হচ্ছে বের করা হয়, তারপর সেই মুহূর্তেই শব্দ ফুটিয়ে তোলে টাইপোগ্রাফি। পর্দার লাইনটাই এখানে ক্যাপশন; বিরতির জায়গায় বসে বিরতি কার্ড। চাইলে আলাদা সাবটাইটেলও দিতে পারেন — সেটাই তখন প্রাধান্য পাবে।',
+      ctaTrack: '🎧 ভয়েস ট্র্যাক করুন',
+      fStoryStyle: 'টাইপোগ্রাফি',
+      typAuto: 'অটো (সিন বুঝে)', typReveal: 'শব্দ-বাই-শব্দ ফুটে ওঠে', typBoard: 'স্টোরিবুক কার্ড',
+      typStack: 'টেলিপ্রম্পটার', typType: 'টাইপরাইটার',
+      fKicker: 'উপরের ছোট লাইন', fEndCard: 'শেষ কার্ড',
+      stTrackNoVoice: 'আগে গল্পের ভয়েসটা দিন (mp3 / wav) — তাহলেই ট্র্যাক করা যাবে।',
+      stTracking: 'ভয়েস ট্র্যাক করা হচ্ছে…',
+      stTracked: 'ভয়েস ট্র্যাক হয়েছে',
+      stTrackEstimated: 'ভয়েস থেকে ট্র্যাক করা গেল না — টেক্সটের গতিতে টাইমিং বসানো হচ্ছে',
+      alignStats: '{phrases}টা ফ্রেজ · কথা {speech}% · {dur} · {words} শব্দ · {wps}/সে',
+      stStoryBuilt: 'গল্পের প্ল্যান তৈরি — {scenes}টা সিন, {beats}টা বিরতি কার্ড',
+      ctaEstimate: '🎧 আবার ট্র্যাক',
+      stAlignHint: 'ওয়েভফর্মে ক্লিক করে সেই মুহূর্তে যান · নিচের লাইনে ক্লিক করে লাইন ধরে শুনুন',
+      stQuotaLow: 'গল্পের টেক্সট আর ভয়েসের দৈর্ঘ্য মিলছে না',
+      lookTitle: '৩ · লুক ও ফিল', fMood: 'মিউজিক মুড', fAspect: 'অ্যাসপেক্ট',
       fQuality: 'কোয়ালিটি', fFps: 'ফ্রেম রেট', fDuration: 'টার্গেট দৈর্ঘ্য (সেকেন্ড)',
       fPerf: 'পারফরম্যান্স মোড', perfHigh: 'হাই (ডেস্কটপ)', perfBal: 'ব্যালেন্সড', perfFast: 'ফাস্ট (ফোন / লম্বা ভিডিও)',
       fWatermark: 'ওয়াটারমার্ক / চ্যানেল', fMusic: 'প্রসিডিউরাল মিউজিক (নিজস্ব, কপিরাইট-ফ্রি)',
       fProgressBar: 'নিচে প্রোগ্রেস বার', fVoice: 'ভয়েসওভার (ঐচ্ছিক — mp3/wav)', fLogo: 'ব্র্যান্ড লোগো (ঐচ্ছিক — png/svg)',
       ctaBuildPlan: 'প্ল্যান বানাও (প্রিভিউ)', ctaQueue: 'সব ভিডিও কিউতে দাও',
-      previewTitle: '৩ · লাইভ প্রিভিউ', renderTitle: '৪ · রেন্ডার',
+      previewTitle: '৫ · লাইভ প্রিভিউ', renderTitle: '৬ · রেন্ডার',
       ctaRender: '⚡ ফাস্ট রেন্ডার (WebCodecs)', ctaRenderCompat: '🎥 MP4 / কম্প্যাট রেন্ডার', ctaCancel: 'বাতিল',
-      publishTitle: '৫ · পাবলিশ (YouTube)', ctaThumb: 'থাম্বনেইল রেন্ডার', ctaThumbDl: 'ডাউনলোড PNG',
+      publishTitle: '৭ · পাবলিশ (YouTube)', ctaThumb: 'থাম্বনেইল রেন্ডার', ctaThumbDl: 'ডাউনলোড PNG',
       fYtTitle: 'YouTube টাইটেল', fYtDesc: 'ডেসক্রিপশন (চ্যাপ্টার সহ)', fYtTags: 'ট্যাগ',
       fPrivacy: 'প্রাইভেসি', fSchedule: 'শিডিউল শুরু (তারিখ)',
       ctaCopy: 'মেটাডেটা কপি', ctaOpenStudio: 'YouTube Studio খুলুন',
@@ -1270,7 +1344,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       stSaved: 'সেভ হয়েছে',
       stEngineFast: 'WebCodecs (ফাস্ট)', stEngineCompat: 'MediaRecorder (কম্প্যাট)',
       stEstSize: 'আনুমানিক ফাইল',
-      voiceTitle: '৩ · ভয়েসওভার ও সাবটাইটেল',
+      voiceTitle: '৪ · ভয়েসওভার ও সাবটাইটেল',
       pickAudio: '📁 অডিও ফাইল বাছুন', pickImage: '🖼️ ছবি বাছুন',
       fVoicePick: 'TTS ভয়েস', fVoiceRate: 'গতি', fNarrFit: 'সিনের দৈর্ঘ্য ন্যারেশনের সাথে মিলিয়ে নাও',
       ctaVoiceTest: '🔊 ভয়েস চেক', ctaMeasure: '⏱ টাইমিং মাপুন', ctaRecordVoice: '🎙 ভয়েসওভার রেকর্ড',
@@ -1306,15 +1380,32 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       srcTitle: '1 · Brief / script', fTitle: 'Video title',
       fScript: 'Script (each paragraph becomes a scene)',
       sampleBatch: 'Sample batch', clearBrief: 'Clear',
-      lookTitle: '2 · Look & feel', fMood: 'Music mood', fAspect: 'Aspect',
+      storyTitle: '2 · Story mode — voice tracking',
+      fStory: 'Story mode (track the voice and turn the story into a video)',
+      storyHint: 'Write the story, hand over the voice — we track it, find out when every word is spoken, and drive the typography from that. The line on screen is the caption; real pauses become beat cards. Bring your own subtitle file and it takes over instead.',
+      ctaTrack: '🎧 Track the voice',
+      fStoryStyle: 'Typography',
+      typAuto: 'Auto (per scene)', typReveal: 'Word-by-word reveal', typBoard: 'Storybook card',
+      typStack: 'Teleprompter', typType: 'Typewriter',
+      fKicker: 'Eyebrow line', fEndCard: 'End card',
+      stTrackNoVoice: 'Load the story voice first (mp3 / wav) — then we can track it.',
+      stTracking: 'Tracking the voice…',
+      stTracked: 'Voice tracked',
+      stTrackEstimated: 'Could not hear a voice — falling back to text-paced timing',
+      alignStats: '{phrases} phrases · speech {speech}% · {dur} · {words} words · {wps}/s',
+      stStoryBuilt: 'Story plan ready — {scenes} scenes, {beats} beat cards',
+      ctaEstimate: '🎧 Track again',
+      stAlignHint: 'Click the waveform to jump to that moment · click a line below to hear it',
+      stQuotaLow: 'The script and the voice length do not line up',
+      lookTitle: '3 · Look & feel', fMood: 'Music mood', fAspect: 'Aspect',
       fQuality: 'Quality', fFps: 'Frame rate', fDuration: 'Target length (seconds)',
       fPerf: 'Performance mode', perfHigh: 'High (desktop)', perfBal: 'Balanced', perfFast: 'Fast (phone / long videos)',
       fWatermark: 'Watermark / channel', fMusic: 'Procedural music (original, copyright-free)',
       fProgressBar: 'Progress bar at the bottom', fVoice: 'Voice-over (optional — mp3/wav)', fLogo: 'Brand logo (optional — png/svg)',
       ctaBuildPlan: 'Build the plan (preview)', ctaQueue: 'Queue every video',
-      previewTitle: '3 · Live preview', renderTitle: '4 · Render',
+      previewTitle: '5 · Live preview', renderTitle: '6 · Render',
       ctaRender: '⚡ Fast render (WebCodecs)', ctaRenderCompat: '🎥 MP4 / compat render', ctaCancel: 'Cancel',
-      publishTitle: '5 · Publish (YouTube)', ctaThumb: 'Render thumbnail', ctaThumbDl: 'Download PNG',
+      publishTitle: '7 · Publish (YouTube)', ctaThumb: 'Render thumbnail', ctaThumbDl: 'Download PNG',
       fYtTitle: 'YouTube title', fYtDesc: 'Description (with chapters)', fYtTags: 'Tags',
       fPrivacy: 'Privacy', fSchedule: 'Schedule start (date)',
       ctaCopy: 'Copy metadata', ctaOpenStudio: 'Open YouTube Studio',
@@ -1361,7 +1452,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       stSaved: 'Saved',
       stEngineFast: 'WebCodecs (fast)', stEngineCompat: 'MediaRecorder (compat)',
       stEstSize: 'Estimated size',
-      voiceTitle: '3 · Voice-over & subtitles',
+      voiceTitle: '4 · Voice-over & subtitles',
       pickAudio: '📁 Choose audio file', pickImage: '🖼️ Choose image',
       fVoicePick: 'TTS voice', fVoiceRate: 'Rate', fNarrFit: 'Fit scene lengths to the narration',
       ctaVoiceTest: '🔊 Test voice', ctaMeasure: '⏱ Measure timing', ctaRecordVoice: '🎙 Record voice-over',
@@ -1685,6 +1776,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
     var weight = o.weight || 700;
     ctx.font = weight + ' ' + size + 'px ' + family;
     var maxWidth = o.maxWidth || ctx.canvas.width;
+    var theme = ctx.__cfxTheme || CFX.THEMES.aurora;   // drawKinetic lives outside the renderer scope
     var lines = o.lines || wrapLines(ctx, o.text, maxWidth);
     var lineHeight = size * (o.lineHeight || 1.24);
     var total = lines.reduce(function (n, l) { return n + l.split(/\s+/).filter(Boolean).length; }, 0) || 1;
@@ -1695,6 +1787,11 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'left';
 
+    // Voice tracking: when o.times is given (one {s,e} per word, in order) the
+    // words appear exactly when they are spoken instead of on a uniform stagger.
+    var times = o.times || null;
+    var now = o.time == null ? -1 : o.time;
+    var activeIdx = -1;
     var index = 0;
     lines.forEach(function (line, li) {
       var words = line.split(/\s+/).filter(Boolean);
@@ -1710,24 +1807,77 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       }
 
       words.forEach(function (word, wi) {
-        var startAt = (index / total) * (o.stagger == null ? 0.62 : o.stagger);
-        var p = clamp((reveal - startAt) / 0.26, 0, 1);
-        var eased = E.outExpo(p);
+        var gi = index;
+        var tw = times && times[gi] ? times[gi] : null;
+        var p, active = false;
+        if (tw && now >= 0) {
+          if (o.hard) p = now >= tw.s ? 1 : 0;                       // typewriter
+          else p = clamp((now - tw.s) / Math.max(0.001, tw.e - tw.s), 0, 1);
+          active = now >= tw.s && now < tw.e;
+          if (active) activeIdx = gi;
+        } else {
+          var startAt = (gi / total) * (o.stagger == null ? 0.62 : o.stagger);
+          p = clamp((reveal - startAt) / 0.26, 0, 1);
+        }
+        var eased = E.outExpo(clamp(p, 0, 1));
         var dx = (1 - eased) * size * (o.dirX == null ? 0 : o.dirX);
         var dy = (1 - eased) * size * (o.dirY == null ? 0.42 : o.dirY);
+        var wy = startY + li * lineHeight;
         index++;
 
         if (p > 0) {
           var fill = o.fill;
-          if (typeof fill === 'function') fill = fill(x + dx, startY + li * lineHeight, lineWidth, size, index);
+          if (typeof fill === 'function') fill = fill(x + dx, wy, lineWidth, size, index);
+          var emphasised = o.emphasis && o.emphasis.indexOf(gi) > -1;
           ctx.globalAlpha = clamp(p * 1.15, 0, 1) * (o.alpha == null ? 1 : o.alpha);
-          ctx.fillStyle = fill || '#fff';
-          ctx.fillText(word, x + dx, startY + li * lineHeight + dy);
+
+          if (active && o.activeStyle !== 'none') {
+            // the word being spoken right now: soft pill + accent + glow
+            ctx.save();
+            ctx.globalAlpha *= 0.9;
+            ctx.fillStyle = rgba(theme.accent, 0.22);
+            roundRectPath(ctx, x + dx - size * 0.12, wy - size * 0.62, widths[wi] + size * 0.24, size * 1.18, size * 0.24);
+            ctx.fill();
+            ctx.restore();
+            ctx.fillStyle = mixHex(theme.accent, '#ffffff', 0.25);
+            ctx.shadowColor = rgba(theme.accent, 0.85);
+            ctx.shadowBlur = size * 0.5;
+          } else if (emphasised) {
+            ctx.fillStyle = accentGradientFor(ctx, x + dx, wy - size * 0.5, widths[wi] + 2, size);
+            ctx.shadowColor = rgba(theme.accent, 0.35);
+            ctx.shadowBlur = size * 0.22;
+          } else if (active && o.activeStyle === 'none') {
+            ctx.fillStyle = mixHex(theme.accent, '#ffffff', 0.2);
+          } else {
+            ctx.fillStyle = fill || '#fff';
+          }
+          ctx.fillText(word, x + dx, wy + dy);
+          ctx.shadowBlur = 0;
+          if (o.emphasisUnderline && emphasised) {
+            ctx.save();
+            ctx.globalAlpha *= 0.75;
+            ctx.fillStyle = rgba(theme.accent, 0.85);
+            roundRectPath(ctx, x + dx, wy + size * 0.62, widths[wi], Math.max(2, size * 0.07), size * 0.05);
+            ctx.fill();
+            ctx.restore();
+          }
         }
         x += widths[wi] + spaceWidth;
       });
       ctx.restore();
     });
+
+    // typewriter caret sitting right after the word being spoken
+    if (o.hard && times && now >= 0 && activeIdx > -1) {
+      var caret = caretPosFor(o, times, activeIdx, size, maxWidth);
+      if (caret) {
+        ctx.save();
+        ctx.globalAlpha = (0.55 + 0.45 * Math.abs(Math.sin(now * 6))) * (o.alpha == null ? 1 : o.alpha);
+        ctx.fillStyle = mixHex(theme.accent, '#ffffff', 0.3);
+        ctx.fillRect(caret.x, caret.y - size * 0.46, Math.max(2, size * 0.1), size * 0.92);
+        ctx.restore();
+      }
+    }
 
     // moving light band across the glyphs ("shimmer")
     if (o.shimmer != null && reveal > 0.95) {
@@ -1754,6 +1904,57 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       ctx.restore();
     }
     return { lines: lines, lineHeight: lineHeight, startY: startY };
+  }
+
+  function accentGradientFor(ctx, x, y, w, h) {
+    var theme = (ctx.__cfxTheme) || CFX.THEMES.aurora;
+    var g = ctx.createLinearGradient(x, y, x + w, y + h * 0.5);
+    g.addColorStop(0, theme.text);
+    g.addColorStop(0.55, mixHex(theme.accent, '#ffffff', 0.35));
+    g.addColorStop(1, theme.accent2);
+    return g;
+  }
+
+  function roundRectPath(ctx, x, y, w, h, r) {
+    r = Math.min(r || 0, Math.min(w, h) / 2);
+    ctx.beginPath();
+    if (ctx.roundRect) { ctx.roundRect(x, y, w, h, r); return; }
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  // Where does the caret go for the word currently being spoken?
+  function caretPosFor(o, times, activeIdx, size, maxWidth) {
+    var family = o.family || CFX.FONTS.display;
+    var weight = o.weight || 700;
+    var lineHeight = size * (o.lineHeight || 1.24);
+    var lines = o.lines || [];
+    var startY = o.y - ((lines.length - 1) * lineHeight) / 2;
+    ctx.font = weight + ' ' + size + 'px ' + family;
+    var index = 0;
+    for (var li = 0; li < lines.length; li++) {
+      var words = lines[li].split(/\s+/).filter(Boolean);
+      var widths = words.map(function (word) { return ctx.measureText(word).width; });
+      var spaceWidth = ctx.measureText(' ').width;
+      var lineWidth = widths.reduce(function (a, b) { return a + b; }, 0) + spaceWidth * Math.max(0, words.length - 1);
+      var x = o.align === 'center' ? o.x - lineWidth / 2 : o.align === 'right' ? o.x - lineWidth : o.x;
+      for (var wi = 0; wi < words.length; wi++) {
+        if (index === activeIdx) {
+          return { x: x + widths[wi] + Math.max(2, size * 0.08), y: startY + li * lineHeight };
+        }
+        index++;
+        x += widths[wi] + spaceWidth;
+      }
+    }
+    return null;
   }
 
   // Shrinks the type until the copy fits the safe area and the line budget —
@@ -1796,6 +1997,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
     var H = canvas.height = spec.height;
     var U = Math.min(W, H);                 // layout unit so 9:16 and 16:9 both breathe
     var ctx = canvas.getContext('2d');
+    ctx.__cfxTheme = theme;                 // helpers outside this scope need it
     var fps = spec.fps || 30;
     var seed = spec.meta.seed || 12345;
     var rand = mulberry32(seed);
@@ -2114,6 +2316,255 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
           break;
         }
 
+
+        /* ------------------------------------------------------------ story
+           Every story scene carries `words` with scene-relative times, so the
+           typography is driven by the narrator's voice and nothing else. */
+        case 'storyTitle': {
+          var kickFit = fitText(c, (scene.kicker || '').toUpperCase(), {
+            maxWidth: maxW, maxLines: 1, maxSize: U * 0.032, minSize: U * 0.022, weight: 700
+          });
+          var tFit = fitText(c, scene.title || '', {
+            maxWidth: maxW, maxLines: 3, maxSize: U * 0.145, minSize: U * 0.07, lineHeight: 1.16
+          });
+          var sFit = scene.subtitle ? fitText(c, scene.subtitle, {
+            maxWidth: maxW * 0.86, maxLines: 2, maxSize: U * 0.04, minSize: U * 0.026, weight: 500, lineHeight: 1.42
+          }) : null;
+          var tH = tFit.lines.length * tFit.lineHeight;
+          var sH = sFit ? sFit.lines.length * sFit.lineHeight : 0;
+          var blockTop = WIN_CY - (tH + sH + (sFit ? U * 0.05 : 0) + U * 0.10) / 2;
+
+          drawKinetic(c, {
+            text: scene.kicker || '', lines: kickFit.lines, x: W / 2, y: blockTop + U * 0.03,
+            size: kickFit.size, align: 'center', maxWidth: maxW, weight: 700, lineHeight: 1.2,
+            reveal: clamp(ch.reveal * 1.8, 0, 1), fill: rgba(theme.accent, 1), dirY: 0.2
+          });
+          drawRule(c, W / 2 - U * 0.14, blockTop + U * 0.062, U * 0.28, Math.max(1.5, U * 0.0035),
+            rgba(theme.accent, 0.15), rgba(theme.accent2, 0.85));
+
+          drawKinetic(c, {
+            text: scene.title || '', lines: tFit.lines, x: W / 2, y: blockTop + U * 0.10 + tH / 2,
+            size: tFit.size, align: 'center', maxWidth: maxW, lineHeight: 1.16,
+            reveal: clamp((ch.reveal - 0.12) * 1.5, 0, 1), dirY: 0.55, blurIn: true, shimmer: shimmerPos,
+            fill: function () { return accentGrad(0, 0, W, H); }, glow: theme.accent
+          });
+
+          if (sFit) {
+            drawKinetic(c, {
+              text: scene.subtitle, lines: sFit.lines, x: W / 2,
+              y: blockTop + U * 0.10 + tH + U * 0.05 + sH / 2,
+              size: sFit.size, align: 'center', maxWidth: maxW * 0.86, weight: 500, lineHeight: 1.42,
+              reveal: clamp((ch.reveal - 0.4) * 1.6, 0, 1), dirY: 0.35,
+              fill: rgba(theme.text, 0.72), alpha: 0.95
+            });
+          }
+
+          // slow breathing glow behind the title
+          c.save();
+          c.globalCompositeOperation = 'screen';
+          c.globalAlpha = 0.16 + 0.06 * Math.sin(local * 1.4);
+          var halo = c.createRadialGradient(W / 2, WIN_CY, 0, W / 2, WIN_CY, U * 0.6);
+          halo.addColorStop(0, rgba(theme.accent, 0.55));
+          halo.addColorStop(1, rgba(theme.accent, 0));
+          c.fillStyle = halo;
+          c.fillRect(0, 0, W, H);
+          c.restore();
+          break;
+        }
+
+        case 'story':
+        case 'storyQuote': {
+          var storyStyle = scene.style || 'reveal';
+          var isQuote = scene.type === 'storyQuote';
+          var bodyMax = U * (storyStyle === 'board' ? 0.072 : storyStyle === 'typewriter' ? 0.082 : 0.078);
+          var txtFit = fitText(c, scene.text || '', {
+            maxWidth: maxW * (storyStyle === 'board' ? 0.82 : 0.94),
+            maxLines: storyStyle === 'board' ? 5 : 4,
+            maxSize: bodyMax, minSize: U * 0.04,
+            weight: storyStyle === 'board' ? 600 : 700, lineHeight: 1.32
+          });
+          var times = (scene.words && scene.words.length) ? scene.words.map(function (wd) {
+            return { s: wd.s, e: wd.e };
+          }) : null;
+          var blockH = txtFit.lines.length * txtFit.lineHeight;
+          var panelPad = U * 0.055;
+          var cy = WIN_CY + (storyStyle === 'board' ? U * 0.006 : 0);
+
+          if (storyStyle === 'board' || isQuote) {
+            // a storybook panel: the text sits on a soft card with a progress rule
+            var panelW = maxW * 0.94;
+            var panelH = blockH + panelPad * 2;
+            c.save();
+            c.globalAlpha = ch.out * 0.98;
+            var pg = c.createLinearGradient(0, cy - panelH / 2, 0, cy + panelH / 2);
+            pg.addColorStop(0, 'rgba(6,10,22,0.62)');
+            pg.addColorStop(1, 'rgba(6,10,22,0.42)');
+            c.fillStyle = pg;
+            roundRectPath(c, W / 2 - panelW / 2, cy - panelH / 2, panelW, panelH, U * 0.035);
+            c.fill();
+            c.globalAlpha = ch.out * 0.55;
+            c.lineWidth = Math.max(1, U * 0.0022);
+            c.strokeStyle = rgba(theme.accent, 0.45);
+            c.stroke();
+            // progress rule along the bottom edge of the panel
+            c.globalAlpha = ch.out * 0.9;
+            var pw = (panelW - panelPad * 1.2) * clamp(p, 0, 1);
+            drawRule(c, W / 2 - (panelW - panelPad * 1.2) / 2, cy + panelH / 2 - U * 0.02, Math.max(2, pw), Math.max(2, U * 0.004),
+              rgba(theme.accent, 0.9), rgba(theme.accent2, 0.35));
+            c.restore();
+          }
+
+          if (isQuote) {
+            c.save();
+            c.globalAlpha = ch.out * 0.5;
+            c.font = '700 ' + (U * 0.2) + 'px ' + CFX.FONTS.display;
+            c.fillStyle = rgba(theme.accent, 0.85);
+            c.textAlign = 'left';
+            c.textBaseline = 'top';
+            c.fillText('“', W / 2 - maxW / 2 - U * 0.02, cy - blockH / 2 - U * 0.13);
+            c.restore();
+          }
+
+          if (storyStyle === 'stack') {
+            // teleprompter: the spoken line is big, what came before stays faint
+            var lines = txtFit.lines;
+            var lineTimes = [];
+            var cursorWord = 0;
+            lines.forEach(function (ln) {
+              var cnt = ln.split(/\s+/).filter(Boolean).length;
+              var first = times ? times[cursorWord] : null;
+              var last = times ? times[Math.min(times.length - 1, cursorWord + cnt - 1)] : null;
+              lineTimes.push({ s: first ? first.s : 0, e: last ? last.e : 0 });
+              cursorWord += cnt;
+            });
+            var activeLine = 0;
+            for (var li2 = 0; li2 < lines.length; li2++) {
+              if (times && local >= lineTimes[li2].s) activeLine = li2;
+            }
+            lines.forEach(function (ln, li3) {
+              var dist = li3 - activeLine;
+              var alpha = dist === 0 ? 1 : dist < 0 ? clamp(0.42 + dist * 0.18, 0.06, 0.42) : 0;
+              if (alpha <= 0.02) return;
+              var size = txtFit.size * (dist === 0 ? 1 : 0.82);
+              var y = cy + dist * txtFit.lineHeight * (dist === 0 ? 0.9 : 0.62);
+              c.save();
+              c.globalAlpha = ch.out * alpha;
+              c.font = '700 ' + size + 'px ' + CFX.FONTS.display;
+              c.textAlign = 'center';
+              c.textBaseline = 'middle';
+              c.fillStyle = dist === 0 ? accentGrad(0, 0, W, H) : rgba(theme.text, 0.7);
+              c.fillText(ln, W / 2, y);
+              c.restore();
+            });
+          } else {
+            drawKinetic(c, {
+              text: scene.text || '', lines: txtFit.lines, x: W / 2, y: cy,
+              size: txtFit.size, align: 'center', maxWidth: maxW * 0.94,
+              weight: storyStyle === 'board' ? 600 : 700, lineHeight: 1.32,
+              reveal: ch.reveal, times: times, time: local, activeStyle: 'glow',
+              emphasis: scene.emphasis, emphasisUnderline: true,
+              hard: storyStyle === 'typewriter',
+              fill: function () { return accentGrad(0, 0, W, H); }
+            });
+          }
+          break;
+        }
+
+        case 'storyList': {
+          var items2 = scene.items && scene.items.length ? scene.items : [scene.text || ''];
+          var rowGap = U * 0.022;
+          var perItem = [];
+          var wCursor = 0;
+          items2.forEach(function (it) {
+            var f = fitText(c, it, { maxWidth: maxW * 0.84, maxLines: 2, maxSize: U * 0.058, minSize: U * 0.034, weight: 600, lineHeight: 1.3 });
+            var count = (CFX.align ? CFX.align.words(it).length : it.split(/\s+/).length);
+            perItem.push({ fit: f, words: (scene.words || []).slice(wCursor, wCursor + count) });
+            wCursor += count;
+          });
+          var stackH2 = perItem.reduce(function (t2, it) { return t2 + it.fit.lines.length * it.fit.lineHeight + rowGap; }, 0) - rowGap;
+          var top3 = WIN_CY - stackH2 / 2;
+          var yCursor = top3;
+          perItem.forEach(function (it, ii) {
+            var first = it.words[0];
+            var spoken = !first || local >= first.s - 0.02;
+            var active = first && local >= first.s && local < it.words[it.words.length - 1].e;
+            var h = it.fit.lines.length * it.fit.lineHeight;
+            if (spoken) {
+              c.save();
+              c.globalAlpha = ch.out;
+              // marker
+              var mr = U * 0.011;
+              c.fillStyle = active ? mixHex(theme.accent, '#ffffff', 0.25) : rgba(theme.accent, 0.75);
+              if (active) { c.shadowColor = rgba(theme.accent, 0.8); c.shadowBlur = U * 0.02; }
+              c.beginPath();
+              c.arc(W / 2 - maxW * 0.42, yCursor + h / 2, mr * (active ? 1.35 : 1), 0, TAU);
+              c.fill();
+              c.restore();
+              drawKinetic(c, {
+                text: it.fit.lines.join(' '), lines: it.fit.lines, x: W / 2, y: yCursor + h / 2,
+                size: it.fit.size, align: 'center', maxWidth: maxW * 0.84, weight: 600, lineHeight: 1.3,
+                reveal: clamp((local - (first ? first.s : 0)) / 0.35 + 0.25, 0, 1),
+                times: it.words.length ? it.words.map(function (wd) { return { s: wd.s, e: wd.e }; }) : null,
+                time: local, activeStyle: 'glow', fill: rgba(theme.text, 0.96)
+              });
+            }
+            yCursor += h + rowGap;
+          });
+          break;
+        }
+
+        case 'storyBeat': {
+          var dots = 3;
+          var pulse = clamp(p * 3, 0, 1);
+          c.save();
+          c.globalAlpha = ch.out * 0.85;
+          drawRule(c, W / 2 - U * 0.16, WIN_CY - U * 0.05, U * 0.32, Math.max(1, U * 0.0022),
+            rgba(theme.accent, 0.05), rgba(theme.accent, 0.5));
+          drawRule(c, W / 2 - U * 0.16, WIN_CY + U * 0.05, U * 0.32, Math.max(1, U * 0.0022),
+            rgba(theme.accent, 0.5), rgba(theme.accent, 0.05));
+          c.restore();
+          for (var d = 0; d < dots; d++) {
+            var on = clamp((local * 2.4) - d * 0.5, 0, 1);
+            var grow = 1 + 0.35 * (1 - on);
+            c.save();
+            c.globalAlpha = ch.out * (0.25 + 0.75 * E.outCubic(on)) * pulse;
+            c.fillStyle = mixHex(theme.accent, '#ffffff', d * 0.2);
+            c.beginPath();
+            c.arc(W / 2 + (d - 1) * U * 0.055, WIN_CY, U * 0.014 * grow, 0, TAU);
+            c.fill();
+            c.restore();
+          }
+          break;
+        }
+
+        case 'storyEnd': {
+          var eFit = fitText(c, scene.title || '', {
+            maxWidth: maxW, maxLines: 2, maxSize: U * 0.13, minSize: U * 0.07, lineHeight: 1.2
+          });
+          var cFit = scene.cta ? fitText(c, scene.cta, {
+            maxWidth: maxW * 0.86, maxLines: 3, maxSize: U * 0.038, minSize: U * 0.024, weight: 500, lineHeight: 1.42
+          }) : null;
+          var eH = eFit.lines.length * eFit.lineHeight;
+          var cH = cFit ? cFit.lines.length * cFit.lineHeight : 0;
+          var eTop = WIN_CY - (eH + cH + (cFit ? U * 0.06 : 0)) / 2;
+          drawKinetic(c, {
+            text: scene.title || '', lines: eFit.lines, x: W / 2, y: eTop + eH / 2,
+            size: eFit.size, align: 'center', maxWidth: maxW, lineHeight: 1.2,
+            reveal: clamp(ch.reveal * 1.35, 0, 1), dirY: 0.5, shimmer: shimmerPos,
+            fill: function () { return accentGrad(0, 0, W, H); }, glow: theme.accent
+          });
+          drawRule(c, W / 2 - U * 0.1, eTop + eH + U * 0.03, U * 0.2, Math.max(1.5, U * 0.003),
+            rgba(theme.accent, 0.15), rgba(theme.accent2, 0.8));
+          if (cFit) {
+            drawKinetic(c, {
+              text: scene.cta, lines: cFit.lines, x: W / 2, y: eTop + eH + U * 0.06 + cH / 2,
+              size: cFit.size, align: 'center', maxWidth: maxW * 0.86, weight: 500, lineHeight: 1.42,
+              reveal: clamp((ch.reveal - 0.35) * 1.5, 0, 1), dirY: 0.3, fill: rgba(theme.text, 0.75)
+            });
+          }
+          break;
+        }
+
         case 'bullets': {
           var items = scene.items || [];
           var headFit3 = fitText(c, scene.heading || '', {
@@ -2413,8 +2864,10 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       return null;
     }
 
-    function drawCaptions(t) {
+    function drawCaptions(t, scene) {
       if (!captionCfg.enabled || captionCfg.style === 'none' || !captions.length) return;
+      if (scene && scene.caption === false) return;    // story: the line already speaks
+
       var cue = activeCue(t);
       if (!cue) return;
       var text = String(cue.text || '').replace(/\n/g, ' ');
@@ -2529,12 +2982,14 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
 
       var exiting = (hasNext && timeLeft < exitLen) || (!hasNext && t > total - 0.4);
 
+      var layerPainted = false;   // the layer canvas is stale unless we just painted it
       if (!exiting) {
         // no transition: paint the scene straight onto the finished frame
         drawSceneContent(ctx, cur.scene, cur.local, cur.progress);
       } else {
         lx.clearRect(0, 0, W, H);
         drawSceneContent(lx, cur.scene, cur.local, cur.progress);
+        layerPainted = true;
       }
 
       if (!hasNext && t > total - 0.4) {
@@ -2546,11 +3001,13 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
         var p = 1 - timeLeft / exitLen;
         var kind = cur.scene.transitionOut || TRANSITIONS[(cur.index + 1) % TRANSITIONS.length];
         drawSceneExit(kind, p, t);
-      } else {
+      } else if (layerPainted) {
+        // only composite what we actually rendered this frame — the layer used to
+        // be stale here, ghosting the last transition's scene over every frame
         ctx.drawImage(layer, 0, 0);
       }
 
-      drawCaptions(t);
+      drawCaptions(t, cur.scene);
 
       // scene-entry flash (punchy cut-in)
       var flash = clamp(1 - cur.local / 0.18, 0, 1);
@@ -2984,22 +3441,29 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
     }
 
     if (opts.voice) {
+      // a title card can delay the narration: the voice starts late, and the
+      // music must duck late with it
+      var voiceStart = Math.max(0, opts.voiceStart || 0);
       var v = bufferToContextSource(ctx, opts.voice);
       v.connect(voiceGain);
-      v.start(0);
+      v.start(voiceStart);
 
       if (opts.duck !== false) {
         var env = rmsEnvelope(opts.voice, ctx.sampleRate, 50);
         var duckLevel = opts.duckLevel == null ? 0.32 : opts.duckLevel;
         musicGain.gain.setValueAtTime(opts.musicGain == null ? 0.85 : opts.musicGain, 0);
         var speaking = false;
+        var musicBase = opts.musicGain == null ? 0.85 : opts.musicGain;
         for (var i = 0; i < env.values.length; i++) {
-          var t = i * env.hop / ctx.sampleRate;
+          var t = i * env.hop / ctx.sampleRate + voiceStart;
+          if (t > seconds - 0.05) break;
           var loud = env.values[i] > 0.02;
           if (loud !== speaking) {
             speaking = loud;
-            var target = loud ? duckLevel : (opts.musicGain == null ? 0.85 : opts.musicGain);
-            musicGain.gain.linearRampToValueAtTime(target, t + (loud ? 0.12 : 0.35));
+            var target = loud ? duckLevel : musicBase;
+            // automation times must only move forward, and stay inside the take
+            var when = Math.max(t, 0.001);
+            musicGain.gain.linearRampToValueAtTime(target, Math.min(seconds - 0.02, when + (loud ? 0.12 : 0.35)));
           }
         }
       }
@@ -3239,6 +3703,25 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
     });
   }
 
+  // Keep cues locked to the audio: trim anything past the end, never rescale.
+  // (Scaling is right for text-paced cues, wrong for voice-tracked ones.)
+  function clampTo(cues, duration) {
+    if (!cues || !cues.length || !(duration > 0)) return cues || [];
+    var out = [];
+    cues.forEach(function (c) {
+      var start = num(c.start, 0);
+      if (start >= duration - 0.05) return;
+      var end = Math.min(duration, Math.max(start + 0.2, num(c.end, start + 1)));
+      out.push({
+        start: start, end: end, text: c.text,
+        words: c.words ? c.words.filter(function (wd) { return num(wd.s, 0) < duration; }).map(function (wd) {
+          return { w: wd.w, s: Math.min(duration, num(wd.s, 0)), e: Math.min(duration, num(wd.e, start + 1)) };
+        }) : undefined
+      });
+    });
+    return out;
+  }
+
   function cueAt(cues, time) {
     for (var i = 0; i < cues.length; i++) {
       if (time >= cues[i].start && time < cues[i].end) return cues[i];
@@ -3266,8 +3749,1074 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
     plainText: plainText,
     fmtTimestamp: fmtTimestamp,
     num: num,
+    clampTo: clampTo,
     parseTimestamp: parseTimestamp,
     wrapText: wrapText
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script data-module="align">
+/* ============================================================================
+   CutFree Studio — voice tracking / forced alignment (zero-cost, offline)
+
+   The user brings the narration. We do NOT transcribe it (no server, no API):
+   we listen to the *waveform* — where speech starts, where it pauses, how loud
+   it breathes — and pour the written script into those spoken slots. The result
+   is word-level timing good enough to drive karaoke captions and kinetic
+   typography that lands on the syllable.
+
+   Pipeline
+     samples ─▶ analyse()  : adaptive-threshold VAD → phrases (speech spans)
+     script  ─▶ words()    : per-word weight (Bengali matra-aware) + pause-bias
+     both    ─▶ assign()   : weight-proportional distribution inside each phrase
+     ...     ─▶ track()    : one call → paragraphs + word timings + karaoke cues
+
+   Everything is a pure function over numbers, so node, the CLI and the tests
+   use exactly the same code as the browser.
+   ========================================================================== */
+(function (w) {
+  'use strict';
+
+  var CFX = w.CFX = w.CFX || {};
+
+  /* --------------------------------------------------------------- helpers */
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+
+  function percentile(values, p) {
+    if (!values.length) return 0;
+    var arr = Array.prototype.slice.call(values).sort(function (a, b) { return a - b; });
+    var idx = clamp(Math.round((arr.length - 1) * p), 0, arr.length - 1);
+    return arr[idx];
+  }
+
+  // Accepts an AudioBuffer (browser), {data, sampleRate}, a Float32Array or an
+  // array of channel arrays. Returns mono samples + the sample rate we assumed.
+  function toMono(input, opts) {
+    opts = opts || {};
+    if (!input) return { data: new Float32Array(0), sampleRate: opts.sampleRate || 48000 };
+
+    if (input.getChannelData && input.numberOfChannels) {          // AudioBuffer
+      var n = input.length, ch = input.numberOfChannels;
+      var out = new Float32Array(n);
+      for (var c = 0; c < ch; c++) {
+        var d = input.getChannelData(c);
+        for (var i = 0; i < n; i++) out[i] += d[i] / ch;
+      }
+      return { data: out, sampleRate: input.sampleRate };
+    }
+    if (input.data && input.data.length !== undefined) {           // {data, sampleRate}
+      return { data: toMonoData(input.data), sampleRate: input.sampleRate || opts.sampleRate || 48000 };
+    }
+    return { data: toMonoData(input), sampleRate: input.sampleRate || opts.sampleRate || 48000 };
+  }
+
+  function toMonoData(data) {
+    if (data.getChannelData) {                                     // {data: AudioBuffer}
+      var buf = data, n = buf.length, ch = buf.numberOfChannels, out = new Float32Array(n);
+      for (var c = 0; c < ch; c++) {
+        var d = buf.getChannelData(c);
+        for (var i = 0; i < n; i++) out[i] += d[i] / ch;
+      }
+      return out;
+    }
+    if (Array.isArray(data) && data.length && Array.isArray(data[0])) {   // [ch][i]
+      var len = data[0].length, out2 = new Float32Array(len);
+      for (var c2 = 0; c2 < data.length; c2++) {
+        for (var j = 0; j < len; j++) out2[j] += data[c2][j] / data.length;
+      }
+      return out2;
+    }
+    if (data instanceof Float32Array) return data;
+    return Float32Array.from(data);
+  }
+
+  /* ---------------------------------------------------------------- analyse */
+  // Windowed RMS → noise floor → hysteresis threshold → speech phrases.
+  // All the knobs are exposed because phone recordings are noisy and studio
+  // takes are not; the defaults are tuned for a spoken voice-over.
+  function analyse(input, opts) {
+    opts = opts || {};
+    var mono = toMono(input, opts);
+    var data = mono.data;
+    var sr = mono.sampleRate;
+    var duration = data.length / sr;
+
+    var win = Math.max(1, Math.round((opts.window || 0.030) * sr));
+    var hop = Math.max(1, Math.round((opts.hop || 0.010) * sr));
+    var frames = Math.max(0, Math.floor((data.length - win) / hop) + 1);
+    var rms = new Float32Array(frames);
+    var smooth = new Float32Array(frames);
+
+    for (var f = 0; f < frames; f++) {
+      var base = f * hop, sum = 0;
+      for (var i = base; i < base + win; i++) sum += data[i] * data[i];
+      rms[f] = Math.sqrt(sum / win);
+    }
+    // 3-frame moving average kills single-sample dropouts
+    for (var s = 0; s < frames; s++) {
+      var a = rms[Math.max(0, s - 1)], b = rms[s], c = rms[Math.min(frames - 1, s + 1)];
+      smooth[s] = (a + b + c) / 3;
+    }
+
+    var floor = percentile(smooth, opts.floorPercentile == null ? 0.2 : opts.floorPercentile);
+    var loud = percentile(smooth, 0.95);
+    var hi = Math.max(floor * 3.0, floor + 0.010, loud * 0.16);
+    var lo = Math.max(floor * 1.7, floor + 0.005, hi * 0.55);
+
+    var minSpeech = opts.minSpeech == null ? 0.16 : opts.minSpeech;
+    var minGap = opts.minGap == null ? 0.14 : opts.minGap;
+    var mergeGap = opts.mergeGap == null ? 0.22 : opts.mergeGap;
+    var pad = opts.pad == null ? 0.035 : opts.pad;
+
+    var minSpeechF = Math.max(1, Math.round(minSpeech / (hop / sr)));
+    var minGapF = Math.max(1, Math.round(minGap / (hop / sr)));
+
+    var phrases = [];
+    var speaking = false;
+    var startF = 0, quiet = 0;
+    for (var k = 0; k < frames; k++) {
+      var level = smooth[k];
+      if (!speaking) {
+        if (level >= hi) { speaking = true; startF = k; quiet = 0; }
+      } else {
+        if (level < lo) { quiet++; if (quiet >= minGapF) { phrases.push({ a: startF, b: k - quiet + 1 }); speaking = false; } }
+        else quiet = 0;
+      }
+    }
+    if (speaking) phrases.push({ a: startF, b: frames });
+
+    // frame spans → seconds, then tidy up
+    var spans = phrases
+      .filter(function (p) { return (p.b - p.a) >= minSpeechF; })
+      .map(function (p) {
+        return { start: Math.max(0, p.a * hop / sr - pad), end: Math.min(duration, (p.b * hop + win) / sr + pad) };
+      });
+
+    // join spans that are separated by an unnaturally short breath
+    var merged = [];
+    spans.forEach(function (sp) {
+      var prev = merged[merged.length - 1];
+      if (prev && (sp.start - prev.end) < mergeGap) prev.end = sp.end;
+      else merged.push({ start: sp.start, end: sp.end });
+    });
+
+    var speechTime = merged.reduce(function (t, p) { return t + (p.end - p.start); }, 0);
+    var gaps = [];
+    for (var g = 1; g < merged.length; g++) gaps.push({ start: merged[g - 1].end, end: merged[g].start });
+
+    return {
+      duration: duration,
+      sampleRate: sr,
+      phrases: merged,
+      gaps: gaps,
+      envelope: smooth,
+      hop: hop / sr,
+      noiseFloor: floor,
+      threshold: hi,
+      speechRatio: duration > 0 ? speechTime / duration : 0,
+      speechTime: speechTime,
+      // "is there really a voice in here?" — used to fall back to estimates
+      usable: merged.length >= 2 && speechTime > 0.8
+    };
+  }
+
+  /* ----------------------------------------------------------------- words */
+  var BN_MATRA = /[\u09BE-\u09CD\u09D7\u09E2\u09E3]/;          // vowel signs / hasanta
+  var BN_LETTER = /[\u0985-\u0994\u0995-\u09B9\u09DC-\u09DF\u09F0\u09F1\u09E6-\u09EF]/;
+  var LAT_VOWEL = /[aeiouyAEIOUY]/;
+
+  // Roughly "how long does this word take to say" — Bengali counts letters plus
+  // half-weight vowel signs, Latin counts syllable cores. Punctuation adds the
+  // pause the speaker will naturally take.
+  function weight(word) {
+    var s = String(word || '');
+    var sum = 0;
+    for (var i = 0; i < s.length; i++) {
+      var ch = s[i];
+      if (BN_MATRA.test(ch)) sum += 0.45;
+      else if (BN_LETTER.test(ch)) sum += 1;
+      else if (/[0-9]/.test(ch)) sum += 1.1;
+      else if (LAT_VOWEL.test(ch)) sum += 1;
+      else if (/[a-zA-Z]/.test(ch)) sum += 0.72;
+    }
+    return Math.max(1, sum);
+  }
+
+  // Natural pause *after* a word, in seconds (scaled down when time is tight).
+  function pauseAfter(word) {
+    var s = String(word || '');
+    if (/[.!?…]+["'”’)]?$/.test(s)) return 0.30;
+    if (/[।॥]$/.test(s)) return 0.34;                   // Bengali danda
+    if (/[,;:—–-]$/.test(s)) return 0.17;
+    return 0.045;
+  }
+
+  function words(text, para) {
+    return String(text == null ? '' : text)
+      .split(/\s+/)
+      .map(function (t) { return t.trim(); })
+      .filter(Boolean)
+      .map(function (t) {
+        var core = t.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '') || t;
+        return { w: t, core: core, weight: weight(core), pause: pauseAfter(t), para: para };
+      });
+  }
+
+  /* ---------------------------------------------------------------- assign */
+  // Pour a word list into the spoken slots, weighted by how long each word takes
+  // to say. Slots run from one phrase's start to the next phrase's start, so the
+  // breaths between phrases are distributed naturally and words never drift out
+  // of the audio they belong to.
+  function slotsFrom(analysis) {
+    var ph = analysis.phrases;
+    return ph.map(function (p, i) {
+      var next = ph[i + 1];
+      var end = next ? next.start : Math.min(analysis.duration, p.end + 0.45);
+      return { start: p.start, spokenEnd: p.end, end: Math.max(p.end, end) };
+    });
+  }
+
+  // Paragraphs are poured into *whole* slots so a sentence always starts where
+  // the speaker takes breath. A paragraph can own several slots; when there are
+  // more paragraphs than phrases, neighbouring paragraphs share one slot.
+  function groupParagraphs(paras, slotCount) {
+    if (paras.length <= slotCount) return paras.map(function (_, i) { return [i]; });
+    var total = paras.reduce(function (t, p) { return t + p.weight; }, 0) || 1;
+    var groups = [];
+    var acc = 0, cur = [];
+    paras.forEach(function (p, i) {
+      cur.push(i);
+      acc += p.weight;
+      var target = (groups.length + 1) * (total / slotCount);
+      if (acc >= target * 0.92 && groups.length < slotCount - 1) { groups.push(cur); cur = []; }
+    });
+    if (cur.length) groups.push(cur);
+    return groups;
+  }
+
+  // Dynamic programming: give each paragraph group the run of slots whose
+  // cumulative *time* fraction best matches the group's cumulative *weight*
+  // fraction. Cost is the absolute error, so it stays balanced end to end.
+  function chooseRuns(groups, slots, paras) {
+    var P = groups.length, S = slots.length;
+    var totalW = paras.reduce(function (t, p) { return t + p.weight; }, 0) || 1;
+    var totalT = slots.reduce(function (t, s) { return t + (s.end - s.start); }, 0) || 1;
+    var wFrac = [], acc = 0;
+    groups.forEach(function (g) {
+      g.forEach(function (i) { acc += paras[i].weight; });
+      wFrac.push(acc / totalW);
+    });
+    var tFrac = [], accT = 0;
+    slots.forEach(function (sl) { accT += (sl.end - sl.start); tFrac.push(accT / totalT); });
+
+    var INF = 1e9;
+    var dp = [], prev = [];
+    for (var i = 0; i < P; i++) { dp.push([]); prev.push([]); }
+    for (var j = 0; j < S; j++) {
+      dp[0][j] = Math.abs(wFrac[0] - tFrac[j]);
+      prev[0][j] = -1;
+    }
+    for (var i2 = 1; i2 < P; i2++) {
+      for (var j2 = i2; j2 < S - (P - i2 - 1); j2++) {
+        var best = INF, bestK = i2 - 1;
+        for (var k = i2 - 1; k < j2; k++) {
+          var cost = dp[i2 - 1][k];
+          if (cost < best) { best = cost; bestK = k; }
+        }
+        dp[i2][j2] = best + Math.abs(wFrac[i2] - tFrac[j2]);
+        prev[i2][j2] = bestK;
+      }
+    }
+    var runs = [];
+    var jEnd = S - 1;
+    for (var i3 = P - 1; i3 >= 0; i3--) {
+      var jStart = i3 === 0 ? -1 : prev[i3][jEnd];
+      runs[i3] = { from: Math.max(0, jStart + (jStart === -1 ? 0 : 1)), to: jEnd };
+      if (i3 === 0) runs[0].from = 0;
+      jEnd = jStart;
+    }
+    return runs;
+  }
+
+  function assignWords(list, analysis, opts) {
+    opts = opts || {};
+    var slots = slotsFrom(analysis);
+    if (!slots.length || !list.length) return [];
+
+    // 1. group the words by the paragraph they were written in
+    var paras = [];
+    list.forEach(function (it) {
+      var idx = it.para == null ? 0 : it.para;
+      if (!paras[idx]) paras[idx] = { weight: 0, words: [] };
+      paras[idx].weight += it.weight + it.pause;
+      paras[idx].words.push(it);
+    });
+    paras = paras.filter(Boolean);
+
+    // 2. how many phrases each paragraph gets (whole-phrase granularity)
+    var groups = groupParagraphs(paras, slots.length);
+    var runs = chooseRuns(groups, slots, paras);
+
+    var tailAllow = opts.tailAllow == null ? 0.30 : opts.tailAllow;
+    var spw = opts.secondsPerWeight == null ? 0.075 : opts.secondsPerWeight;
+    var placed = [];
+
+    groups.forEach(function (group, gi) {
+      var run = runs[gi] || { from: gi, to: gi };
+      var runSlots = slots.slice(run.from, run.to + 1);
+      if (!runSlots.length) runSlots = [slots[Math.min(gi, slots.length - 1)]];
+
+      var groupWords = [];
+      var groupWeight = 0;
+      group.forEach(function (pi) {
+        groupWeight += paras[pi].weight;
+        groupWords = groupWords.concat(paras[pi].words);
+      });
+      if (!groupWords.length) return;
+
+      var runTime = runSlots.reduce(function (t, x) { return t + (x.end - x.start); }, 0) || 1;
+
+      // 3. split the group's words across its phrases, by how long each one lasts
+      var wi = 0;
+      runSlots.forEach(function (slot) {
+        var slotTime = Math.max(0.12, slot.end - slot.start);
+        var slotWeight = groupWeight * (slotTime / runTime);
+        var weightUsed = 0, assigned = [];
+        while (wi < groupWords.length && (weightUsed < slotWeight * 0.999 || !assigned.length)) {
+          assigned.push(groupWords[wi]);
+          weightUsed += groupWords[wi].weight + groupWords[wi].pause;
+          wi++;
+        }
+        if (!assigned.length) return;
+
+        // 4. place them: inside the spoken phrase, plus the breath after it, and
+        //    if the text needs more room than the voice gave it, borrow part of
+        //    the following silence — never past the next phrase's onset.
+        // Words live inside the spoken phrase. If the text genuinely needs more
+        // time than the voice gave it they may borrow the following silence —
+        // but they never stretch into it just because it is there.
+        var readable = assigned.reduce(function (t, x) { return t + x.weight; }, 0) * spw;
+        var windowEnd = Math.min(slot.end, Math.max(slot.spokenEnd,
+          Math.min(slot.spokenEnd + tailAllow, slot.start + readable)));
+        var window = Math.max(0.15, windowEnd - slot.start);
+        var wSum = assigned.reduce(function (t, x) { return t + x.weight + x.pause; }, 0) || 1;
+
+        var placed_in_slot = 0;
+        assigned.forEach(function (item, ai) {
+          var share = (item.weight + item.pause) / wSum;
+          var dur = clamp(window * share, 0.09, 3.2);
+          var start = ai === 0 ? slot.start : slot.start + placed_in_slot;
+          var soft = Math.min(item.pause, dur * 0.5);
+          var end = start + Math.max(0.05, dur - soft);
+          if (end > slot.end) end = slot.end;
+          if (end - start < 0.09) end = Math.min(slot.end, start + 0.09);
+          placed.push({
+            word: item.w, core: item.core, para: item.para,
+            start: start, end: end, slot: slots.indexOf(slot)
+          });
+          placed_in_slot += dur;
+        });
+      });
+
+      // 5. if the run could not take them all (very short audio), let the rest
+      //    ride the tail of the last phrase so nothing is lost
+      while (wi < groupWords.length) {
+        var prev = placed[placed.length - 1];
+        var st = prev ? prev.end + 0.04 : 0;
+        var step = clamp((groupWords[wi].weight) * spw, 0.12, 1.1);
+        placed.push({
+          word: groupWords[wi].w, core: groupWords[wi].core, para: groupWords[wi].para,
+          start: st, end: st + step * 0.85, slot: -1
+        });
+        wi++;
+      }
+    });
+
+    // 6. final safety pass — strictly ordered, non-overlapping, ≥ 50 ms
+    var last = 0;
+    placed.forEach(function (t) {
+      if (!(t.start >= 0)) t.start = last + 0.05;
+      if (t.start < last) t.start = last + 0.02;
+      if (!(t.end > t.start)) t.end = t.start + 0.06;
+      last = t.end;
+    });
+    return placed;
+  }
+
+  // Split a flat word list back into the paragraphs the script was written in.
+  function paragraphsFrom(list, script, timing) {
+    var blocks = String(script == null ? '' : script)
+      .split(/\n\s*\n+/)
+      .map(function (b) { return b.replace(/\s+/g, ' ').trim(); })
+      .filter(Boolean);
+    if (!blocks.length) blocks = [String(script || '').trim()];
+
+    var out = [];
+    var cursor = 0;
+    var tagged = timing.length && timing[0].para !== undefined;
+    blocks.forEach(function (block, i) {
+      var list2 = words(block, i);
+      var slice = tagged
+        ? timing.filter(function (t) { return t.para === i; })
+        : timing.slice(cursor, cursor + list2.length);
+      cursor += list2.length;
+      if (!slice.length) return;
+      out.push({
+        index: i,
+        text: block,
+        words: slice,
+        start: slice[0].start,
+        end: slice[slice.length - 1].end,
+        wordCount: list2.length
+      });
+    });
+    return out;
+  }
+
+  /* ----------------------------------------------------------------- track */
+  function cuesFrom(timing, opts) {
+    if (!timing || !timing.length) return [];
+    // a caption never spans two paragraphs — that is where the speaker breathes
+    if (timing[0].para !== undefined && timing.some(function (t) { return t.para !== timing[0].para; })) {
+      var buckets = [];
+      timing.forEach(function (t) {
+        var i = t.para == null ? 0 : t.para;
+        if (!buckets[i]) buckets[i] = [];
+        buckets[i].push({ word: t.word, start: t.start, end: t.end });
+      });
+      var merged = [];
+      buckets.filter(Boolean).forEach(function (b) { merged = merged.concat(cuesFrom(b, opts)); });
+      return merged;
+    }
+    if (CFX.captions && CFX.captions.fromWords) {
+      return CFX.captions.fromWords(
+        timing.map(function (t) { return { word: t.word, start: t.start, end: t.end }; }), opts
+      );
+    }
+    return timing.map(function (t) { return { start: t.start, end: t.end, text: t.word, words: [{ w: t.word, s: t.start, e: t.end }] }; });
+  }
+
+  // One call: audio + script in, timing + captions out.
+  // `estimated: true` means we could not hear a voice and fell back to text pace.
+  function track(audio, script, opts) {
+    opts = opts || {};
+    var res = analyse(audio, opts);
+    var blocks = String(script == null ? '' : script)
+      .split(/\n\s*\n+/).map(function (b) { return b.replace(/\s+/g, ' ').trim(); }).filter(Boolean);
+    var flat = [];
+    blocks.forEach(function (block, bi) { flat = flat.concat(words(block, bi)); });
+
+    if (!res.usable || !flat.length) {
+      var est = proportional(script, {
+        wps: opts.wps || 2.45,
+        leadIn: opts.leadIn == null ? 0.35 : opts.leadIn
+      });
+      est.analysis = res;
+      est.estimated = true;
+      est.reason = !flat.length ? 'empty-script' : (res.phrases.length < 2 ? 'no-phrases' : 'too-little-speech');
+      return est;
+    }
+
+    var timing = assignWords(flat, res, opts);
+    var paragraphs = paragraphsFrom(timing, script, timing);
+    var cues = cuesFrom(timing, {
+      maxChars: opts.maxChars == null ? 40 : opts.maxChars,
+      maxSeconds: opts.maxSeconds == null ? 2.8 : opts.maxSeconds,
+      minSeconds: opts.minSeconds
+    });
+
+    return {
+      estimated: false,
+      duration: res.duration,
+      speechTime: res.speechTime,
+      speechRatio: res.speechRatio,
+      phrases: res.phrases,
+      gaps: res.gaps,
+      envelope: res.envelope,
+      hop: res.hop,
+      analysis: res,
+      words: timing,
+      paragraphs: paragraphs,
+      cues: cues
+    };
+  }
+
+  // No usable audio: keep the same shape, pace the text by words-per-second.
+  function proportional(script, opts) {
+    opts = opts || {};
+    var wps = opts.wps || 2.45;
+    var blocks = String(script == null ? '' : script)
+      .split(/\n\s*\n+/).map(function (b) { return b.replace(/\s+/g, ' ').trim(); }).filter(Boolean);
+    if (!blocks.length) return { estimated: true, duration: 0, words: [], paragraphs: [], cues: [], phrases: [], gaps: [] };
+
+    var t = opts.leadIn == null ? 0.35 : opts.leadIn;
+    var timing = [];
+    var paragraphs = [];
+    blocks.forEach(function (block, bi) {
+      var list = words(block);
+      var pStart = t;
+      list.forEach(function (item, i) {
+        var dur = item.weight / wps;
+        timing.push({ word: item.w, core: item.core, start: t, end: t + dur * 0.92, slot: -1, block: bi });
+        t += dur + Math.min(item.pause, 0.22) * 0.5 + (i === list.length - 1 ? 0.12 : 0);
+      });
+      paragraphs.push({
+        index: bi, text: block, words: timing.slice(-list.length),
+        start: pStart, end: t - 0.12, wordCount: list.length
+      });
+      t += 0.22;
+    });
+
+    return {
+      estimated: true,
+      duration: t,
+      speechTime: t,
+      speechRatio: 1,
+      phrases: paragraphs.map(function (p) { return { start: p.start, end: p.end }; }),
+      gaps: [],
+      words: timing,
+      paragraphs: paragraphs,
+      cues: cuesFrom(timing, opts)
+    };
+  }
+
+  /* --------------------------------------------------------------- editing */
+  // Nudge a paragraph (and everything after it) — how the user fixes a tracker
+  // that put a line on the wrong breath.
+  function shiftFrom(paragraphs, index, delta) {
+    if (!paragraphs[index]) return paragraphs;
+    var hitBoundary = false;
+    return paragraphs.map(function (p, i) {
+      if (i === index) hitBoundary = true;
+      if (!hitBoundary) return p;
+      var shift = function (t) { return Math.max(0, t + delta); };
+      return {
+        index: p.index, text: p.text, wordCount: p.wordCount,
+        start: shift(p.start), end: shift(p.end),
+        words: p.words.map(function (wd) {
+          return { word: wd.word, core: wd.core, start: shift(wd.start), end: shift(wd.end), slot: wd.slot };
+        })
+      };
+    });
+  }
+
+  // Re-derive cues after the paragraph list changed.
+  function retime(tracked) {
+    if (!tracked) return tracked;
+    var flat = [];
+    (tracked.paragraphs || []).forEach(function (p) { flat = flat.concat(p.words); });
+    tracked.words = flat;
+    tracked.cues = cuesFrom(flat);
+    tracked.duration = flat.length ? flat[flat.length - 1].end + 0.2 : tracked.duration;
+    return tracked;
+  }
+
+  w.CFX.align = {
+    analyse: analyse,
+    track: track,
+    proportional: proportional,
+    words: words,
+    weight: weight,
+    pauseAfter: pauseAfter,
+    assignWords: assignWords,
+    paragraphsFrom: paragraphsFrom,
+    cuesFrom: cuesFrom,
+    shiftFrom: shiftFrom,
+    retime: retime,
+    toMono: toMono,
+    percentile: percentile
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script data-module="story">
+/* ============================================================================
+   CutFree Studio — story mode
+
+   "Text + your voice in, a story video out."
+
+   The alignment engine (align.js) has already told us which word is spoken when.
+   The story director turns that timing into a *staged* video:
+
+     title card  ─▶ kinetic narration lines (word-synced) ─▶ breath/beat cards
+                 ─▶ quote & list scenes ─▶ end card
+
+   Three things matter here:
+     1. A line starts exactly when the narrator starts it (no guesswork), and a
+        long pause becomes a beat card instead of dead air.
+     2. Typography follows the voice — words pop in, the spoken word glows.
+     3. Nothing depends on the network: no transcription API, no ASR service.
+   ========================================================================== */
+(function (w) {
+  'use strict';
+
+  var CFX = w.CFX = w.CFX || {};
+
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  function round2(v) { return Math.round(v * 100) / 100; }
+
+  function seedOf(str) {
+    var h = 2166136261;
+    var s = String(str || '');
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return (h >>> 0) || 12345;
+  }
+
+  var STOP = {
+    bn: ['এবং', 'কিন্তু', 'তাই', 'আর', 'যে', 'সে', 'এই', 'ওই', 'একটা', 'একটি', 'করল', 'হলো', 'হল', 'না', 'কে', 'তার', 'আমি', 'আমরা', 'তুমি', 'আপনি', 'ছিল', 'করে'],
+    en: ['and', 'but', 'so', 'the', 'a', 'an', 'of', 'to', 'in', 'is', 'was', 'it', 'that', 'this', 'he', 'she', 'they', 'we', 'you', 'for', 'on', 'with']
+  };
+
+  /* ------------------------------------------------------------- text tools */
+  function sentences(text) {
+    var out = String(text || '')
+      .replace(/\s+/g, ' ')
+      .match(/[^.!?।॥…]+[.!?।॥…]*/g);
+    if (!out) return [];
+    return out.map(function (s) { return s.trim(); }).filter(Boolean);
+  }
+
+  function isQuote(line) {
+    return /^["“'‘]/.test(line) || /^[—–-]\s?/.test(line) || /["”'’]\s*$/.test(line);
+  }
+
+  function isList(paragraph) {
+    return /(^|\n)\s*(?:[-•*·]|\d+[.)])\s+/.test(String(paragraph || ''));
+  }
+
+  function listItems(paragraph) {
+    return String(paragraph || '')
+      .split(/\n/)
+      .map(function (l) { return l.replace(/^\s*(?:[-•*·]|\d+[.)])\s*/, '').trim(); })
+      .filter(Boolean);
+  }
+
+  function labelOf(text, maxWords) {
+    var parts = String(text || '').split(/\s+/).filter(Boolean);
+    var label = parts.slice(0, maxWords || 5).join(' ');
+    return (parts.length > (maxWords || 5) ? label + '…' : label).slice(0, 60);
+  }
+
+  // Which words deserve the accent colour: the long, content-bearing ones.
+  function emphasisFor(words, lang, limit) {
+    var stop = STOP[lang === 'en' ? 'en' : 'bn'];
+    var scored = [];
+    words.forEach(function (wd, i) {
+      var core = String(wd.core || wd.word || '').replace(/[^\p{L}\p{N}]/gu, '');
+      if (core.length < 4) return;
+      if (stop.indexOf(core.toLowerCase()) > -1) return;
+      if (/\d/.test(core)) { scored.push({ i: i, score: 99 }); return; }
+      scored.push({ i: i, score: core.length * (lang === 'en' ? 1 : 0.85) });
+    });
+    scored.sort(function (a, b) { return b.score - a.score || a.i - b.i; });
+    var picked = scored.slice(0, limit || 2).map(function (s) { return s.i; });
+    picked.sort(function (a, b) { return a - b; });
+    return picked;
+  }
+
+  function pickStyle(kind, wordCount, index, wanted) {
+    if (wanted && wanted !== 'auto') return wanted;
+    if (kind === 'quote') return 'board';
+    if (kind === 'list') return 'stack';
+    if (wordCount <= 4) return index % 2 ? 'typewriter' : 'reveal';
+    if (index % 4 === 3) return 'board';
+    return 'reveal';
+  }
+
+  /* ------------------------------------------------------------------ plan */
+  // input: {title, script, track|timings, kicker, endCard, cta, style, lang,
+  //         theme, mood, aspect, quality, fps, perf, shorts, captionStyle,
+  //         watermark, logoDataUrl, maxWordsPerScene, maxSceneSeconds}
+  function plan(input) {
+    input = input || {};
+    var lang = input.language === 'en' || input.lang === 'en' ? 'en' : 'bn';
+    var script = String(input.script || '');
+    if (!script.trim()) return null;
+
+    var tracked = input.track || (CFX.align ? CFX.align.proportional(script, { wps: Input_wps(input) }) : null);
+    if (!tracked || !tracked.paragraphs || !tracked.paragraphs.length) return null;
+
+    // dramatic pauses (a real breath in the recording) become their own beat card
+    var markers = [];
+    var phrases = tracked.phrases || [];
+    for (var pi = 1; pi < phrases.length; pi++) {
+      var g = phrases[pi].start - phrases[pi - 1].end;
+      if (g >= (input.beatPauseSeconds == null ? 1.1 : input.beatPauseSeconds)) {
+        markers.push({ t: phrases[pi - 1].end + g * 0.5, gap: g });
+      }
+    }
+
+    var maxWords = input.maxWordsPerScene || (lang === 'en' ? 12 : 11);
+    var maxSeconds = input.maxSceneSeconds || 5.2;
+    var aspect = input.aspect || (input.shorts ? '9:16' : '16:9');
+    var size = resolution(aspect, input.quality);
+    var seed = input.seed == null ? seedOf(input.title + '|' + script) : input.seed;
+
+    /* ---- 1. sentences → scenes, keeping the alignment of every word ------ */
+    var body = [];      // {kind, text, items?, words[], srcStart, srcEnd, paraIndex}
+    tracked.paragraphs.forEach(function (para) {
+      var kind = isList(para.text) ? 'list' : isQuote(para.text) ? 'quote' : 'narration';
+      var units = kind === 'list' ? listItems(para.text).map(function (t) { return { text: t }; })
+        : sentences(para.text).map(function (t) { return { text: t }; });
+      if (!units.length) units = [{ text: para.text }];
+
+      // cut the paragraph's sentences wherever the narrator took a long pause
+      var pieces = [];
+      units.forEach(function (unit, ui) {
+        var startIdx = units.slice(0, ui).reduce(function (n, u) {
+          return n + (CFX.align ? CFX.align.words(u.text).length : u.text.split(/\s+/).length);
+        }, 0);
+        var cnt = CFX.align ? CFX.align.words(unit.text).length : unit.text.split(/\s+/).length;
+        var slice = para.words.slice(startIdx, startIdx + cnt);
+        var cur = { text: unit.text, words: [] };
+        slice.forEach(function (wd) {
+          if (cur.words.length) {
+            var prev = cur.words[cur.words.length - 1];
+            // (a) the marker sits in the silence between the two words, or
+            // (b) the words live in different spoken phrases and the breath
+            //     between those phrases is long enough to deserve a beat
+            var crossed = markers.some(function (m) { return m.t > prev.end && m.t < wd.start; })
+              || slotBreakIsLong(prev, wd, phrases);
+            if (crossed) { pieces.push(cur); cur = { text: '', words: [] }; }
+          }
+          cur.words.push(wd);
+        });
+        if (cur.words.length) pieces.push(cur);
+      });
+      pieces.forEach(function (piece) {
+        if (!piece.text) piece.text = piece.words.map(function (x) { return x.word; }).join(' ');
+      });
+      units = pieces.length ? pieces : units;
+
+      var cursor = 0;                                  // index into para.words
+      var current = null;
+      units.forEach(function (unit) {
+        var count = unit.words ? unit.words.length
+          : (CFX.align ? CFX.align.words(unit.text).length : unit.text.split(/\s+/).length);
+        var slice = unit.words && unit.words.length ? unit.words : para.words.slice(cursor, cursor + count);
+        cursor += count;
+        if (!slice.length) return;
+
+        var start = slice[0].start;
+        var end = slice[slice.length - 1].end;
+        var canExtend = current &&
+          (current.words.length + slice.length) <= maxWords &&
+          (end - current.srcStart) <= maxSeconds;
+
+        if (!canExtend) {
+          current = {
+            kind: kind, parts: [], words: [], srcStart: start, srcEnd: end,
+            paraIndex: para.index, items: []
+          };
+          body.push(current);
+        }
+        current.parts.push(unit.text);
+        if (kind === 'list' && unit.text) current.items.push(unit.text);
+        current.words = current.words.concat(slice);
+        current.srcEnd = end;
+      });
+    });
+
+    if (!body.length) return null;
+
+    /* ---- 2. audio timeline: title card, beats in the pauses, end card ---- */
+    var leadIn = Math.max(0, tracked.paragraphs[0].start);
+    var titleDur = clamp(leadIn + 0.15, 2.4, 4.6);
+    var voiceStart = round2(titleDur - leadIn);         // voice is delayed to the card's end
+    var lastWord = body[body.length - 1].words;
+    var audioEnd = lastWord[lastWord.length - 1].end;
+    var endDur = 2.9;
+
+    /* ---- 2. video timeline ------------------------------------------------
+       Video time is audio time shifted by `voiceStart`, with the title card at
+       the head and the end card at the tail. Scenes are laid out back-to-back
+       (the renderer plays them in order), so every scene length is derived from
+       the audio timeline and any leftover air is handed to the scene before it —
+       that is what keeps the typography glued to the narrator's voice. */
+    var scenes = [];
+    var shift = voiceStart;
+    var lead = 0.20, trail = 0.30;
+    var beatMin = input.beatPauseSeconds == null ? 0.9 : input.beatPauseSeconds;
+    var maxBeat = 3.2;
+    var beats = 0;
+    var drifts = [];
+
+    scenes.push({
+      type: 'storyTitle', dur: titleDur, label: input.title || (lang === 'en' ? 'Story' : 'গল্প'),
+      kicker: input.kicker || (lang === 'en' ? 'A story' : 'একটি গল্প'),
+      title: input.title || (lang === 'en' ? 'Untitled story' : 'নামহীন গল্প'),
+      subtitle: input.subtitle || labelOf(tracked.paragraphs[0].text, 8),
+      srcStart: 0, srcEnd: titleDur
+    });
+    var prevEnd = titleDur;
+
+    var videoStartOf = function (scene) { return scene.srcStart + shift - lead; };
+    var desiredEndOf = function (scene) { return Math.max(scene.srcEnd + shift + trail, prevEnd + 0.55); };
+
+    // 1. how each line wants to sit on the audio timeline
+    var plan2 = body.map(function (scene, i) {
+      var want = Math.max(prevEnd, videoStartOf(scene));
+      var we = Math.max(want + 0.95, scene.srcEnd + shift + trail);
+      var next = body[i + 1];
+      var gap = next ? Math.max(want + 0.4, videoStartOf(next)) - we : 0;
+      return { scene: scene, start: want, end: we, next: next, gap: gap, index: i };
+    });
+
+    // 2. fill the breaths: a beat card for a real pause, otherwise the previous
+    //    line simply stays on screen through the short breath (so the timeline
+    //    stays continuous and nothing can drift away from the voice)
+    for (var bi = 0; bi < plan2.length; bi++) {
+      var item = plan2[bi];
+      var nextItem = plan2[bi + 1];
+      item.end = Math.max(item.end, prevEnd);
+      var limit = nextItem ? Math.max(item.start + 0.4, nextItem.start) : null;
+      var room = limit == null ? 0 : limit - item.end;
+      if (limit != null && room >= beatMin) {
+        var beatDur = Math.min(room, maxBeat);
+        item.end = limit - beatDur;
+        item.beat = beatDur;
+      } else if (limit != null) {
+        item.end = limit;                       // absorb the breath
+      }
+      if (nextItem && nextItem.start < item.end) nextItem.start = item.end;
+      prevEnd = item.end;
+      drifts.push(Math.abs(item.start - videoStartOf(item.scene)));
+    }
+
+    // 3. paint them, inserting the beat cards
+    var tailStart = Math.max(
+      plan2.length ? plan2[plan2.length - 1].end : titleDur,
+      audioEnd + shift + 0.42
+    );
+    if (plan2.length && plan2[plan2.length - 1].end < tailStart) {
+      plan2[plan2.length - 1].end = tailStart;   // hold the last line instead of going black
+      prevEnd = tailStart;
+    }
+    plan2.forEach(function (item) {
+      var packed = packScene(item.scene, item.start, item.end, item.index, lang, input, shift);
+      // the story line on screen already is the caption — unless the user brought
+      // their own cues (imported/edited SRT), which always win
+      if (!input.captionCues) packed.caption = false;
+      scenes.push(packed);
+      if (item.beat) {
+        scenes.push({
+          type: 'storyBeat', dur: round2(item.beat), srcStart: round2(item.end),
+          srcEnd: round2(item.end + item.beat), text: ' ',
+          label: lang === 'en' ? 'Beat' : 'বিরতি'
+        });
+        beats++;
+      }
+    });
+
+    // 4. the end card closes the story (it starts after the last word, never before)
+    scenes.push({
+      type: 'storyEnd', dur: endDur, srcStart: round2(tailStart), srcEnd: round2(tailStart + endDur),
+      label: lang === 'en' ? 'The end' : 'সমাপ্তি',
+      title: input.endCard || (lang === 'en' ? 'The End' : 'সমাপ্ত'),
+      cta: input.cta || (lang === 'en' ? 'Liked the story? Subscribe for the next one.'
+        : 'গল্পটা ভালো লাগলে সাবস্ক্রাইব করে যান — পরের গল্পটা আসছে।')
+    });
+
+    /* ---- 3. spec --------------------------------------------------------- */
+    var total = scenes.reduce(function (t, s) { return t + s.dur; }, 0);
+    var captionStyle = input.captionStyle || (input.shorts ? 'karaoke' : 'karaoke');
+    var cueOffset = voiceStart;
+
+    var cues = (tracked.cues || []).map(function (c) {
+      return {
+        start: round2(c.start + cueOffset), end: round2(c.end + cueOffset), text: c.text,
+        words: c.words ? c.words.map(function (wd) {
+          return { w: wd.w, s: round2(wd.s + cueOffset), e: round2(wd.e + cueOffset) };
+        }) : undefined
+      };
+    });
+    // voice-tracked captions stay locked to the audio — clamping only
+    if (CFX.captions && CFX.captions.clampTo && cues.length) cues = CFX.captions.clampTo(cues, total);
+
+    var spec = {
+      fps: input.fps || 30,
+      width: size.width,
+      height: size.height,
+      scenes: scenes,
+      captions: cues,
+      meta: {
+        story: true,
+        title: input.title || (lang === 'en' ? 'Untitled story' : 'নামহীন গল্প'),
+        kicker: input.kicker || (lang === 'en' ? 'A story' : 'একটি গল্প'),
+        seed: seed,
+        theme: input.theme || 'aurora',
+        mood: input.mood || 'cinematic',
+        language: lang,
+        aspect: aspect,
+        perf: input.perf || 'high',
+        shorts: !!input.shorts,
+        safe: input.shorts ? { top: 0.11, bottom: 0.19 } : { top: 0.05, bottom: 0.08 },
+        captions: {
+          enabled: input.captions !== false, style: captionStyle,
+          scale: input.shorts ? 1.1 : 1
+        },
+        storyStyle: input.style || 'auto',
+        watermark: input.watermark || '',
+        logoDataUrl: input.logoDataUrl || null,
+        voiceStart: voiceStart,
+        voiceDuration: round2(tracked.duration),
+        estimated: !!tracked.estimated,
+        phrases: (tracked.phrases || []).length,
+        speechRatio: tracked.speechRatio,
+        wordCount: tracked.words ? tracked.words.length : 0,
+        beats: beats,
+        drift: round2(drifts.length ? Math.max.apply(null, drifts) : 0),
+        wordsPerSecond: tracked.duration > 0 ? round2((tracked.words || []).length / tracked.duration) : 0
+      },
+      energy: null
+    };
+
+    return spec;
+  }
+
+  function Input_wps(input) { return input && input.wps ? input.wps : 2.45; }
+
+  // Two words sit in different phrases: is the breath between them a beat?
+  function slotBreakIsLong(prev, wd, phrases) {
+    if (!phrases || !phrases.length) return false;
+    var a = prev.slot, b = wd.slot;
+    if (a == null || b == null || a === b || a < 0 || b < 0) return false;
+    if (!phrases[a] || !phrases[b]) return false;
+    var gap = phrases[b].start - phrases[a].end;
+    return gap >= 1.1;
+  }
+
+  // A body scene with scene-relative word timings (that is what the renderer
+  // needs to pop each word exactly when it is spoken).
+  function packScene(scene, videoStart, videoEnd, index, lang, input, voiceShift) {
+    var shift = voiceShift || 0;
+    var dur = Math.max(1.15, round2(videoEnd - videoStart));
+    var words = scene.words.map(function (wd) {
+      var s = round2(clamp(wd.start + shift - videoStart, 0, Math.max(0, dur - 0.05)));
+      var e = round2(clamp(wd.end + shift - videoStart, s + 0.05, dur));
+      return { w: wd.word, core: wd.core, s: s, e: e };
+    });
+    var text = scene.parts.join(scene.kind === 'list' ? '\n' : ' ').trim();
+    return {
+      type: scene.kind === 'quote' ? 'storyQuote' : scene.kind === 'list' ? 'storyList' : 'story',
+      dur: dur,
+      text: text,
+      items: scene.kind === 'list' ? scene.items : undefined,
+      words: words,
+      emphasis: emphasisFor(scene.words, lang, 2),
+      style: pickStyle(scene.kind, scene.words.length, index, (input && input.style) || 'auto'),
+      label: labelOf(text, 5),
+      srcStart: round2(videoStart),
+      srcEnd: round2(videoStart + dur),
+      wordsPerSecond: dur > 0 ? round2(scene.words.length / dur) : 0
+    };
+  }
+
+  function resolution(aspect, quality) {
+    var q = quality || '1080p';
+    var base = q === '720p' ? 720 : q === '480p' ? 480 : 1080;
+    var ratio = aspect === '9:16' ? (9 / 16) : aspect === '1:1' ? 1 : aspect === '4:5' ? 0.8 : (16 / 9);
+    var w, h;
+    if (ratio >= 1) { h = base; w = Math.round(base * ratio); }
+    else { w = base; h = Math.round(base / ratio); }
+    var even = function (n) { return n % 2 ? n + 1 : n; };
+    return { width: even(w), height: even(h) };
+  }
+
+  /* --------------------------------------------------------------- metadata */
+  // Story-flavoured description: the story name, the opening lines, chapters at
+  // every beat, plus the usual free hashtags.
+  function metadata(spec, opts) {
+    opts = opts || {};
+    var bn = (spec.meta.language || 'bn') !== 'en';
+    var base = CFX.director && CFX.director.metadata ? CFX.director.metadata(spec, opts) : { tags: [] };
+    var opening = (spec.scenes.filter(function (s) { return s.type === 'story'; })[0] || {}).text || '';
+    var total = spec.scenes.reduce(function (t, s) { return t + s.dur; }, 0);
+
+    var lines = [];
+    lines.push(opening ? opening.slice(0, 170) : spec.meta.title);
+    lines.push('');
+    lines.push(bn ? '📖 গল্প: ' + spec.meta.title : '📖 Story: ' + spec.meta.title);
+    lines.push(bn ? '🎧 ন্যারেশন: নিজের ভয়েস (ভয়েস-ট্র্যাক করা ক্যাপশন সহ)'
+      : '🎧 Narration: your own voice, with voice-tracked captions');
+    lines.push(bn ? '⏱️ দৈর্ঘ্য: ' + fmtClock(total) : '⏱️ Length: ' + fmtClock(total));
+
+    var chapterLines = [];
+    var acc = 0;
+    var beats = 0;
+    var sinceChapter = 1e9;
+    spec.scenes.forEach(function (sc) {
+      if (sc.type === 'storyTitle') {
+        chapterLines.push(fmtStamp(0) + (bn ? ' 📖 শুরু' : ' 📖 Intro'));
+        sinceChapter = 0;
+      } else if (sc.type === 'storyBeat') {
+        chapterLines.push(fmtStamp(acc) + (bn ? ' ⏸️ বিরতি' : ' ⏸️ Beat'));
+        beats++;
+        sinceChapter = 0;
+      } else if (sc.type !== 'storyEnd' && sc.label && sinceChapter >= 11) {
+        chapterLines.push(fmtStamp(acc) + ' ' + sc.label.slice(0, 48));
+        sinceChapter = 0;
+      }
+      acc += sc.dur;
+      sinceChapter += sc.dur;
+    });
+    if (spec.scenes.length && spec.scenes[spec.scenes.length - 1].type === 'storyEnd') {
+      chapterLines.push(fmtStamp(Math.max(0, total - spec.scenes[spec.scenes.length - 1].dur)) + (bn ? ' 🔚 শেষ' : ' 🔚 The end'));
+    }
+    if (total > 40 && chapterLines.length >= 3) {
+      lines.push('');
+      lines.push(bn ? '⏱️ টাইমস্ট্যাম্প:' : '⏱️ Timestamps:');
+      chapterLines.slice(0, 14).forEach(function (l) { lines.push(l); });
+    }
+    if (spec.meta.shorts) {
+      lines.push('');
+      lines.push(bn ? '#Shorts — ৬০ সেকেন্ডের ভেতরে, ভার্টিকাল ৯:১৬, সেফ-জোন মেনে বানানো।'
+        : '#Shorts — vertical 9:16, under a minute, laid out inside the Shorts safe zone.');
+    }
+    lines.push('');
+    lines.push(bn ? '🔒 ক্যাপশন, টাইপোগ্রাফি আর এডিট — সব ব্রাউজারে, কোনো API বা সার্ভার ছাড়া।'
+      : '🔒 Captions, typography and editing all happened in the browser — no API, no server.');
+
+    var tags = (base.tags || []).slice(0, 12);
+    if (bn) { if (tags.indexOf('বাংলা গল্প') < 0) tags.unshift('বাংলা গল্প'); }
+    else if (tags.indexOf('story') < 0) tags.unshift('story');
+    tags = tags.slice(0, 14);
+
+    var hashtags = (base.hashtags || []).slice(0, 5);
+    if (spec.meta.shorts && hashtags.indexOf('#Shorts') < 0) hashtags.unshift('#Shorts');
+
+    return {
+      title: base.title,
+      shorts: !!spec.meta.shorts,
+      description: lines.join('\n'),
+      tags: tags,
+      hashtags: hashtags,
+      chapters: chapterLines,
+      beats: beats,
+      duration: total,
+      schedule: base.schedule || null
+    };
+  }
+
+  function fmtClock(sec) {
+    var s = Math.max(0, Math.round(sec));
+    var m = Math.floor(s / 60);
+    return m + ':' + String(s % 60).padStart(2, '0');
+  }
+  function fmtStamp(sec) {
+    var s = Math.max(0, Math.floor(sec));
+    var m = Math.floor(s / 60);
+    var r = s % 60;
+    return (m < 10 ? '0' : '') + m + ':' + (r < 10 ? '0' : '') + r;
+  }
+
+  CFX.story = {
+    plan: plan,
+    metadata: metadata,
+    sentences: sentences,
+    labelOf: labelOf,
+    emphasisFor: emphasisFor,
+    resolution: resolution,
+    seedOf: seedOf
   };
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
@@ -5017,6 +6566,8 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
     rendererKey: 0,
     timings: null,        // measured / estimated narration timing
     voiceBuffer: null,    // captured or uploaded narration audio
+    track: null,          // voice-tracked alignment (CFX.align.track)
+    alignPlayhead: 0,
     srtCues: null,        // imported captions
     voice: null,          // selected TTS voice entry
     recording: false
@@ -5070,6 +6621,8 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
         logoDataUrl: S.logoImage ? S.logoImage.src : null,
         language: window.CF_LANG === 'en' ? 'en' : 'bn',
         shorts: $('#fShorts').checked,
+        story: $('#fStory').checked,
+        multi: multi,
         captionStyle: $('#fCaptionStyle').value,
         captionCues: S.srtCues || null,
         fitCaptions: true
@@ -5088,6 +6641,40 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       title: item.title, script: item.script, seed: item.seed
     });
 
+    // ---- story mode: the voice drives everything (scenes, typography, captions)
+    if (opts.story) {
+      opts.aspect = opts.shorts ? '9:16' : opts.aspect;
+      var rawScript = ($('#fScript').value || '').trim();
+      var scriptForStory = opts.multi ? item.script : (rawScript || item.script);
+
+      // a track belongs to the script it was measured on — a different script in
+      // the same session (e.g. the next item of a batch) falls back to text pace
+      var track = S.track;
+      if (track) {
+        var have = (track.words || []).length;
+        var want = window.CFX.align.words(scriptForStory).length;
+        if (!have || Math.abs(have - want) / Math.max(1, want) > 0.25) track = null;
+      }
+      if (!track) track = window.CFX.align.proportional(scriptForStory, { wps: 2.45 });
+      var typedTitle = ($('#fTitle').value || '').trim();
+      var spec2 = window.CFX.story.plan({
+        title: typedTitle || item.title, script: scriptForStory, track: track,
+        kicker: $('#fKicker').value.trim(), endCard: $('#fEndCard').value.trim(),
+        style: $('#fStoryStyle').value, language: opts.language,
+        theme: opts.theme, mood: opts.mood, aspect: opts.aspect, quality: opts.quality,
+        fps: opts.fps, perf: opts.perf, shorts: opts.shorts,
+        captionStyle: $('#fCaptionStyle').value, watermark: opts.watermark,
+        logoDataUrl: opts.logoDataUrl, seed: item.seed
+      });
+      if (spec2) {
+        spec2.meta.captions = Object.assign({}, spec2.meta.captions, {
+          enabled: $('#fCaptionStyle').value !== 'none'
+        });
+        return spec2;
+      }
+      toast(t('stQuotaLow'));
+    }
+
     if (opts.shorts) {
       opts.aspect = '9:16';
       opts.durationTarget = Math.min(opts.durationTarget || 45, 58);
@@ -5096,13 +6683,22 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
 
     var spec = window.CFX.director.build(opts);
 
-    // narration first: measure/delivered timings drive the scene lengths...
-    if (S.timings && $('#fNarrFit').checked) {
+    // narration first: a tracked voice (or TTS timings) drives the scene lengths
+    if (S.track && $('#fNarrFit').checked) {
+      window.CFX.director.fitToNarration(spec, timingsFromTrack(S.track));
+      spec.meta.voiceStart = S.track.voiceStart || 0;
+    } else if (S.timings && $('#fNarrFit').checked) {
       window.CFX.director.fitToNarration(spec, S.timings);
     }
-    // ...and the captions (an imported SRT wins over TTS timings)
+    // ...and the captions (an imported SRT wins over tracked/TTS timing)
     if (S.srtCues && S.srtCues.length) {
       spec.captions = window.CFX.captions.fitTo(S.srtCues, spec.scenes.reduce(function (a, x) { return a + x.dur; }, 0));
+      spec.meta.captions = Object.assign({}, spec.meta.captions, { enabled: $('#fCaptionStyle').value !== 'none' });
+    } else if (S.track && S.track.cues && S.track.cues.length) {
+      spec.captions = window.CFX.captions.clampTo(S.track.cues.map(function (c) {
+        return { start: c.start + (spec.meta.voiceStart || 0), end: c.end + (spec.meta.voiceStart || 0), text: c.text,
+          words: c.words ? c.words.map(function (wd) { return { w: wd.w, s: wd.s + (spec.meta.voiceStart || 0), e: wd.e + (spec.meta.voiceStart || 0) }; }) : undefined };
+      }), spec.scenes.reduce(function (a, x) { return a + x.dur; }, 0));
       spec.meta.captions = Object.assign({}, spec.meta.captions, { enabled: $('#fCaptionStyle').value !== 'none' });
     } else if (S.timings) {
       var cues = window.CFX.director.captionsFromTimings(S.timings);
@@ -5128,6 +6724,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
         if (S.voiceBuffer) {
           return window.CFX.music.mix({
             music: music, voice: S.voiceBuffer, seconds: total,
+            voiceStart: spec.meta.voiceStart || 0,
             sampleRate: music.sampleRate, channels: 2
           }).then(function (mixed) {
             return mixed;
@@ -5172,7 +6769,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       var chip = document.createElement('button');
       chip.type = 'button';
       chip.className = 'scene-chip';
-      chip.textContent = (i + 1) + '. ' + (sc.title || sc.heading || sc.text || sc.items && sc.items[0] || sc.type).toString().slice(0, 22) +
+      chip.textContent = (i + 1) + '. ' + (sc.label || sc.title || sc.heading || sc.text || sc.items && sc.items[0] || sc.type).toString().slice(0, 22) +
         ' · ' + sc.dur.toFixed(1) + 's';
       chip.addEventListener('click', function () { seek(starts[i] + 0.05); });
       strip.appendChild(chip);
@@ -5268,7 +6865,9 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       everyHours: 24,
       atHourUtc: 12
     };
-    S.meta = window.CFX.director.metadata(spec, opts);
+    S.meta = (spec.meta && spec.meta.story && window.CFX.story)
+      ? window.CFX.story.metadata(spec, opts)
+      : window.CFX.director.metadata(spec, opts);
     $('#ytTitle').value = S.meta.title;
     $('#ytDesc').value = S.meta.description;
     $('#ytTags').value = S.meta.tags.join(', ');
@@ -5571,6 +7170,160 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
   }
 
 
+
+  /* ------------------------------------------------------- voice tracking */
+  // Turn a tracked alignment into the {segments} shape the director uses for
+  // narration-fit and the classic flow.
+  function timingsFromTrack(track) {
+    return {
+      segments: (track.paragraphs || []).map(function (p) {
+        return {
+          text: p.text, start: p.start, end: p.end,
+          words: p.words.map(function (wd) { return { word: wd.word, start: wd.start, end: wd.end }; })
+        };
+      }),
+      duration: track.duration,
+      estimated: !!track.estimated
+    };
+  }
+
+  function trackVoice(fromRecording) {
+    var script = $('#fScript').value || '';
+    if (!S.voiceBuffer) { toast(t('stTrackNoVoice')); return Promise.resolve(null); }
+    if (script.trim().length < 8) { toast(t('stNeedScript')); return Promise.resolve(null); }
+
+    setProgress(0.35, t('stTracking'));
+    return new Promise(function (resolve) {
+      setTimeout(function () {
+        var track = null;
+        try {
+          track = window.CFX.align.track(S.voiceBuffer, script, {
+            sampleRate: S.voiceBuffer.sampleRate,
+            wps: 2.45
+          });
+        } catch (e) {
+          track = null;
+        }
+        $('#progressWrap').hidden = true;
+        if (!track) { toast(t('stTrackEstimated')); resolve(null); return; }
+        S.track = track;
+        S.track.voiceStart = 0;                       // the story planner sets the real shift
+        S.trackScript = script;
+        renderAlign();
+        toast((track.estimated ? t('stTrackEstimated') : t('stTracked')) + ' · ' + fmtTime(track.duration));
+        showVoiceNote(track.estimated ? t('stTrackEstimated')
+          : (t('stTracked') + ' · ' + track.phrases.length + ' •'), track.estimated ? 'warn' : 'ok');
+        if (S.spec) buildCurrentPlan();
+        resolve(track);
+      }, 30);
+    });
+  }
+
+  // ---------- the alignment timeline: waveform, phrases, lines and playhead
+  function renderAlign() {
+    var wrap = $('#alignWrap');
+    var canvas = $('#alignCanvas');
+    var track = S.track;
+    if (!track) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+
+    var stats = t('alignStats', {
+      phrases: (track.phrases || []).length,
+      speech: Math.round((track.speechRatio || 0) * 100),
+      dur: fmtTime(track.duration),
+      words: (track.words || []).length,
+      wps: (track.words && track.duration ? (track.words.length / track.duration).toFixed(1) : '0')
+    });
+    $('#alignStats').textContent = stats + (track.estimated ? ' · ' + t('voiceEstimated') : '');
+
+    var cssW = canvas.clientWidth || 520;
+    var cssH = 130;
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    var c = canvas.getContext('2d');
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.clearRect(0, 0, cssW, cssH);
+
+    var theme = (window.CFX.THEMES && window.CFX.THEMES[$('.swatch.on') ? $('.swatch.on').dataset.theme : 'aurora']) || window.CFX.THEMES.aurora;
+    var dur = Math.max(0.1, track.duration || 1);
+    var xOf = function (t2) { return (t2 / dur) * cssW; };
+
+    // background + speech blocks
+    c.fillStyle = 'rgba(8,12,26,.55)';
+    c.fillRect(0, 0, cssW, cssH);
+    (track.phrases || []).forEach(function (ph) {
+      c.fillStyle = 'rgba(120,160,255,.14)';
+      c.fillRect(xOf(ph.start), 0, Math.max(1, xOf(ph.end) - xOf(ph.start)), cssH);
+    });
+
+    // waveform envelope
+    var env = (track.analysis && track.analysis.envelope) || null;
+    var hop = (track.analysis && track.analysis.hop) || 0.01;
+    if (env && env.length) {
+      var mid = cssH * 0.5;
+      var step = Math.max(1, Math.floor(env.length / cssW));
+      c.beginPath();
+      for (var i = 0, x = 0; i < env.length; i += step, x++) {
+        var v = Math.min(1, env[i] * 9);
+        c.moveTo(x, mid - v * (cssH * 0.42));
+        c.lineTo(x, mid + v * (cssH * 0.42));
+      }
+      c.strokeStyle = 'rgba(190,215,255,.42)';
+      c.lineWidth = 1;
+      c.stroke();
+    } else {
+      c.strokeStyle = 'rgba(190,215,255,.25)';
+      c.beginPath();
+      c.moveTo(0, cssH * 0.5);
+      c.lineTo(cssW, cssH * 0.5);
+      c.stroke();
+    }
+
+    // caption / line bars
+    (track.cues || []).forEach(function (cue) {
+      var x = xOf(cue.start), w = Math.max(2, xOf(cue.end) - xOf(cue.start));
+      c.fillStyle = 'rgba(90,225,205,.20)';
+      c.fillRect(x, cssH * 0.76, w, 10);
+      c.fillStyle = 'rgba(90,225,205,.65)';
+      c.fillRect(x, cssH * 0.76, w, 2);
+    });
+
+    // paragraph boundaries (where a line starts)
+    (track.paragraphs || []).forEach(function (p, i) {
+      var x = xOf(p.start);
+      c.fillStyle = 'rgba(255,255,255,.28)';
+      c.fillRect(x, cssH * 0.62, 1, cssH * 0.3);
+    });
+
+    // playhead
+    var px = xOf(Math.min(dur, S.alignPlayhead || 0));
+    c.fillStyle = '#ff5c8a';
+    c.fillRect(px - 1, 0, 2, cssH);
+
+    // paragraph chips under the canvas
+    var list = $('#alignList');
+    list.innerHTML = '';
+    (track.paragraphs || []).forEach(function (p, i) {
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'align-chip';
+      chip.innerHTML = '<b>' + fmtTime(p.start) + '</b><span>' + String(p.text).slice(0, 46) + '</span>';
+      chip.addEventListener('click', function () { seekAudio(p.start); });
+      list.appendChild(chip);
+    });
+  }
+
+  // Jump the preview to a moment in the *audio* time (the story shifts it).
+  function seekAudio(audioTime) {
+    if (!S.renderer) return;
+    var shift = S.spec && S.spec.meta ? (S.spec.meta.voiceStart || 0) : 0;
+    var t2 = Math.max(0, audioTime + shift - 0.05);
+    seek(Math.min(t2, S.renderer.duration - 0.05));
+    S.alignPlayhead = audioTime;
+    renderAlign();
+  }
+
   /* ------------------------------------------------------------ voice panel */
   function fillVoiceList() {
     var sel = $('#fVoicePick');
@@ -5648,6 +7401,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
         if (res.buffer) {
           S.voiceBuffer = window.CFX.voice.trimToOffset(res.buffer, res.offset);
           showVoiceNote(t('voiceRecorded'), 'ok');
+          trackVoice(true);
         } else {
           showVoiceNote(t('voiceNoCapture'), 'warn');
         }
@@ -5730,6 +7484,10 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
         progress: $('#fProgress').checked,
         captionStyle: $('#fCaptionStyle').value,
         shorts: $('#fShorts').checked,
+        story: $('#fStory').checked,
+        storyStyle: $('#fStoryStyle').value,
+        kicker: $('#fKicker').value,
+        endCard: $('#fEndCard').value,
         voiceId: $('#fVoicePick').value,
         voiceRate: $('#fVoiceRate').value,
         narrationFit: $('#fNarrFit').checked,
@@ -5738,7 +7496,12 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
         clientId: $('#fClientId').value
       },
       captions: S.srtCues || (S.spec && S.spec.captions) || null,
-      timings: S.timings || null
+      timings: S.timings || null,
+      track: S.track ? {
+        estimated: !!S.track.estimated, duration: S.track.duration,
+        speechRatio: S.track.speechRatio, phrases: S.track.phrases,
+        paragraphs: S.track.paragraphs, cues: S.track.cues, words: S.track.words
+      } : null
     };
     window.CFX.publish.downloadBlob(
       new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' }),
@@ -5777,11 +7540,18 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
         if (rvL) rvL.textContent = parseFloat(f.voiceRate).toFixed(2);
       }
       $('#fNarrFit').checked = f.narrationFit !== false;
+      $('#fStory').checked = !!f.story;
+      if (f.storyStyle) $('#fStoryStyle').value = f.storyStyle;
+      if (f.kicker != null) $('#fKicker').value = f.kicker;
+      if (f.endCard != null) $('#fEndCard').value = f.endCard;
       if (f.privacy) $('#fPrivacy').value = f.privacy;
       if (f.schedule) $('#fSchedule').value = f.schedule;
       if (f.clientId) $('#fClientId').value = f.clientId;
       S.srtCues = data.captions || null;
       S.timings = data.timings || null;
+      // a saved track lets the story rebuild exactly without the audio file
+      S.track = data.track || null;
+      if (S.track) { S.track.voiceStart = 0; renderAlign(); }
       $$('.swatch').forEach(function (s2) { s2.classList.toggle('on', s2.dataset.theme === ($('#themePicker').dataset.current || '')); });
       toast(t('stProjectLoaded'));
       buildCurrentPlan();
@@ -5895,6 +7665,25 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
     });
     $('#fCaptionStyle').addEventListener('change', function () {
       if (S.spec) { S.spec.meta.captions = Object.assign({}, S.spec.meta.captions, { style: this.value, enabled: this.value !== 'none' }); paint(); }
+    });
+    $('#btnTrack').addEventListener('click', function () { trackVoice(); });
+    $('#btnAlignPlay').addEventListener('click', function () { trackVoice(); });
+    $('#fStory').addEventListener('change', function () {
+      if (this.checked) {
+        if ($('#fCaptionStyle').value === 'none') $('#fCaptionStyle').value = 'karaoke';
+        if (S.voiceBuffer && !S.track) trackVoice();
+        else if (!S.voiceBuffer) toast(t('stTrackNoVoice'));
+      }
+      if (S.spec) buildCurrentPlan();
+    });
+    $('#fStoryStyle').addEventListener('change', function () {
+      if (S.spec && S.spec.meta && S.spec.meta.story) buildCurrentPlan();
+    });
+    $('#alignCanvas').addEventListener('click', function (e) {
+      if (!S.track) return;
+      var rect = this.getBoundingClientRect();
+      var frac = (e.clientX - rect.left) / Math.max(1, rect.width);
+      seekAudio(frac * (S.track.duration || 0));
     });
     $('#btnSaveProject').addEventListener('click', saveProject);
     $('#fProject').addEventListener('change', function () { if (this.files && this.files[0]) loadProject(this.files[0]); });
@@ -6028,6 +7817,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
           S.voiceBuffer = buffer;
           toast(t('stVoiceLoaded'));
           ac.close();
+          trackVoice();                       // straight into voice tracking
         })['catch'](function () { toast(t('stVoiceFail')); ac.close(); });
     });
     $('#fLogo').addEventListener('change', function () {

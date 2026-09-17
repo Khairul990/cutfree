@@ -203,6 +203,25 @@
     });
   }
 
+  // Keep cues locked to the audio: trim anything past the end, never rescale.
+  // (Scaling is right for text-paced cues, wrong for voice-tracked ones.)
+  function clampTo(cues, duration) {
+    if (!cues || !cues.length || !(duration > 0)) return cues || [];
+    var out = [];
+    cues.forEach(function (c) {
+      var start = num(c.start, 0);
+      if (start >= duration - 0.05) return;
+      var end = Math.min(duration, Math.max(start + 0.2, num(c.end, start + 1)));
+      out.push({
+        start: start, end: end, text: c.text,
+        words: c.words ? c.words.filter(function (wd) { return num(wd.s, 0) < duration; }).map(function (wd) {
+          return { w: wd.w, s: Math.min(duration, num(wd.s, 0)), e: Math.min(duration, num(wd.e, start + 1)) };
+        }) : undefined
+      });
+    });
+    return out;
+  }
+
   function cueAt(cues, time) {
     for (var i = 0; i < cues.length; i++) {
       if (time >= cues[i].start && time < cues[i].end) return cues[i];
@@ -230,6 +249,7 @@
     plainText: plainText,
     fmtTimestamp: fmtTimestamp,
     num: num,
+    clampTo: clampTo,
     parseTimestamp: parseTimestamp,
     wrapText: wrapText
   };

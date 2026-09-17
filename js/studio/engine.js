@@ -129,6 +129,7 @@
     var weight = o.weight || 700;
     ctx.font = weight + ' ' + size + 'px ' + family;
     var maxWidth = o.maxWidth || ctx.canvas.width;
+    var theme = ctx.__cfxTheme || CFX.THEMES.aurora;   // drawKinetic lives outside the renderer scope
     var lines = o.lines || wrapLines(ctx, o.text, maxWidth);
     var lineHeight = size * (o.lineHeight || 1.24);
     var total = lines.reduce(function (n, l) { return n + l.split(/\s+/).filter(Boolean).length; }, 0) || 1;
@@ -139,6 +140,11 @@
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'left';
 
+    // Voice tracking: when o.times is given (one {s,e} per word, in order) the
+    // words appear exactly when they are spoken instead of on a uniform stagger.
+    var times = o.times || null;
+    var now = o.time == null ? -1 : o.time;
+    var activeIdx = -1;
     var index = 0;
     lines.forEach(function (line, li) {
       var words = line.split(/\s+/).filter(Boolean);
@@ -154,24 +160,77 @@
       }
 
       words.forEach(function (word, wi) {
-        var startAt = (index / total) * (o.stagger == null ? 0.62 : o.stagger);
-        var p = clamp((reveal - startAt) / 0.26, 0, 1);
-        var eased = E.outExpo(p);
+        var gi = index;
+        var tw = times && times[gi] ? times[gi] : null;
+        var p, active = false;
+        if (tw && now >= 0) {
+          if (o.hard) p = now >= tw.s ? 1 : 0;                       // typewriter
+          else p = clamp((now - tw.s) / Math.max(0.001, tw.e - tw.s), 0, 1);
+          active = now >= tw.s && now < tw.e;
+          if (active) activeIdx = gi;
+        } else {
+          var startAt = (gi / total) * (o.stagger == null ? 0.62 : o.stagger);
+          p = clamp((reveal - startAt) / 0.26, 0, 1);
+        }
+        var eased = E.outExpo(clamp(p, 0, 1));
         var dx = (1 - eased) * size * (o.dirX == null ? 0 : o.dirX);
         var dy = (1 - eased) * size * (o.dirY == null ? 0.42 : o.dirY);
+        var wy = startY + li * lineHeight;
         index++;
 
         if (p > 0) {
           var fill = o.fill;
-          if (typeof fill === 'function') fill = fill(x + dx, startY + li * lineHeight, lineWidth, size, index);
+          if (typeof fill === 'function') fill = fill(x + dx, wy, lineWidth, size, index);
+          var emphasised = o.emphasis && o.emphasis.indexOf(gi) > -1;
           ctx.globalAlpha = clamp(p * 1.15, 0, 1) * (o.alpha == null ? 1 : o.alpha);
-          ctx.fillStyle = fill || '#fff';
-          ctx.fillText(word, x + dx, startY + li * lineHeight + dy);
+
+          if (active && o.activeStyle !== 'none') {
+            // the word being spoken right now: soft pill + accent + glow
+            ctx.save();
+            ctx.globalAlpha *= 0.9;
+            ctx.fillStyle = rgba(theme.accent, 0.22);
+            roundRectPath(ctx, x + dx - size * 0.12, wy - size * 0.62, widths[wi] + size * 0.24, size * 1.18, size * 0.24);
+            ctx.fill();
+            ctx.restore();
+            ctx.fillStyle = mixHex(theme.accent, '#ffffff', 0.25);
+            ctx.shadowColor = rgba(theme.accent, 0.85);
+            ctx.shadowBlur = size * 0.5;
+          } else if (emphasised) {
+            ctx.fillStyle = accentGradientFor(ctx, x + dx, wy - size * 0.5, widths[wi] + 2, size);
+            ctx.shadowColor = rgba(theme.accent, 0.35);
+            ctx.shadowBlur = size * 0.22;
+          } else if (active && o.activeStyle === 'none') {
+            ctx.fillStyle = mixHex(theme.accent, '#ffffff', 0.2);
+          } else {
+            ctx.fillStyle = fill || '#fff';
+          }
+          ctx.fillText(word, x + dx, wy + dy);
+          ctx.shadowBlur = 0;
+          if (o.emphasisUnderline && emphasised) {
+            ctx.save();
+            ctx.globalAlpha *= 0.75;
+            ctx.fillStyle = rgba(theme.accent, 0.85);
+            roundRectPath(ctx, x + dx, wy + size * 0.62, widths[wi], Math.max(2, size * 0.07), size * 0.05);
+            ctx.fill();
+            ctx.restore();
+          }
         }
         x += widths[wi] + spaceWidth;
       });
       ctx.restore();
     });
+
+    // typewriter caret sitting right after the word being spoken
+    if (o.hard && times && now >= 0 && activeIdx > -1) {
+      var caret = caretPosFor(o, times, activeIdx, size, maxWidth);
+      if (caret) {
+        ctx.save();
+        ctx.globalAlpha = (0.55 + 0.45 * Math.abs(Math.sin(now * 6))) * (o.alpha == null ? 1 : o.alpha);
+        ctx.fillStyle = mixHex(theme.accent, '#ffffff', 0.3);
+        ctx.fillRect(caret.x, caret.y - size * 0.46, Math.max(2, size * 0.1), size * 0.92);
+        ctx.restore();
+      }
+    }
 
     // moving light band across the glyphs ("shimmer")
     if (o.shimmer != null && reveal > 0.95) {
@@ -198,6 +257,57 @@
       ctx.restore();
     }
     return { lines: lines, lineHeight: lineHeight, startY: startY };
+  }
+
+  function accentGradientFor(ctx, x, y, w, h) {
+    var theme = (ctx.__cfxTheme) || CFX.THEMES.aurora;
+    var g = ctx.createLinearGradient(x, y, x + w, y + h * 0.5);
+    g.addColorStop(0, theme.text);
+    g.addColorStop(0.55, mixHex(theme.accent, '#ffffff', 0.35));
+    g.addColorStop(1, theme.accent2);
+    return g;
+  }
+
+  function roundRectPath(ctx, x, y, w, h, r) {
+    r = Math.min(r || 0, Math.min(w, h) / 2);
+    ctx.beginPath();
+    if (ctx.roundRect) { ctx.roundRect(x, y, w, h, r); return; }
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  // Where does the caret go for the word currently being spoken?
+  function caretPosFor(o, times, activeIdx, size, maxWidth) {
+    var family = o.family || CFX.FONTS.display;
+    var weight = o.weight || 700;
+    var lineHeight = size * (o.lineHeight || 1.24);
+    var lines = o.lines || [];
+    var startY = o.y - ((lines.length - 1) * lineHeight) / 2;
+    ctx.font = weight + ' ' + size + 'px ' + family;
+    var index = 0;
+    for (var li = 0; li < lines.length; li++) {
+      var words = lines[li].split(/\s+/).filter(Boolean);
+      var widths = words.map(function (word) { return ctx.measureText(word).width; });
+      var spaceWidth = ctx.measureText(' ').width;
+      var lineWidth = widths.reduce(function (a, b) { return a + b; }, 0) + spaceWidth * Math.max(0, words.length - 1);
+      var x = o.align === 'center' ? o.x - lineWidth / 2 : o.align === 'right' ? o.x - lineWidth : o.x;
+      for (var wi = 0; wi < words.length; wi++) {
+        if (index === activeIdx) {
+          return { x: x + widths[wi] + Math.max(2, size * 0.08), y: startY + li * lineHeight };
+        }
+        index++;
+        x += widths[wi] + spaceWidth;
+      }
+    }
+    return null;
   }
 
   // Shrinks the type until the copy fits the safe area and the line budget —
@@ -240,6 +350,7 @@
     var H = canvas.height = spec.height;
     var U = Math.min(W, H);                 // layout unit so 9:16 and 16:9 both breathe
     var ctx = canvas.getContext('2d');
+    ctx.__cfxTheme = theme;                 // helpers outside this scope need it
     var fps = spec.fps || 30;
     var seed = spec.meta.seed || 12345;
     var rand = mulberry32(seed);
@@ -558,6 +669,255 @@
           break;
         }
 
+
+        /* ------------------------------------------------------------ story
+           Every story scene carries `words` with scene-relative times, so the
+           typography is driven by the narrator's voice and nothing else. */
+        case 'storyTitle': {
+          var kickFit = fitText(c, (scene.kicker || '').toUpperCase(), {
+            maxWidth: maxW, maxLines: 1, maxSize: U * 0.032, minSize: U * 0.022, weight: 700
+          });
+          var tFit = fitText(c, scene.title || '', {
+            maxWidth: maxW, maxLines: 3, maxSize: U * 0.145, minSize: U * 0.07, lineHeight: 1.16
+          });
+          var sFit = scene.subtitle ? fitText(c, scene.subtitle, {
+            maxWidth: maxW * 0.86, maxLines: 2, maxSize: U * 0.04, minSize: U * 0.026, weight: 500, lineHeight: 1.42
+          }) : null;
+          var tH = tFit.lines.length * tFit.lineHeight;
+          var sH = sFit ? sFit.lines.length * sFit.lineHeight : 0;
+          var blockTop = WIN_CY - (tH + sH + (sFit ? U * 0.05 : 0) + U * 0.10) / 2;
+
+          drawKinetic(c, {
+            text: scene.kicker || '', lines: kickFit.lines, x: W / 2, y: blockTop + U * 0.03,
+            size: kickFit.size, align: 'center', maxWidth: maxW, weight: 700, lineHeight: 1.2,
+            reveal: clamp(ch.reveal * 1.8, 0, 1), fill: rgba(theme.accent, 1), dirY: 0.2
+          });
+          drawRule(c, W / 2 - U * 0.14, blockTop + U * 0.062, U * 0.28, Math.max(1.5, U * 0.0035),
+            rgba(theme.accent, 0.15), rgba(theme.accent2, 0.85));
+
+          drawKinetic(c, {
+            text: scene.title || '', lines: tFit.lines, x: W / 2, y: blockTop + U * 0.10 + tH / 2,
+            size: tFit.size, align: 'center', maxWidth: maxW, lineHeight: 1.16,
+            reveal: clamp((ch.reveal - 0.12) * 1.5, 0, 1), dirY: 0.55, blurIn: true, shimmer: shimmerPos,
+            fill: function () { return accentGrad(0, 0, W, H); }, glow: theme.accent
+          });
+
+          if (sFit) {
+            drawKinetic(c, {
+              text: scene.subtitle, lines: sFit.lines, x: W / 2,
+              y: blockTop + U * 0.10 + tH + U * 0.05 + sH / 2,
+              size: sFit.size, align: 'center', maxWidth: maxW * 0.86, weight: 500, lineHeight: 1.42,
+              reveal: clamp((ch.reveal - 0.4) * 1.6, 0, 1), dirY: 0.35,
+              fill: rgba(theme.text, 0.72), alpha: 0.95
+            });
+          }
+
+          // slow breathing glow behind the title
+          c.save();
+          c.globalCompositeOperation = 'screen';
+          c.globalAlpha = 0.16 + 0.06 * Math.sin(local * 1.4);
+          var halo = c.createRadialGradient(W / 2, WIN_CY, 0, W / 2, WIN_CY, U * 0.6);
+          halo.addColorStop(0, rgba(theme.accent, 0.55));
+          halo.addColorStop(1, rgba(theme.accent, 0));
+          c.fillStyle = halo;
+          c.fillRect(0, 0, W, H);
+          c.restore();
+          break;
+        }
+
+        case 'story':
+        case 'storyQuote': {
+          var storyStyle = scene.style || 'reveal';
+          var isQuote = scene.type === 'storyQuote';
+          var bodyMax = U * (storyStyle === 'board' ? 0.072 : storyStyle === 'typewriter' ? 0.082 : 0.078);
+          var txtFit = fitText(c, scene.text || '', {
+            maxWidth: maxW * (storyStyle === 'board' ? 0.82 : 0.94),
+            maxLines: storyStyle === 'board' ? 5 : 4,
+            maxSize: bodyMax, minSize: U * 0.04,
+            weight: storyStyle === 'board' ? 600 : 700, lineHeight: 1.32
+          });
+          var times = (scene.words && scene.words.length) ? scene.words.map(function (wd) {
+            return { s: wd.s, e: wd.e };
+          }) : null;
+          var blockH = txtFit.lines.length * txtFit.lineHeight;
+          var panelPad = U * 0.055;
+          var cy = WIN_CY + (storyStyle === 'board' ? U * 0.006 : 0);
+
+          if (storyStyle === 'board' || isQuote) {
+            // a storybook panel: the text sits on a soft card with a progress rule
+            var panelW = maxW * 0.94;
+            var panelH = blockH + panelPad * 2;
+            c.save();
+            c.globalAlpha = ch.out * 0.98;
+            var pg = c.createLinearGradient(0, cy - panelH / 2, 0, cy + panelH / 2);
+            pg.addColorStop(0, 'rgba(6,10,22,0.62)');
+            pg.addColorStop(1, 'rgba(6,10,22,0.42)');
+            c.fillStyle = pg;
+            roundRectPath(c, W / 2 - panelW / 2, cy - panelH / 2, panelW, panelH, U * 0.035);
+            c.fill();
+            c.globalAlpha = ch.out * 0.55;
+            c.lineWidth = Math.max(1, U * 0.0022);
+            c.strokeStyle = rgba(theme.accent, 0.45);
+            c.stroke();
+            // progress rule along the bottom edge of the panel
+            c.globalAlpha = ch.out * 0.9;
+            var pw = (panelW - panelPad * 1.2) * clamp(p, 0, 1);
+            drawRule(c, W / 2 - (panelW - panelPad * 1.2) / 2, cy + panelH / 2 - U * 0.02, Math.max(2, pw), Math.max(2, U * 0.004),
+              rgba(theme.accent, 0.9), rgba(theme.accent2, 0.35));
+            c.restore();
+          }
+
+          if (isQuote) {
+            c.save();
+            c.globalAlpha = ch.out * 0.5;
+            c.font = '700 ' + (U * 0.2) + 'px ' + CFX.FONTS.display;
+            c.fillStyle = rgba(theme.accent, 0.85);
+            c.textAlign = 'left';
+            c.textBaseline = 'top';
+            c.fillText('“', W / 2 - maxW / 2 - U * 0.02, cy - blockH / 2 - U * 0.13);
+            c.restore();
+          }
+
+          if (storyStyle === 'stack') {
+            // teleprompter: the spoken line is big, what came before stays faint
+            var lines = txtFit.lines;
+            var lineTimes = [];
+            var cursorWord = 0;
+            lines.forEach(function (ln) {
+              var cnt = ln.split(/\s+/).filter(Boolean).length;
+              var first = times ? times[cursorWord] : null;
+              var last = times ? times[Math.min(times.length - 1, cursorWord + cnt - 1)] : null;
+              lineTimes.push({ s: first ? first.s : 0, e: last ? last.e : 0 });
+              cursorWord += cnt;
+            });
+            var activeLine = 0;
+            for (var li2 = 0; li2 < lines.length; li2++) {
+              if (times && local >= lineTimes[li2].s) activeLine = li2;
+            }
+            lines.forEach(function (ln, li3) {
+              var dist = li3 - activeLine;
+              var alpha = dist === 0 ? 1 : dist < 0 ? clamp(0.42 + dist * 0.18, 0.06, 0.42) : 0;
+              if (alpha <= 0.02) return;
+              var size = txtFit.size * (dist === 0 ? 1 : 0.82);
+              var y = cy + dist * txtFit.lineHeight * (dist === 0 ? 0.9 : 0.62);
+              c.save();
+              c.globalAlpha = ch.out * alpha;
+              c.font = '700 ' + size + 'px ' + CFX.FONTS.display;
+              c.textAlign = 'center';
+              c.textBaseline = 'middle';
+              c.fillStyle = dist === 0 ? accentGrad(0, 0, W, H) : rgba(theme.text, 0.7);
+              c.fillText(ln, W / 2, y);
+              c.restore();
+            });
+          } else {
+            drawKinetic(c, {
+              text: scene.text || '', lines: txtFit.lines, x: W / 2, y: cy,
+              size: txtFit.size, align: 'center', maxWidth: maxW * 0.94,
+              weight: storyStyle === 'board' ? 600 : 700, lineHeight: 1.32,
+              reveal: ch.reveal, times: times, time: local, activeStyle: 'glow',
+              emphasis: scene.emphasis, emphasisUnderline: true,
+              hard: storyStyle === 'typewriter',
+              fill: function () { return accentGrad(0, 0, W, H); }
+            });
+          }
+          break;
+        }
+
+        case 'storyList': {
+          var items2 = scene.items && scene.items.length ? scene.items : [scene.text || ''];
+          var rowGap = U * 0.022;
+          var perItem = [];
+          var wCursor = 0;
+          items2.forEach(function (it) {
+            var f = fitText(c, it, { maxWidth: maxW * 0.84, maxLines: 2, maxSize: U * 0.058, minSize: U * 0.034, weight: 600, lineHeight: 1.3 });
+            var count = (CFX.align ? CFX.align.words(it).length : it.split(/\s+/).length);
+            perItem.push({ fit: f, words: (scene.words || []).slice(wCursor, wCursor + count) });
+            wCursor += count;
+          });
+          var stackH2 = perItem.reduce(function (t2, it) { return t2 + it.fit.lines.length * it.fit.lineHeight + rowGap; }, 0) - rowGap;
+          var top3 = WIN_CY - stackH2 / 2;
+          var yCursor = top3;
+          perItem.forEach(function (it, ii) {
+            var first = it.words[0];
+            var spoken = !first || local >= first.s - 0.02;
+            var active = first && local >= first.s && local < it.words[it.words.length - 1].e;
+            var h = it.fit.lines.length * it.fit.lineHeight;
+            if (spoken) {
+              c.save();
+              c.globalAlpha = ch.out;
+              // marker
+              var mr = U * 0.011;
+              c.fillStyle = active ? mixHex(theme.accent, '#ffffff', 0.25) : rgba(theme.accent, 0.75);
+              if (active) { c.shadowColor = rgba(theme.accent, 0.8); c.shadowBlur = U * 0.02; }
+              c.beginPath();
+              c.arc(W / 2 - maxW * 0.42, yCursor + h / 2, mr * (active ? 1.35 : 1), 0, TAU);
+              c.fill();
+              c.restore();
+              drawKinetic(c, {
+                text: it.fit.lines.join(' '), lines: it.fit.lines, x: W / 2, y: yCursor + h / 2,
+                size: it.fit.size, align: 'center', maxWidth: maxW * 0.84, weight: 600, lineHeight: 1.3,
+                reveal: clamp((local - (first ? first.s : 0)) / 0.35 + 0.25, 0, 1),
+                times: it.words.length ? it.words.map(function (wd) { return { s: wd.s, e: wd.e }; }) : null,
+                time: local, activeStyle: 'glow', fill: rgba(theme.text, 0.96)
+              });
+            }
+            yCursor += h + rowGap;
+          });
+          break;
+        }
+
+        case 'storyBeat': {
+          var dots = 3;
+          var pulse = clamp(p * 3, 0, 1);
+          c.save();
+          c.globalAlpha = ch.out * 0.85;
+          drawRule(c, W / 2 - U * 0.16, WIN_CY - U * 0.05, U * 0.32, Math.max(1, U * 0.0022),
+            rgba(theme.accent, 0.05), rgba(theme.accent, 0.5));
+          drawRule(c, W / 2 - U * 0.16, WIN_CY + U * 0.05, U * 0.32, Math.max(1, U * 0.0022),
+            rgba(theme.accent, 0.5), rgba(theme.accent, 0.05));
+          c.restore();
+          for (var d = 0; d < dots; d++) {
+            var on = clamp((local * 2.4) - d * 0.5, 0, 1);
+            var grow = 1 + 0.35 * (1 - on);
+            c.save();
+            c.globalAlpha = ch.out * (0.25 + 0.75 * E.outCubic(on)) * pulse;
+            c.fillStyle = mixHex(theme.accent, '#ffffff', d * 0.2);
+            c.beginPath();
+            c.arc(W / 2 + (d - 1) * U * 0.055, WIN_CY, U * 0.014 * grow, 0, TAU);
+            c.fill();
+            c.restore();
+          }
+          break;
+        }
+
+        case 'storyEnd': {
+          var eFit = fitText(c, scene.title || '', {
+            maxWidth: maxW, maxLines: 2, maxSize: U * 0.13, minSize: U * 0.07, lineHeight: 1.2
+          });
+          var cFit = scene.cta ? fitText(c, scene.cta, {
+            maxWidth: maxW * 0.86, maxLines: 3, maxSize: U * 0.038, minSize: U * 0.024, weight: 500, lineHeight: 1.42
+          }) : null;
+          var eH = eFit.lines.length * eFit.lineHeight;
+          var cH = cFit ? cFit.lines.length * cFit.lineHeight : 0;
+          var eTop = WIN_CY - (eH + cH + (cFit ? U * 0.06 : 0)) / 2;
+          drawKinetic(c, {
+            text: scene.title || '', lines: eFit.lines, x: W / 2, y: eTop + eH / 2,
+            size: eFit.size, align: 'center', maxWidth: maxW, lineHeight: 1.2,
+            reveal: clamp(ch.reveal * 1.35, 0, 1), dirY: 0.5, shimmer: shimmerPos,
+            fill: function () { return accentGrad(0, 0, W, H); }, glow: theme.accent
+          });
+          drawRule(c, W / 2 - U * 0.1, eTop + eH + U * 0.03, U * 0.2, Math.max(1.5, U * 0.003),
+            rgba(theme.accent, 0.15), rgba(theme.accent2, 0.8));
+          if (cFit) {
+            drawKinetic(c, {
+              text: scene.cta, lines: cFit.lines, x: W / 2, y: eTop + eH + U * 0.06 + cH / 2,
+              size: cFit.size, align: 'center', maxWidth: maxW * 0.86, weight: 500, lineHeight: 1.42,
+              reveal: clamp((ch.reveal - 0.35) * 1.5, 0, 1), dirY: 0.3, fill: rgba(theme.text, 0.75)
+            });
+          }
+          break;
+        }
+
         case 'bullets': {
           var items = scene.items || [];
           var headFit3 = fitText(c, scene.heading || '', {
@@ -857,8 +1217,10 @@
       return null;
     }
 
-    function drawCaptions(t) {
+    function drawCaptions(t, scene) {
       if (!captionCfg.enabled || captionCfg.style === 'none' || !captions.length) return;
+      if (scene && scene.caption === false) return;    // story: the line already speaks
+
       var cue = activeCue(t);
       if (!cue) return;
       var text = String(cue.text || '').replace(/\n/g, ' ');
@@ -973,12 +1335,14 @@
 
       var exiting = (hasNext && timeLeft < exitLen) || (!hasNext && t > total - 0.4);
 
+      var layerPainted = false;   // the layer canvas is stale unless we just painted it
       if (!exiting) {
         // no transition: paint the scene straight onto the finished frame
         drawSceneContent(ctx, cur.scene, cur.local, cur.progress);
       } else {
         lx.clearRect(0, 0, W, H);
         drawSceneContent(lx, cur.scene, cur.local, cur.progress);
+        layerPainted = true;
       }
 
       if (!hasNext && t > total - 0.4) {
@@ -990,11 +1354,13 @@
         var p = 1 - timeLeft / exitLen;
         var kind = cur.scene.transitionOut || TRANSITIONS[(cur.index + 1) % TRANSITIONS.length];
         drawSceneExit(kind, p, t);
-      } else {
+      } else if (layerPainted) {
+        // only composite what we actually rendered this frame — the layer used to
+        // be stale here, ghosting the last transition's scene over every frame
         ctx.drawImage(layer, 0, 0);
       }
 
-      drawCaptions(t);
+      drawCaptions(t, cur.scene);
 
       // scene-entry flash (punchy cut-in)
       var flash = clamp(1 - cur.local / 0.18, 0, 1);

@@ -325,14 +325,17 @@ const SCRIPT = [
     return {
       manifestStart: manifest && manifest.start_url,
       manifestIcons: manifest ? manifest.icons.length : 0,
-      swHasShell: /cutfree-studio-v2/.test(sw) && /studio\.html/.test(sw),
+      swHasShell: /cutfree-studio-v\d+/.test(sw) && /studio\.html/.test(sw),
+      swStory: /align\.js/.test(sw) && /story\.js/.test(sw),
       swFiles: (sw.match(/\.\/js\/studio\/[a-z]+\.js/g) || []).length,
+      swStory: /align\.js/.test(sw) && /story\.js/.test(sw),
       registered: !!reg
     };
   });
   console.log('  pwa:', JSON.stringify(pwa));
   check('manifest is valid and points at the studio', pwa.manifestStart === './studio.html' && pwa.manifestIcons >= 2, pwa);
   check('service worker caches the whole studio shell', pwa.swHasShell && pwa.swFiles >= 8, pwa.swFiles);
+  check('offline shell includes the story engines', pwa.swStory === true, pwa.swStory);
 
 
   console.log('\n== 4g. new panels driven through the UI ==');
@@ -454,6 +457,285 @@ const SCRIPT = [
   const backToBn = await page.evaluate(() => document.querySelector('[data-i18n="fVoicePick"]').textContent.trim());
   check('language toggle returns to Bengali', backToBn.indexOf('ভয়েস') > -1, backToBn);
 
+
+  console.log('\n== 4i. voice tracking (offline forced alignment) ==');
+  const align = await page.evaluate(() => {
+    const SR = 48000;
+    const paras = [
+      'রাত তখন বারোটা। টুকটুক করে বৃষ্টি পড়ছিল টিনের চালে।',
+      'শহরের সবচেয়ে পুরনো চায়ের দোকানে বসে ছিল সৌম্য। তার হাতে একটা ভাঁজ করা চিঠি।',
+      'চিঠিটা বিশ বছর পুরনো।'
+    ];
+    const script = paras.join('\n\n');
+    const parts = [];
+    const sil = (d) => { for (let i = 0; i < Math.round(d * SR); i++) parts.push(0); };
+    const burst = (d) => {
+      for (let i = 0; i < Math.round(d * SR); i++) {
+        const t = i / SR, f = 118 + 20 * Math.sin(2 * Math.PI * 4.2 * t);
+        parts.push(0.085 * (Math.sin(2 * Math.PI * f * t) * .7 + Math.sin(4 * Math.PI * f * t) * .2) * (.5 + .5 * Math.abs(Math.sin(2 * Math.PI * 6.2 * t))));
+      }
+    };
+    sil(1.3); burst(3.2); sil(0.5); burst(4.4); sil(1.7); burst(2.4); sil(1.1);
+    const data = Float32Array.from(parts);
+    const track = CFX.align.track(data, script, { sampleRate: SR });
+
+    // paragraph starts should land on a phrase onset (that is where the voice is)
+    const onPhrase = track.paragraphs.every(p => track.phrases.some(ph => Math.abs(p.start - ph.start) < 0.45));
+    const ordered = track.words.every((w, i) => i === 0 || w.start >= track.words[i - 1].start - 0.001);
+    const insideAudio = track.words.every(w => w.start >= -0.01 && w.end <= track.duration + 1.0);
+    const det = JSON.stringify(CFX.align.track(data, script, { sampleRate: SR }).words) === JSON.stringify(track.words);
+    // words must sit inside spoken audio, not in the long pause
+    const audioDur = data.length / SR;
+    const pause = track.phrases[1] ? { a: track.phrases[1].end, b: track.phrases[2] ? track.phrases[2].start : audioDur } : null;
+    const wordsInPause = pause ? track.words.filter(w => w.start > pause.a && w.end < pause.b - 0.05).length : 0;
+
+    const silence = CFX.align.track(new Float32Array(SR * 3), script, { sampleRate: SR });
+    return {
+      phrases: track.phrases.length, duration: +track.duration.toFixed(2), audioDur: +audioDur.toFixed(2),
+      speechRatio: +track.speechRatio.toFixed(2), words: track.words.length,
+      paragraphs: track.paragraphs.map(p => ({ start: +p.start.toFixed(2), end: +p.end.toFixed(2), words: p.wordCount })),
+      cues: track.cues.length, onPhrase, ordered, insideAudio, det, wordsInPause,
+      estimatedSilence: silence.estimated, silentReason: silence.reason,
+      gapSeconds: pause ? +(pause.b - pause.a).toFixed(2) : 0
+    };
+  });
+  console.log('  align:', JSON.stringify(align));
+  check('VAD finds the spoken phrases', align.phrases === 3, align.phrases);
+  check('speech ratio is realistic', align.speechRatio > 0.5 && align.speechRatio < 0.95, align.speechRatio);
+  check('every paragraph starts on a phrase onset', align.onPhrase, align.paragraphs);
+  check('word timings are ordered and inside the audio', align.ordered && align.insideAudio, align.words);
+  check('the 1.7s pause is not swallowed by text', align.wordsInPause <= 3 && align.gapSeconds > 1.4, { inPause: align.wordsInPause, gap: align.gapSeconds });
+  check('tracking is deterministic', align.det);
+  check('silent audio degrades to text pacing', align.estimatedSilence && align.silentReason === 'no-phrases', align.silentReason);
+
+  console.log('\n== 4j. story mode (text + voice -> staged video) ==');
+  const story = await page.evaluate(() => {
+    const SR = 48000;
+    const paras = [
+      'রাত তখন বারোটা। টুকটুক করে বৃষ্টি পড়ছিল টিনের চালে।',
+      'শহরের সবচেয়ে পুরনো চায়ের দোকানে বসে ছিল সৌম্য। তার হাতে একটা ভাঁজ করা চিঠি।',
+      'উপরের লাইনে লেখা ছিল শুধু একটা নাম — আর নিচে একটা তারিখ।',
+      'চিঠিটা বিশ বছর পুরনো।'
+    ];
+    const script = paras.join('\n\n');
+    const parts = [];
+    const sil = (d) => { for (let i = 0; i < Math.round(d * SR); i++) parts.push(0); };
+    const burst = (d) => {
+      for (let i = 0; i < Math.round(d * SR); i++) {
+        const t = i / SR, f = 118 + 20 * Math.sin(2 * Math.PI * 4.2 * t);
+        parts.push(0.085 * (Math.sin(2 * Math.PI * f * t) * .7 + Math.sin(4 * Math.PI * f * t) * .2) * (.5 + .5 * Math.abs(Math.sin(2 * Math.PI * 6.2 * t))));
+      }
+    };
+    sil(1.3); burst(3.2); sil(0.5); burst(4.4); sil(1.6); burst(3.2); sil(0.5); burst(2.0); sil(1.0);
+    const track = CFX.align.track(Float32Array.from(parts), script, { sampleRate: SR });
+    const spec = CFX.story.plan({
+      title: 'বারোটা রাতের চিঠি', script, track, language: 'bn', quality: '720p',
+      theme: 'aurora', mood: 'cinematic', watermark: '@cutfree'
+    });
+    const total = spec.scenes.reduce((a, s) => a + s.dur, 0);
+    const types = spec.scenes.map(s => s.type);
+    const body = spec.scenes.filter(s => /^story(Quote|List)?$/.test(s.type));
+    const beats = spec.scenes.filter(s => s.type === 'storyBeat');
+
+    // the engine must render every story scene, and a spoken word must change the frame
+    const canvas = document.createElement('canvas');
+    const R = CFX.engine.createRenderer(canvas, spec);
+    const x = canvas.getContext('2d');
+    const sig = (t) => {
+      R.renderAt(t);
+      const d = x.getImageData(0, 0, canvas.width, canvas.height).data;
+      let h = 0;
+      for (let i = 0; i < d.length; i += 97) h = (h * 31 + d[i]) | 0;
+      return h;
+    };
+    let acc = 0;
+    const perScene = spec.scenes.map(s => { const h = sig(acc + s.dur * 0.5); acc += s.dur; return { type: s.type, hash: h }; });
+    const firstStory = types.indexOf('story');
+    const before = spec.scenes.slice(0, firstStory).reduce((a, s) => a + s.dur, 0);
+    const early = sig(before + 0.30), later = sig(before + 1.40);
+
+    // voiceStart: the title card delays the narration, captions shift with it
+    const shiftedCues = spec.captions.every(c => c.start >= spec.meta.voiceStart - 0.01);
+    const firstCueAudio = track.cues.length ? +(spec.captions[0].start - spec.meta.voiceStart).toFixed(2) : null;
+    const cueShiftExact = track.cues.length ? Math.abs(firstCueAudio - track.cues[0].start) < 0.05 : false;
+
+    // the line on screen is the caption — no duplicate bar over the story text
+    const captionRule = {
+      storyScenes: body.length,
+      silenced: body.filter(s => s.caption === false).length,
+      titleHasBar: spec.scenes.filter(s => s.type === 'storyTitle').every(s => s.caption !== false)
+    };
+    const withImported = CFX.story.plan({
+      title: 'বাইরের সাবটাইটেল', script, track, language: 'bn', quality: '480p',
+      captionCues: [{ start: 1, end: 2, text: 'বাইরের সাবটাইটেল' }]
+    });
+    const importedKeepsBar = withImported.scenes.filter(s => /^story/.test(s.type))
+      .every(s => s.caption !== false);
+
+    // a short promo build of the same story (shorts) must stay portrait
+    const shortsSpec = CFX.story.plan({ title: 'ছোট গল্প', script, track, language: 'bn', quality: '720p', shorts: true });
+
+    return {
+      types, total: +total.toFixed(2), audioDur: +track.duration.toFixed(2), voiceStart: spec.meta.voiceStart,
+      beats: beats.length, bodyScenes: body.length, scenesRendered: perScene.length,
+      revealChangesFrame: early !== later, cues: spec.captions.length, shiftedCues, cueShiftExact,
+      wordsInsideScene: body.every(s => s.words.every(w => w.s >= -0.01 && w.e <= s.dur + 0.01 && w.e > w.s)),
+      emphasis: body.filter(s => (s.emphasis || []).length).length,
+      captionRule, importedKeepsBar,
+      portrait: shortsSpec.height > shortsSpec.width, shortsSafe: shortsSpec.meta.safe,
+      estimatedFallback: CFX.story.plan({ title: 'নামহীন', script, language: 'bn', quality: '720p' }).scenes.length > 2
+    };
+  });
+  console.log('  story:', JSON.stringify(story));
+  check('story plan opens with a title card and closes with the end card',
+    story.types[0] === 'storyTitle' && story.types[story.types.length - 1] === 'storyEnd', story.types);
+  check('narration lines become their own scenes', story.bodyScenes >= 3, story.bodyScenes);
+  check('a long pause becomes a beat card', story.beats >= 1, story.beats);
+  check('every story scene renders a frame', story.scenesRendered === story.types.length, story.scenesRendered);
+  check('word timing drives the typography (frame changes mid-line)', story.revealChangesFrame);
+  check('title card delays the voice, captions shift with it',
+    story.voiceStart > 0.5 && story.shiftedCues && story.cueShiftExact, { voiceStart: story.voiceStart, cues: story.cues });
+  check('story lines carry no duplicate caption bar', story.captionRule.silenced === story.captionRule.storyScenes &&
+    story.captionRule.storyScenes > 0 && story.captionRule.titleHasBar, story.captionRule);
+  check('imported captions are never suppressed', story.importedKeepsBar === true);
+  check('word times stay inside their scene', story.wordsInsideScene);
+  check('emphasis picker finds accent words', story.emphasis >= 1, story.emphasis);
+  check('story mode supports 9:16 Shorts', story.portrait && story.shortsSafe.bottom === 0.19, story.shortsSafe);
+  check('story works without a voice (text-paced fallback)', story.estimatedFallback);
+  check('story length tracks the audio length', Math.abs(story.total - story.audioDur) < 8, { total: story.total, audio: story.audioDur });
+
+  console.log('\n== 4k. narration offset is honoured by the mixer ==');
+  const mixCheck = await page.evaluate(async () => {
+    const SR = 48000;
+    const voice = new OfflineAudioContext(1, SR * 2, SR).createBuffer(1, SR * 2, SR);
+    const vd = voice.getChannelData(0);
+    for (let i = SR; i < SR + 0.5 * SR; i++) vd[i] = 0.6;              // a loud blip 1s in
+    const music = await CFX.music.render('cinematic', 6, { seed: 3 });
+    const mix = await CFX.music.mix({ music, voice, seconds: 6, voiceStart: 2, sampleRate: music.sampleRate, channels: 2 });
+    const mix0 = await CFX.music.mix({ music, voice, seconds: 6, sampleRate: music.sampleRate, channels: 2 });
+    const rms = (buf, from, to) => {
+      const d = buf.getChannelData(0);
+      let s = 0, n = 0;
+      for (let i = Math.floor(from * SR); i < Math.floor(to * SR) && i < d.length; i++) { s += d[i] * d[i]; n++; }
+      return Math.sqrt(s / Math.max(1, n));
+    };
+    // the blip must land at 3.0s when delayed by 2s, and at 1.0s without the offset
+    return {
+      plainAtBlip: +rms(mix0, 1.05, 1.45).toFixed(4),
+      plainBefore: +rms(mix0, 0.1, 0.9).toFixed(4),
+      shiftedAtOld: +rms(mix, 1.05, 1.45).toFixed(4),
+      shiftedAtNew: +rms(mix, 3.05, 3.45).toFixed(4)
+    };
+  });
+  console.log('  mixer:', JSON.stringify(mixCheck));
+  check('voice lands later when a title card delays it',
+    mixCheck.shiftedAtNew > mixCheck.shiftedAtOld * 1.6, mixCheck);
+
+
+  console.log('\n== 4l. story mode end-to-end through the UI ==');
+  // fresh page: the story flow deserves a clean workbench (no imported SRT,
+  // no leftover shorts toggle from the earlier UI checks)
+  await page.goto(URL, { waitUntil: 'load' });
+  await page.waitForTimeout(500);
+  // write a real WAV (narration-style bursts) and feed it to the file input
+  const wavPath = path.join(dlDir, 'story-voice.wav');
+  (() => {
+    const SR = 48000;
+    const paragraphs = [
+      'রাত তখন বারোটা। টুকটুক করে বৃষ্টি পড়ছিল টিনের চালে।',
+      'শহরের সবচেয়ে পুরনো চায়ের দোকানে বসে ছিল সৌম্য। তার হাতে একটা ভাঁজ করা চিঠি।',
+      'চিঠিটা বিশ বছর পুরনো।'
+    ];
+    const parts = [];
+    const sil = (d) => { for (let i = 0; i < Math.round(d * SR); i++) parts.push(0); };
+    const burst = (d) => {
+      for (let i = 0; i < Math.round(d * SR); i++) {
+        const t = i / SR, f = 118 + 20 * Math.sin(2 * Math.PI * 4.2 * t);
+        parts.push(0.30 * (Math.sin(2 * Math.PI * f * t) * .7 + Math.sin(4 * Math.PI * f * t) * .2) * (.5 + .5 * Math.abs(Math.sin(2 * Math.PI * 6.2 * t))));
+      }
+    };
+    sil(1.3);
+    paragraphs.forEach((txt, i) => { burst(txt.split(/\s+/).length * 0.4); sil(i === 1 ? 1.7 : 0.5); });
+    sil(1.0);
+    const buf = Buffer.alloc(44 + parts.length * 2);
+    buf.write('RIFF', 0); buf.writeUInt32LE(36 + parts.length * 2, 4); buf.write('WAVE', 8);
+    buf.write('fmt ', 12); buf.writeUInt32LE(16, 16); buf.writeUInt16LE(1, 20); buf.writeUInt16LE(1, 22);
+    buf.writeUInt32LE(SR, 24); buf.writeUInt32LE(SR * 2, 28); buf.writeUInt16LE(2, 32); buf.writeUInt16LE(16, 34);
+    buf.write('data', 36); buf.writeUInt32LE(parts.length * 2, 40);
+    parts.forEach((v, i) => buf.writeInt16LE(Math.max(-32767, Math.min(32767, Math.round(v * 32767))), 44 + i * 2));
+    fs.writeFileSync(wavPath, buf);
+  })();
+
+  await page.fill('#fTitle', 'বারোটা রাতের চিঠি');
+  await page.fill('#fScript', [
+    'রাত তখন বারোটা। টুকটুক করে বৃষ্টি পড়ছিল টিনের চালে।',
+    '',
+    'শহরের সবচেয়ে পুরনো চায়ের দোকানে বসে ছিল সৌম্য। তার হাতে একটা ভাঁজ করা চিঠি।',
+    '',
+    'চিঠিটা বিশ বছর পুরনো।'
+  ].join('\n'));
+  await page.check('#fStory');
+  await page.setInputFiles('#fVoice', wavPath);
+  await page.waitForFunction(() => !document.querySelector('#alignWrap').hidden, null, { timeout: 40000 });
+  await page.waitForTimeout(500);
+  const uiTrack = await page.evaluate(() => {
+    const c = document.querySelector('#alignCanvas');
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let painted = 0;
+    for (let i = 3; i < d.length; i += 40) if (d[i] > 8) painted++;
+    return {
+      stats: document.querySelector('#alignStats').textContent.trim(),
+      chips: [...document.querySelectorAll('.align-chip')].length,
+      chipText: [...document.querySelectorAll('.align-chip')].map(x => x.textContent.trim().slice(0, 24)),
+      painted,
+      note: document.querySelector('#voiceHint').textContent.trim()
+    };
+  });
+  console.log('  ui track:', JSON.stringify(uiTrack));
+  check('dropping the voice file tracks it automatically', /\d+/.test(uiTrack.stats) && uiTrack.chips >= 2, uiTrack);
+  check('waveform timeline is painted', uiTrack.painted > 200, uiTrack.painted);
+  check('tracked lines show their start times', /^\d\d:\d\d/.test(uiTrack.chipText[0] || ''), uiTrack.chipText);
+
+  await page.click('#btnBuild');
+  await page.waitForFunction(() => document.querySelectorAll('.scene-chip').length > 0, null, { timeout: 60000 });
+  await page.waitForTimeout(900);
+  const uiStory = await page.evaluate(() => ({
+    chips: [...document.querySelectorAll('.scene-chip')].map(c => c.textContent.trim()),
+    ytTitle: document.querySelector('#ytTitle').value,
+    desc: document.querySelector('#ytDesc').value.slice(0, 80),
+    tags: document.querySelector('#ytTags').value,
+    total: document.querySelector('#timeLabel').textContent.trim()
+  }));
+  console.log('  ui story:', JSON.stringify(uiStory));
+  check('the plan opens with the story title card', /^1\. বারোটা রাতের চিঠি/.test(uiStory.chips[0]), uiStory.chips[0]);
+  check('a beat card made it into the strip', uiStory.chips.some(c => /বিরতি/.test(c)), uiStory.chips);
+  check('the plan ends with the end card', /সমাপ্তি/.test(uiStory.chips[uiStory.chips.length - 1]), uiStory.chips[uiStory.chips.length - 1]);
+  check('the YouTube title is the story name', uiStory.ytTitle === 'বারোটা রাতের চিঠি', uiStory.ytTitle);
+  check('the description is written for a story', /📖 গল্প/.test(uiStory.desc), uiStory.desc);
+
+  const storySrt = await grab('#btnSrtExport');
+  const srtCues = (storySrt.text.match(/-->/g) || []).length;
+  check('the exported SRT carries the voice-tracked cues', srtCues >= 3 && /00:00:0[2-9]/.test(storySrt.text), { cues: srtCues, head: storySrt.text.split('\n').slice(0, 3) });
+
+  // the preview must actually play the story (voice mixed in)
+  await page.click('#btnPlay');
+  await page.waitForFunction(() => !/^00:00 \//.test(document.querySelector('#timeLabel').textContent),
+    null, { timeout: 10000 }).catch(() => { });
+  const storyPlaying = await page.evaluate(() => ({
+    btn: document.querySelector('#btnPlay').textContent.trim(),
+    time: document.querySelector('#timeLabel').textContent.trim()
+  }));
+  await page.click('#btnPlay');
+  check('the story preview plays', storyPlaying.btn.indexOf('⏸') > -1 && !/00:00 \//.test(storyPlaying.time), storyPlaying);
+
+  // switching off the tracked story must still give a normal plan
+  await page.uncheck('#fStory');
+  await page.click('#btnBuild');
+  await page.waitForFunction(() => !/বারোটা রাতের চিঠি/.test(document.querySelector('.scene-chip').textContent), null, { timeout: 60000 });
+  const backToClassic = await page.evaluate(() => document.querySelectorAll('.scene-chip').length);
+  await page.check('#fStory');
+  check('the classic director still works after story mode', backToClassic >= 2, backToClassic);
+
   console.log('\n== 5. WebCodecs render -> WebM muxer ==');
   const renderResult = await page.evaluate(async (script) => {
     const spec = CFX.director.build({ title: 'Browser video, explained', script: script, fps: 30, quality: '720p', durationTarget: 12, language: 'en', mood: 'uplifting' });
@@ -552,6 +834,8 @@ const SCRIPT = [
   check('video player page references the file', kit.playerHasVideo);
 
   console.log('\n== 8. UI flow (queue a batch) ==');
+  await page.goto(URL, { waitUntil: 'load' });        // clean workbench for the batch flow
+  await page.waitForTimeout(400);
   await page.fill('#fTitle', '');
   await page.fill('#fScript',
     'First video title\nA short beat about the first topic.\n\n- point one\n- point two\n\n---\n\nSecond video title\nA short beat about the second topic.\n\n- alpha\n- beta');

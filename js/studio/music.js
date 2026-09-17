@@ -336,22 +336,29 @@
     }
 
     if (opts.voice) {
+      // a title card can delay the narration: the voice starts late, and the
+      // music must duck late with it
+      var voiceStart = Math.max(0, opts.voiceStart || 0);
       var v = bufferToContextSource(ctx, opts.voice);
       v.connect(voiceGain);
-      v.start(0);
+      v.start(voiceStart);
 
       if (opts.duck !== false) {
         var env = rmsEnvelope(opts.voice, ctx.sampleRate, 50);
         var duckLevel = opts.duckLevel == null ? 0.32 : opts.duckLevel;
         musicGain.gain.setValueAtTime(opts.musicGain == null ? 0.85 : opts.musicGain, 0);
         var speaking = false;
+        var musicBase = opts.musicGain == null ? 0.85 : opts.musicGain;
         for (var i = 0; i < env.values.length; i++) {
-          var t = i * env.hop / ctx.sampleRate;
+          var t = i * env.hop / ctx.sampleRate + voiceStart;
+          if (t > seconds - 0.05) break;
           var loud = env.values[i] > 0.02;
           if (loud !== speaking) {
             speaking = loud;
-            var target = loud ? duckLevel : (opts.musicGain == null ? 0.85 : opts.musicGain);
-            musicGain.gain.linearRampToValueAtTime(target, t + (loud ? 0.12 : 0.35));
+            var target = loud ? duckLevel : musicBase;
+            // automation times must only move forward, and stay inside the take
+            var when = Math.max(t, 0.001);
+            musicGain.gain.linearRampToValueAtTime(target, Math.min(seconds - 0.02, when + (loud ? 0.12 : 0.35)));
           }
         }
       }

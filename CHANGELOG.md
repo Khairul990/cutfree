@@ -3,6 +3,62 @@
 All notable changes to CutFree are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/).
 
+## [2.2.0] — 2026-09-17
+
+**Story Mode** — write the story, hand over the voice, get a staged video. Still zero-cost,
+still entirely client-side: the voice alignment is a plain VAD + weighted assignment in the
+browser, no API, no upload.
+
+### Added — voice alignment (`js/studio/align.js`)
+- `CFX.align.analyse(audio)` — 30 ms RMS windows / 10 ms hop, percentile noise floor,
+  hysteresis → `{phrases, gaps, envelope, noiseFloor, threshold, speechRatio, speechTime, usable}`.
+  Silence grading: `usable` needs ≥2 phrases and >0.8 s of speech.
+- `words(text, para)` — Bengali matra/weight aware (`দণ্ড` 0.34 s, comma 0.17 s), then
+  `assignWords` / `groupParagraphs` / `chooseRuns` (DP) place every word inside the phrase
+  that actually speaks it, anchored to the phrase's spoken end — **silence is never filled
+  with text** (verified against a 1.7 s pause).
+- `track(audio, script, opts)` → `{words, paragraphs, cues, phrases, analysis, estimated}`;
+  graceful fallbacks `{estimated: true, reason: 'empty-script' | 'no-phrases' | 'too-little-speech'}`.
+  Also `proportional()` (text-paced), `shiftFrom`, `retime`, `toMono`, `percentile`.
+- `CFX.captions.clampTo(cues, duration)` — trims cues to the video length without rescaling
+  (voice-tracked cues must never be re-fitted).
+
+### Added — story planner (`js/studio/story.js`)
+- `CFX.story.plan({title, script, track|timings, kicker, subtitle, endCard, cta, style, …})` →
+  a normal CutFree spec: `storyTitle` (2.4–4.6 s) → one scene per paragraph
+  (`reveal` / `typewriter` / `board` / `stack`, ≤11 BN / 12 EN words or 5.2 s, scene-relative
+  word times + `emphasis`) → `storyBeat` cards on real pauses → `storyEnd` + CTA.
+- **Continuous timeline:** scenes are back-to-back (`lead .20`, `trail .30`, bodies absorb a
+  short breath, a pause ≥ `beatPauseSeconds` becomes a beat card `min(gap, 3.2 s)`) — no black
+  gaps, and `meta.drift` reports how far any line sits from the voice.
+- `meta.voiceStart` shifts every body word and every caption by the title card's length;
+  `metadata()` writes a story description with chapters + tags; `sentences`, `labelOf`,
+  `emphasisFor`, `resolution`, `seedOf` helpers.
+- Story text scenes carry `caption: false` — the line on screen *is* the caption (no duplicate
+  bar); imported/edited cues keep their bar.
+
+### Added — renderer (`js/studio/engine.js`)
+- `storyTitle` / `story` / `storyQuote` / `storyList` / `storyBeat` / `storyEnd` scene types:
+  word-by-word rise, typewriter caret, storybook panel with progress rule, teleprompter stack,
+  beat dots, end-card CTA — all painted from `ctx.__cfxTheme` with accent gradients.
+- `drawKinetic` now takes `{times, time, activeIdx, activeStyle, hard, emphasis}` for exact sync.
+
+### Added — workbench (`studio.html`, `js/studio/ui.js`, `css/studio.css`)
+- Panel ২ · স্টোরি: story toggle, typography style, kicker, end card, voice drop-zone,
+  auto-track after a voice file (or a TTS capture), and an **align timeline**: waveform
+  envelope, caption bars, paragraph ticks, playhead, line chips with start times —
+  click anywhere on it to jump the audio there (`seekAudio`).
+- `#fStory` forces karaoke captions, auto-tracks the dropped voice and toasts when there is
+  none; story fields + the track are part of project save/load; a typed title wins over the
+  auto title; the story description/timeline feed the YouTube kit.
+
+### Tests
+- `tests/studio.e2e.js`: **107 checks** — new §4i (voice tracking: phrase onsets, silence
+  untouched, determinism, silent-audio fallback), §4j (story plan: scene types, beat card,
+  frame-changing reveal, cue shift, 9:16 safe zone, caption rule, text-paced fallback),
+  §4k (mixer `voiceStart` offset) and §4l (full UI flow: WAV drop → auto-track → plan →
+  preview play → SRT export → back to classic mode).
+
 ## [2.1.0] — 2026-09-17
 
 Voice-over, burned-in subtitles, Shorts, projects and offline — all still zero-cost

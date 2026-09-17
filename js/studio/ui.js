@@ -66,6 +66,8 @@
     rendererKey: 0,
     timings: null,        // measured / estimated narration timing
     voiceBuffer: null,    // captured or uploaded narration audio
+    track: null,          // voice-tracked alignment (CFX.align.track)
+    alignPlayhead: 0,
     srtCues: null,        // imported captions
     voice: null,          // selected TTS voice entry
     recording: false
@@ -119,6 +121,8 @@
         logoDataUrl: S.logoImage ? S.logoImage.src : null,
         language: window.CF_LANG === 'en' ? 'en' : 'bn',
         shorts: $('#fShorts').checked,
+        story: $('#fStory').checked,
+        multi: multi,
         captionStyle: $('#fCaptionStyle').value,
         captionCues: S.srtCues || null,
         fitCaptions: true
@@ -137,6 +141,40 @@
       title: item.title, script: item.script, seed: item.seed
     });
 
+    // ---- story mode: the voice drives everything (scenes, typography, captions)
+    if (opts.story) {
+      opts.aspect = opts.shorts ? '9:16' : opts.aspect;
+      var rawScript = ($('#fScript').value || '').trim();
+      var scriptForStory = opts.multi ? item.script : (rawScript || item.script);
+
+      // a track belongs to the script it was measured on — a different script in
+      // the same session (e.g. the next item of a batch) falls back to text pace
+      var track = S.track;
+      if (track) {
+        var have = (track.words || []).length;
+        var want = window.CFX.align.words(scriptForStory).length;
+        if (!have || Math.abs(have - want) / Math.max(1, want) > 0.25) track = null;
+      }
+      if (!track) track = window.CFX.align.proportional(scriptForStory, { wps: 2.45 });
+      var typedTitle = ($('#fTitle').value || '').trim();
+      var spec2 = window.CFX.story.plan({
+        title: typedTitle || item.title, script: scriptForStory, track: track,
+        kicker: $('#fKicker').value.trim(), endCard: $('#fEndCard').value.trim(),
+        style: $('#fStoryStyle').value, language: opts.language,
+        theme: opts.theme, mood: opts.mood, aspect: opts.aspect, quality: opts.quality,
+        fps: opts.fps, perf: opts.perf, shorts: opts.shorts,
+        captionStyle: $('#fCaptionStyle').value, watermark: opts.watermark,
+        logoDataUrl: opts.logoDataUrl, seed: item.seed
+      });
+      if (spec2) {
+        spec2.meta.captions = Object.assign({}, spec2.meta.captions, {
+          enabled: $('#fCaptionStyle').value !== 'none'
+        });
+        return spec2;
+      }
+      toast(t('stQuotaLow'));
+    }
+
     if (opts.shorts) {
       opts.aspect = '9:16';
       opts.durationTarget = Math.min(opts.durationTarget || 45, 58);
@@ -145,13 +183,22 @@
 
     var spec = window.CFX.director.build(opts);
 
-    // narration first: measure/delivered timings drive the scene lengths...
-    if (S.timings && $('#fNarrFit').checked) {
+    // narration first: a tracked voice (or TTS timings) drives the scene lengths
+    if (S.track && $('#fNarrFit').checked) {
+      window.CFX.director.fitToNarration(spec, timingsFromTrack(S.track));
+      spec.meta.voiceStart = S.track.voiceStart || 0;
+    } else if (S.timings && $('#fNarrFit').checked) {
       window.CFX.director.fitToNarration(spec, S.timings);
     }
-    // ...and the captions (an imported SRT wins over TTS timings)
+    // ...and the captions (an imported SRT wins over tracked/TTS timing)
     if (S.srtCues && S.srtCues.length) {
       spec.captions = window.CFX.captions.fitTo(S.srtCues, spec.scenes.reduce(function (a, x) { return a + x.dur; }, 0));
+      spec.meta.captions = Object.assign({}, spec.meta.captions, { enabled: $('#fCaptionStyle').value !== 'none' });
+    } else if (S.track && S.track.cues && S.track.cues.length) {
+      spec.captions = window.CFX.captions.clampTo(S.track.cues.map(function (c) {
+        return { start: c.start + (spec.meta.voiceStart || 0), end: c.end + (spec.meta.voiceStart || 0), text: c.text,
+          words: c.words ? c.words.map(function (wd) { return { w: wd.w, s: wd.s + (spec.meta.voiceStart || 0), e: wd.e + (spec.meta.voiceStart || 0) }; }) : undefined };
+      }), spec.scenes.reduce(function (a, x) { return a + x.dur; }, 0));
       spec.meta.captions = Object.assign({}, spec.meta.captions, { enabled: $('#fCaptionStyle').value !== 'none' });
     } else if (S.timings) {
       var cues = window.CFX.director.captionsFromTimings(S.timings);
@@ -177,6 +224,7 @@
         if (S.voiceBuffer) {
           return window.CFX.music.mix({
             music: music, voice: S.voiceBuffer, seconds: total,
+            voiceStart: spec.meta.voiceStart || 0,
             sampleRate: music.sampleRate, channels: 2
           }).then(function (mixed) {
             return mixed;
@@ -221,7 +269,7 @@
       var chip = document.createElement('button');
       chip.type = 'button';
       chip.className = 'scene-chip';
-      chip.textContent = (i + 1) + '. ' + (sc.title || sc.heading || sc.text || sc.items && sc.items[0] || sc.type).toString().slice(0, 22) +
+      chip.textContent = (i + 1) + '. ' + (sc.label || sc.title || sc.heading || sc.text || sc.items && sc.items[0] || sc.type).toString().slice(0, 22) +
         ' · ' + sc.dur.toFixed(1) + 's';
       chip.addEventListener('click', function () { seek(starts[i] + 0.05); });
       strip.appendChild(chip);
@@ -317,7 +365,9 @@
       everyHours: 24,
       atHourUtc: 12
     };
-    S.meta = window.CFX.director.metadata(spec, opts);
+    S.meta = (spec.meta && spec.meta.story && window.CFX.story)
+      ? window.CFX.story.metadata(spec, opts)
+      : window.CFX.director.metadata(spec, opts);
     $('#ytTitle').value = S.meta.title;
     $('#ytDesc').value = S.meta.description;
     $('#ytTags').value = S.meta.tags.join(', ');
@@ -620,6 +670,160 @@
   }
 
 
+
+  /* ------------------------------------------------------- voice tracking */
+  // Turn a tracked alignment into the {segments} shape the director uses for
+  // narration-fit and the classic flow.
+  function timingsFromTrack(track) {
+    return {
+      segments: (track.paragraphs || []).map(function (p) {
+        return {
+          text: p.text, start: p.start, end: p.end,
+          words: p.words.map(function (wd) { return { word: wd.word, start: wd.start, end: wd.end }; })
+        };
+      }),
+      duration: track.duration,
+      estimated: !!track.estimated
+    };
+  }
+
+  function trackVoice(fromRecording) {
+    var script = $('#fScript').value || '';
+    if (!S.voiceBuffer) { toast(t('stTrackNoVoice')); return Promise.resolve(null); }
+    if (script.trim().length < 8) { toast(t('stNeedScript')); return Promise.resolve(null); }
+
+    setProgress(0.35, t('stTracking'));
+    return new Promise(function (resolve) {
+      setTimeout(function () {
+        var track = null;
+        try {
+          track = window.CFX.align.track(S.voiceBuffer, script, {
+            sampleRate: S.voiceBuffer.sampleRate,
+            wps: 2.45
+          });
+        } catch (e) {
+          track = null;
+        }
+        $('#progressWrap').hidden = true;
+        if (!track) { toast(t('stTrackEstimated')); resolve(null); return; }
+        S.track = track;
+        S.track.voiceStart = 0;                       // the story planner sets the real shift
+        S.trackScript = script;
+        renderAlign();
+        toast((track.estimated ? t('stTrackEstimated') : t('stTracked')) + ' · ' + fmtTime(track.duration));
+        showVoiceNote(track.estimated ? t('stTrackEstimated')
+          : (t('stTracked') + ' · ' + track.phrases.length + ' •'), track.estimated ? 'warn' : 'ok');
+        if (S.spec) buildCurrentPlan();
+        resolve(track);
+      }, 30);
+    });
+  }
+
+  // ---------- the alignment timeline: waveform, phrases, lines and playhead
+  function renderAlign() {
+    var wrap = $('#alignWrap');
+    var canvas = $('#alignCanvas');
+    var track = S.track;
+    if (!track) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+
+    var stats = t('alignStats', {
+      phrases: (track.phrases || []).length,
+      speech: Math.round((track.speechRatio || 0) * 100),
+      dur: fmtTime(track.duration),
+      words: (track.words || []).length,
+      wps: (track.words && track.duration ? (track.words.length / track.duration).toFixed(1) : '0')
+    });
+    $('#alignStats').textContent = stats + (track.estimated ? ' · ' + t('voiceEstimated') : '');
+
+    var cssW = canvas.clientWidth || 520;
+    var cssH = 130;
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    var c = canvas.getContext('2d');
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.clearRect(0, 0, cssW, cssH);
+
+    var theme = (window.CFX.THEMES && window.CFX.THEMES[$('.swatch.on') ? $('.swatch.on').dataset.theme : 'aurora']) || window.CFX.THEMES.aurora;
+    var dur = Math.max(0.1, track.duration || 1);
+    var xOf = function (t2) { return (t2 / dur) * cssW; };
+
+    // background + speech blocks
+    c.fillStyle = 'rgba(8,12,26,.55)';
+    c.fillRect(0, 0, cssW, cssH);
+    (track.phrases || []).forEach(function (ph) {
+      c.fillStyle = 'rgba(120,160,255,.14)';
+      c.fillRect(xOf(ph.start), 0, Math.max(1, xOf(ph.end) - xOf(ph.start)), cssH);
+    });
+
+    // waveform envelope
+    var env = (track.analysis && track.analysis.envelope) || null;
+    var hop = (track.analysis && track.analysis.hop) || 0.01;
+    if (env && env.length) {
+      var mid = cssH * 0.5;
+      var step = Math.max(1, Math.floor(env.length / cssW));
+      c.beginPath();
+      for (var i = 0, x = 0; i < env.length; i += step, x++) {
+        var v = Math.min(1, env[i] * 9);
+        c.moveTo(x, mid - v * (cssH * 0.42));
+        c.lineTo(x, mid + v * (cssH * 0.42));
+      }
+      c.strokeStyle = 'rgba(190,215,255,.42)';
+      c.lineWidth = 1;
+      c.stroke();
+    } else {
+      c.strokeStyle = 'rgba(190,215,255,.25)';
+      c.beginPath();
+      c.moveTo(0, cssH * 0.5);
+      c.lineTo(cssW, cssH * 0.5);
+      c.stroke();
+    }
+
+    // caption / line bars
+    (track.cues || []).forEach(function (cue) {
+      var x = xOf(cue.start), w = Math.max(2, xOf(cue.end) - xOf(cue.start));
+      c.fillStyle = 'rgba(90,225,205,.20)';
+      c.fillRect(x, cssH * 0.76, w, 10);
+      c.fillStyle = 'rgba(90,225,205,.65)';
+      c.fillRect(x, cssH * 0.76, w, 2);
+    });
+
+    // paragraph boundaries (where a line starts)
+    (track.paragraphs || []).forEach(function (p, i) {
+      var x = xOf(p.start);
+      c.fillStyle = 'rgba(255,255,255,.28)';
+      c.fillRect(x, cssH * 0.62, 1, cssH * 0.3);
+    });
+
+    // playhead
+    var px = xOf(Math.min(dur, S.alignPlayhead || 0));
+    c.fillStyle = '#ff5c8a';
+    c.fillRect(px - 1, 0, 2, cssH);
+
+    // paragraph chips under the canvas
+    var list = $('#alignList');
+    list.innerHTML = '';
+    (track.paragraphs || []).forEach(function (p, i) {
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'align-chip';
+      chip.innerHTML = '<b>' + fmtTime(p.start) + '</b><span>' + String(p.text).slice(0, 46) + '</span>';
+      chip.addEventListener('click', function () { seekAudio(p.start); });
+      list.appendChild(chip);
+    });
+  }
+
+  // Jump the preview to a moment in the *audio* time (the story shifts it).
+  function seekAudio(audioTime) {
+    if (!S.renderer) return;
+    var shift = S.spec && S.spec.meta ? (S.spec.meta.voiceStart || 0) : 0;
+    var t2 = Math.max(0, audioTime + shift - 0.05);
+    seek(Math.min(t2, S.renderer.duration - 0.05));
+    S.alignPlayhead = audioTime;
+    renderAlign();
+  }
+
   /* ------------------------------------------------------------ voice panel */
   function fillVoiceList() {
     var sel = $('#fVoicePick');
@@ -697,6 +901,7 @@
         if (res.buffer) {
           S.voiceBuffer = window.CFX.voice.trimToOffset(res.buffer, res.offset);
           showVoiceNote(t('voiceRecorded'), 'ok');
+          trackVoice(true);
         } else {
           showVoiceNote(t('voiceNoCapture'), 'warn');
         }
@@ -779,6 +984,10 @@
         progress: $('#fProgress').checked,
         captionStyle: $('#fCaptionStyle').value,
         shorts: $('#fShorts').checked,
+        story: $('#fStory').checked,
+        storyStyle: $('#fStoryStyle').value,
+        kicker: $('#fKicker').value,
+        endCard: $('#fEndCard').value,
         voiceId: $('#fVoicePick').value,
         voiceRate: $('#fVoiceRate').value,
         narrationFit: $('#fNarrFit').checked,
@@ -787,7 +996,12 @@
         clientId: $('#fClientId').value
       },
       captions: S.srtCues || (S.spec && S.spec.captions) || null,
-      timings: S.timings || null
+      timings: S.timings || null,
+      track: S.track ? {
+        estimated: !!S.track.estimated, duration: S.track.duration,
+        speechRatio: S.track.speechRatio, phrases: S.track.phrases,
+        paragraphs: S.track.paragraphs, cues: S.track.cues, words: S.track.words
+      } : null
     };
     window.CFX.publish.downloadBlob(
       new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' }),
@@ -826,11 +1040,18 @@
         if (rvL) rvL.textContent = parseFloat(f.voiceRate).toFixed(2);
       }
       $('#fNarrFit').checked = f.narrationFit !== false;
+      $('#fStory').checked = !!f.story;
+      if (f.storyStyle) $('#fStoryStyle').value = f.storyStyle;
+      if (f.kicker != null) $('#fKicker').value = f.kicker;
+      if (f.endCard != null) $('#fEndCard').value = f.endCard;
       if (f.privacy) $('#fPrivacy').value = f.privacy;
       if (f.schedule) $('#fSchedule').value = f.schedule;
       if (f.clientId) $('#fClientId').value = f.clientId;
       S.srtCues = data.captions || null;
       S.timings = data.timings || null;
+      // a saved track lets the story rebuild exactly without the audio file
+      S.track = data.track || null;
+      if (S.track) { S.track.voiceStart = 0; renderAlign(); }
       $$('.swatch').forEach(function (s2) { s2.classList.toggle('on', s2.dataset.theme === ($('#themePicker').dataset.current || '')); });
       toast(t('stProjectLoaded'));
       buildCurrentPlan();
@@ -944,6 +1165,25 @@
     });
     $('#fCaptionStyle').addEventListener('change', function () {
       if (S.spec) { S.spec.meta.captions = Object.assign({}, S.spec.meta.captions, { style: this.value, enabled: this.value !== 'none' }); paint(); }
+    });
+    $('#btnTrack').addEventListener('click', function () { trackVoice(); });
+    $('#btnAlignPlay').addEventListener('click', function () { trackVoice(); });
+    $('#fStory').addEventListener('change', function () {
+      if (this.checked) {
+        if ($('#fCaptionStyle').value === 'none') $('#fCaptionStyle').value = 'karaoke';
+        if (S.voiceBuffer && !S.track) trackVoice();
+        else if (!S.voiceBuffer) toast(t('stTrackNoVoice'));
+      }
+      if (S.spec) buildCurrentPlan();
+    });
+    $('#fStoryStyle').addEventListener('change', function () {
+      if (S.spec && S.spec.meta && S.spec.meta.story) buildCurrentPlan();
+    });
+    $('#alignCanvas').addEventListener('click', function (e) {
+      if (!S.track) return;
+      var rect = this.getBoundingClientRect();
+      var frac = (e.clientX - rect.left) / Math.max(1, rect.width);
+      seekAudio(frac * (S.track.duration || 0));
     });
     $('#btnSaveProject').addEventListener('click', saveProject);
     $('#fProject').addEventListener('change', function () { if (this.files && this.files[0]) loadProject(this.files[0]); });
@@ -1077,6 +1317,7 @@
           S.voiceBuffer = buffer;
           toast(t('stVoiceLoaded'));
           ac.close();
+          trackVoice();                       // straight into voice tracking
         })['catch'](function () { toast(t('stVoiceFail')); ac.close(); });
     });
     $('#fLogo').addEventListener('change', function () {

@@ -84,6 +84,53 @@
           <button class="btn ghost small" type="button" id="btnClearBrief" data-i18n="clearBrief">খালি করুন</button>
         </div>
 
+
+        <h3 class="card-title" data-i18n="storyTitle">২ · স্টোরি মোড — ভয়েস ট্র্যাক</h3>
+        <label class="field checkbox">
+          <input type="checkbox" id="fStory" />
+          <span data-i18n="fStory">স্টোরি মোড (ভয়েস ট্র্যাক করে গল্পের ভিডিও)</span>
+        </label>
+        <p class="hint" data-i18n="storyHint">গল্পের টেক্সট লিখে ভয়েসটা দিন — ভয়েস ট্র্যাক করে প্রতিটা শব্দ কখন বলা হচ্ছে বের করা হয়, তারপর সেই মুহূর্তেই শব্দ ফুটিয়ে তোলে টাইপোগ্রাফি আর কারাওকে ক্যাপশন সাজায়।</p>
+        <div class="field">
+          <span data-i18n="fVoice">গল্পের ভয়েস (mp3 / wav / m4a / webm)</span>
+          <label class="btn ghost small file-btn wide-btn">
+            <input type="file" id="fVoice" accept="audio/*" hidden />
+            <span data-i18n="pickAudio">📁 অডিও ফাইল বাছুন</span>
+          </label>
+        </div>
+        <div class="brief-row wrap">
+          <button class="btn ghost small" id="btnTrack" type="button" data-i18n="ctaTrack">🎧 ভয়েস ট্র্যাক করুন</button>
+          <label class="field inline">
+            <span data-i18n="fStoryStyle">টাইপোগ্রাফি</span>
+            <select id="fStoryStyle">
+              <option value="auto" selected data-i18n="typAuto">অটো (সিন বুঝে)</option>
+              <option value="reveal" data-i18n="typReveal">শব্দ-বাই-শব্দ ফুটে ওঠে</option>
+              <option value="board" data-i18n="typBoard">স্টোরিবুক কার্ড</option>
+              <option value="stack" data-i18n="typStack">টেলিপ্রম্পটার</option>
+              <option value="typewriter" data-i18n="typType">টাইপরাইটার</option>
+            </select>
+          </label>
+        </div>
+        <div class="two-col">
+          <label class="field">
+            <span data-i18n="fKicker">উপরের ছোট লাইন</span>
+            <input type="text" id="fKicker" placeholder="একটি গল্প" />
+          </label>
+          <label class="field">
+            <span data-i18n="fEndCard">শেষ কার্ড</span>
+            <input type="text" id="fEndCard" placeholder="সমাপ্ত" />
+          </label>
+        </div>
+        <div id="alignWrap" hidden>
+          <div class="align-head">
+            <span class="align-stats" id="alignStats"></span>
+            <button class="btn ghost small" id="btnAlignPlay" type="button" title="Track again" data-i18n="ctaEstimate">🎧 আবার ট্র্যাক</button>
+          </div>
+          <canvas id="alignCanvas" height="130"></canvas>
+          <div class="align-list" id="alignList"></div>
+          <p class="hint" data-i18n="stAlignHint">ওয়েভফর্মে ক্লিক করে সেই মুহূর্তে যান · নিচের লাইনে ক্লিক করে লাইন ধরে শুনুন</p>
+        </div>
+
         <h3 class="card-title" data-i18n="lookTitle">২ · লুক ও ফিল</h3>
         <div class="theme-picker" id="themePicker"></div>
 
@@ -152,13 +199,6 @@
           <span data-i18n="fProgressBar">নিচে প্রোগ্রেস বার</span>
         </label>
 
-        <div class="field">
-          <span data-i18n="fVoice">ভয়েসওভার (ঐচ্ছিক — mp3/wav)</span>
-          <label class="btn ghost small file-btn wide-btn">
-            <input type="file" id="fVoice" accept="audio/*" hidden />
-            <span data-i18n="pickAudio">📁 অডিও ফাইল বাছুন</span>
-          </label>
-        </div>
         <div class="field">
           <span data-i18n="fLogo">ব্র্যান্ড লোগো (ঐচ্ছিক — png/svg)</span>
           <label class="btn ghost small file-btn wide-btn">
@@ -373,6 +413,8 @@
 <script data-module="engine" src="js/studio/engine.js"></script>
 <script data-module="music" src="js/studio/music.js"></script>
 <script data-module="captions" src="js/studio/captions.js"></script>
+<script data-module="align" src="js/studio/align.js"></script>
+<script data-module="story" src="js/studio/story.js"></script>
 <script data-module="voice" src="js/studio/voice.js"></script>
 <script data-module="muxer" src="js/studio/muxer.js"></script>
 <script data-module="encode" src="js/studio/encode.js"></script>
