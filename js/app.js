@@ -263,6 +263,75 @@
     });
   }
 
+  /* ------------------------------------------------- sample clip (demo aid) */
+  function makeSampleClip() {
+    if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) {
+      toast(t('msgNoRec'));
+      return;
+    }
+    toast(t('msgSample'));
+    var W = 1280, H = 720, FPS = 30, SECONDS = 5;
+    var canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    var c = canvas.getContext('2d');
+    var stream = canvas.captureStream(FPS);
+    var recMime = pickMime() || '';
+    var rec;
+    try { rec = recMime ? new MediaRecorder(stream, { mimeType: recMime }) : new MediaRecorder(stream); }
+    catch (e) { toast(t('msgNoRec')); return; }
+
+    var chunks = [];
+    rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+    rec.start(250);
+
+    var start = performance.now();
+    var draw = function () {
+      var el = (performance.now() - start) / 1000;
+      var p = clamp(el / SECONDS, 0, 1);
+      var g = c.createLinearGradient(0, 0, W, H);
+      g.addColorStop(0, '#7c5cff');
+      g.addColorStop(0.5 + 0.4 * Math.sin(el), '#22d3ee');
+      g.addColorStop(1, '#0b0f17');
+      c.fillStyle = g; c.fillRect(0, 0, W, H);
+
+      c.fillStyle = 'rgba(255,255,255,.92)';
+      c.font = 'bold 84px "Hind Siliguri", system-ui, sans-serif';
+      c.fillText('CutFree', 80, 260);
+      c.font = '40px "Hind Siliguri", system-ui, sans-serif';
+      c.fillText(t('sampleName').replace('.webm', ''), 80, 330);
+      c.font = 'bold 64px ui-monospace, monospace';
+      c.fillText(el.toFixed(1) + 's', 80, 440);
+
+      c.fillStyle = 'rgba(255,255,255,.25)';
+      c.fillRect(80, 520, W - 160, 18);
+      c.fillStyle = '#ffffff';
+      c.fillRect(80, 520, (W - 160) * p, 18);
+
+      c.save();
+      c.translate(W - 240 + Math.sin(el * 2) * 30, H / 2 + Math.cos(el * 3) * 60);
+      c.rotate(el * 1.5);
+      c.fillStyle = 'rgba(255,255,255,.85)';
+      c.fillRect(-60, -60, 120, 120);
+      c.restore();
+
+      if (el < SECONDS) requestAnimationFrame(draw);
+      else finish();
+    };
+
+    var finish = function () {
+      try { rec.stop(); } catch (e) { }
+    };
+    rec.onstop = function () {
+      try {
+        var type = rec.mimeType && rec.mimeType.indexOf('mp4') > -1 ? 'video/mp4' : 'video/webm';
+        var name = t('sampleName').replace(/\.webm$/, type === 'video/mp4' ? '.mp4' : '.webm');
+        var file = new File([new Blob(chunks, { type: type })], name, { type: type });
+        addFiles([file]);
+      } catch (e) { toast(t('msgNoRec')); }
+    };
+    requestAnimationFrame(draw);
+  }
+
   /* ------------------------------------------------------------- rendering */
   function totalDuration() {
     return state.clips.reduce(function (s, c) { return s + Math.max(0, c.end - c.start); }, 0);
@@ -940,6 +1009,7 @@
     $('#heroAdd').addEventListener('click', openPicker);
     $('#ctaAdd').addEventListener('click', openPicker);
     $('#btnAddMore').addEventListener('click', openPicker);
+    $('#btnSample').addEventListener('click', makeSampleClip);
     fileInput.addEventListener('change', function () { addFiles(fileInput.files); });
 
     // dropzone + whole card drag & drop

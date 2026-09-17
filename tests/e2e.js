@@ -130,6 +130,15 @@ async function exportAndMeasure(page, label) {
   check('landing sections rendered', (await page.$$('#featuresGrid .feature')).length === 6 &&
         (await page.$$('#stepsList li')).length === 3 && (await page.$$('#faqList details')).length === 6);
 
+  console.log('\n== 1b. sample clip button ==');
+  await page.click('#btnSample');
+  await page.waitForSelector('#clips .clip', { timeout: 30000 });
+  const sampleState = await stateOf(page);
+  check('sample clip generated in-browser', sampleState.clips.length === 1 && sampleState.clips[0].dur > 3,
+        sampleState.clips[0] && { name: sampleState.clips[0].name, dur: sampleState.clips[0].dur });
+  await page.click('#btnClear');
+  await page.waitForTimeout(200);
+
   console.log('\n== 2. add two videos ==');
   const s1 = await page.evaluate(makeVideo, { seconds: 4, label: 'A', color: '1f4fff' });
   const s2 = await page.evaluate(makeVideo, { seconds: 3, label: 'B', color: 'ff4f8b' });

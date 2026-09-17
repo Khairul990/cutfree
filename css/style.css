@@ -195,6 +195,7 @@ a:hover { text-decoration: underline; }
 .dz-icon { color: var(--brand2); }
 .dz-title { margin: 10px 0 4px; font-size: 1.22rem; }
 .dz-hint { margin: 0 0 18px; color: var(--muted); font-size: .93rem; }
+.dz-cta { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .dz-note { margin: 16px 0 0; color: var(--muted); font-size: .84rem; }
 
 .editor { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
