@@ -9,6 +9,8 @@
 <meta property="og:title" content="কাটফ্রি — ফ্রি অনলাইন ভিডিও কাটার" />
 <meta property="og:description" content="ভিডিও কাটুন, ট্রিম করুন, জোড়া লাগান — সবকিছু আপনার ব্রাউজারেই। ফ্রি, প্রাইভেট, ওয়াটারমার্ক-ফ্রি।" />
 <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkN1dEZyZWUiPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzdjNWNmZiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMyMmQzZWUiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxyZWN0IHg9IjIiIHk9IjIiIHdpZHRoPSI0NCIgaGVpZ2h0PSI0NCIgcng9IjEyIiBmaWxsPSJ1cmwoI2cpIi8+CiAgPGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMGIwZjE3IiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+CiAgICA8IS0tIGZpbG0gc3RyaXAgLS0+CiAgICA8cmVjdCB4PSI5IiB5PSIxNCIgd2lkdGg9IjMwIiBoZWlnaHQ9IjIwIiByeD0iNCIvPgogICAgPHBhdGggZD0iTTE1IDE0djIwTTMzIDE0djIwTTkgMjRoMzAiLz4KICAgIDwhLS0gc2Npc3NvcnMgLS0+CiAgICA8cGF0aCBkPSJNMjAgMzBsMTQtMTNNMjAgMThsMTQgMTMiLz4KICA8L2c+CiAgPGcgZmlsbD0iIzBiMGYxNyI+CiAgICA8Y2lyY2xlIGN4PSIxOCIgY3k9IjMxLjUiIHI9IjMuMiIvPgogICAgPGNpcmNsZSBjeD0iMTgiIGN5PSIxNi41IiByPSIzLjIiLz4KICA8L2c+Cjwvc3ZnPgo=" type="image/svg+xml" />
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
 <style>
 /* ==========================================================================
    CutFree — free browser video cutter / editor
@@ -890,7 +892,31 @@ tr, .empty-line { }
       stUploadFail: 'ব্রাউজার আপলোড আটকে দিল — tools/yt-upload.mjs CLI ব্যবহার করুন (প্যাক ফোল্ডার দিলেই হবে)।',
       stSaved: 'সেভ হয়েছে',
       stEngineFast: 'WebCodecs (ফাস্ট)', stEngineCompat: 'MediaRecorder (কম্প্যাট)',
-      stEstSize: 'আনুমানিক ফাইল'
+      stEstSize: 'আনুমানিক ফাইল',
+      voiceTitle: '৩ · ভয়েসওভার ও সাবটাইটেল',
+      pickAudio: '📁 অডিও ফাইল বাছুন', pickImage: '🖼️ ছবি বাছুন',
+      fVoicePick: 'TTS ভয়েস', fVoiceRate: 'গতি', fNarrFit: 'সিনের দৈর্ঘ্য ন্যারেশনের সাথে মিলিয়ে নাও',
+      ctaVoiceTest: '🔊 ভয়েস চেক', ctaMeasure: '⏱ টাইমিং মাপুন', ctaRecordVoice: '🎙 ভয়েসওভার রেকর্ড',
+      voiceHint: 'সিস্টেম TTS দিয়ে শব্দ-ধরে টাইমিং মাপা যায়, আর Chrome/Edge-এ “এই ট্যাব শেয়ার + tab audio” দিয়ে আসল ভয়েসওভার রেকর্ড করা যায়।',
+      voiceNoVoices: 'এই ব্রাউজারে কোনো TTS ভয়েস নেই — টাইমিং অনুমান করা হবে, সাবটাইটেল তবু কাজ করবে।',
+      voiceRecorded: 'ভয়েসওভার রেকর্ড হয়েছে — এক্সপোর্টে অটো-ডাকিং সহ মিক্স হবে।',
+      voiceNoCapture: 'এই ব্রাউজারে ট্যাব-অডিও ক্যাপচার নেই। mp3/wav আপলোড করুন বা টাইমিং মাপুন।',
+      voiceNoTrack: '“Share tab audio” টিক দেওয়া হয়নি — আবার চেষ্টা করে অডিও শেয়ার চালু করুন।',
+      voiceCaptureFail: 'ভয়েসওভার ক্যাপচার করা গেল না — ফাইল আপলোড করে দেখুন।',
+      voiceMeasured: 'টাইমিং মাপা হয়েছে', voiceEstimated: 'টাইমিং অনুমান করা হয়েছে',
+      stVoiceSpeaking: 'শুনুন…', stMeasuring: 'ন্যারেশন মাপা হচ্ছে',
+      subsTitle: 'সাবটাইটেল', ctaSrtImport: '📄 SRT / VTT ইমপোর্ট', ctaSrtExport: '⬇️ SRT এক্সপোর্ট',
+      fCaptionStyle: 'সাবটাইটেল স্টাইল', capKaraoke: 'কারাওকে (শব্দ হাইলাইট)', capBar: 'সিম্পল বার', capNone: 'কোনোটাই না',
+      stNoCaptions: 'কোনো ক্যাপশন নেই — টাইমিং মাপুন বা SRT ইমপোর্ট করুন।',
+      stSrtDone: '{n}টি ক্যাপশন SRT হিসেবে ডাউনলোড হয়েছে।',
+      stSrtFail: 'SRT পড়া গেল না — ফরম্যাট দেখে নিন।',
+      stSrtLoaded: '{n}টি ক্যাপশন লোড হয়েছে।',
+      fShorts: 'Shorts মোড (9:16 + safe zone + #Shorts)',
+      shortsHint: 'Shorts মোডে কনটেন্ট সেফ-জোনে থাকে (উপরে ১১%, নিচে ১৯% ফাঁকা), ক্যাপশন কারাওকে হয়, আর ডেসক্রিপশনে #Shorts যোগ হয়।',
+      projectTitle: 'প্রজেক্ট', ctaSaveProject: '💾 সেভ (.json)', ctaLoadProject: '📂 লোড',
+      stProjectSaved: 'প্রজেক্ট সেভ হয়েছে (স্ক্রিপ্ট, থিম, ক্যাপশন, টাইমিং)।',
+      stProjectLoaded: 'প্রজেক্ট লোড হয়েছে।',
+      stProjectFail: 'প্রজেক্ট ফাইলটা পড়া গেল না।',
     },
     en: {
       navStudio: 'Auto Studio', navPipeline: 'Pipeline', navPublish: 'Publish', navDocs: 'Docs', navTests: 'Tests',
@@ -957,8 +983,32 @@ tr, .empty-line { }
       stUploadFail: 'The browser blocked the upload — use the tools/yt-upload.mjs CLI on the pack folder.',
       stSaved: 'Saved',
       stEngineFast: 'WebCodecs (fast)', stEngineCompat: 'MediaRecorder (compat)',
-      stEstSize: 'Estimated size'
-    }
+      stEstSize: 'Estimated size',
+      voiceTitle: '3 · Voice-over & subtitles',
+      pickAudio: '📁 Choose audio file', pickImage: '🖼️ Choose image',
+      fVoicePick: 'TTS voice', fVoiceRate: 'Rate', fNarrFit: 'Fit scene lengths to the narration',
+      ctaVoiceTest: '🔊 Test voice', ctaMeasure: '⏱ Measure timing', ctaRecordVoice: '🎙 Record voice-over',
+      voiceHint: 'System TTS gives word-level timings; on Chrome/Edge you can also capture a real voice-over by sharing “this tab” with tab audio.',
+      voiceNoVoices: 'No TTS voice in this browser — timings will be estimated, captions still work.',
+      voiceRecorded: 'Voice-over captured — it will be mixed in with automatic ducking.',
+      voiceNoCapture: 'This browser cannot capture tab audio. Upload an mp3/wav or measure the timing instead.',
+      voiceNoTrack: 'Tab audio was not shared — try again and enable “Share tab audio”.',
+      voiceCaptureFail: 'Voice-over capture failed — try uploading a file instead.',
+      voiceMeasured: 'Timing measured', voiceEstimated: 'Timing estimated',
+      stVoiceSpeaking: 'Listening…', stMeasuring: 'Measuring narration',
+      subsTitle: 'Subtitles', ctaSrtImport: '📄 Import SRT / VTT', ctaSrtExport: '⬇️ Export SRT',
+      fCaptionStyle: 'Caption style', capKaraoke: 'Karaoke (word highlight)', capBar: 'Simple bar', capNone: 'None',
+      stNoCaptions: 'No captions yet — measure the timing or import an SRT.',
+      stSrtDone: 'Downloaded {n} captions as SRT.',
+      stSrtFail: 'Could not read that SRT — check the format.',
+      stSrtLoaded: 'Loaded {n} captions.',
+      fShorts: 'Shorts mode (9:16 + safe zone + #Shorts)',
+      shortsHint: 'Shorts mode keeps content inside the safe zone (11% top, 19% bottom cleared), switches captions to karaoke and adds #Shorts to the description.',
+      projectTitle: 'Project', ctaSaveProject: '💾 Save (.json)', ctaLoadProject: '📂 Load',
+      stProjectSaved: 'Project saved (script, theme, captions, timings).',
+      stProjectLoaded: 'Project loaded.',
+      stProjectFail: 'That project file could not be read.',
+  }
   };
 
   ['bn', 'en'].forEach(function (lang) {

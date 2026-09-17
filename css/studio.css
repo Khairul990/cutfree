@@ -241,3 +241,16 @@ input[type="date"], input[type="number"] { color-scheme: dark; }
 }
 .pm-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 10px; }
 .pm-title { color: var(--txt); font-size: .95rem; opacity: .85; }
+
+/* ---------------- file buttons (label wrapping a hidden input) ---------------- */
+.file-btn { position: relative; overflow: hidden; }
+.file-btn input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.voice-note { font-size: .8rem; color: var(--muted); margin-top: 6px; }
+.voice-note.warn { color: #ffd28a; }
+.voice-note.ok { color: var(--ok); }
+input[type="range"] { accent-color: var(--brand2); width: 100%; }
+
+.wide-btn { width: 100%; justify-content: center; }
+.wide-btn span { pointer-events: none; }
+
+.two-col > .field.checkbox { align-self: center; }

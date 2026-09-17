@@ -21,7 +21,8 @@
   var TAU = Math.PI * 2;
 
   // exit transitions cycled through by the auto-director
-  var TRANSITIONS = ['fade', 'slide', 'zoom', 'wipe', 'glitch'];
+  var TRANSITIONS = ['fade', 'slide', 'zoom', 'wipe', 'glitch',
+    'maskCircle', 'maskBox', 'pageTurn', 'blurZoom', 'whipPan', 'bars'];
 
   /* ------------------------------------------------------------------ maths */
   var E = {
@@ -244,6 +245,17 @@
     var rand = mulberry32(seed);
     var energy = spec.energy || null;       // Float32Array sampled at 10 Hz
     var scenes = spec.scenes || [];
+    var captions = spec.captions || [];
+    var captionCfg = Object.assign({ enabled: true, style: 'bar', scale: 1 }, spec.meta.captions || {});
+
+    // Safe area: Shorts/Reels draw over the top and bottom of the frame, so the
+    // content window shrinks instead of hiding behind the YouTube UI.
+    var safeTop = clamp((spec.meta.safe && spec.meta.safe.top) != null ? spec.meta.safe.top : 0.05, 0, 0.3);
+    var safeBottom = clamp((spec.meta.safe && spec.meta.safe.bottom) != null ? spec.meta.safe.bottom : 0.07, 0, 0.4);
+    var WIN_TOP = H * safeTop;
+    var WIN_BOTTOM = H * (1 - safeBottom);
+    var WIN_H = Math.max(U * 0.2, WIN_BOTTOM - WIN_TOP);
+    var WIN_CY = WIN_TOP + WIN_H / 2;
     var total = scenes.reduce(function (s, sc) { return s + (sc.dur || 3); }, 0);
 
     // Performance dial — 'high' for desktops, 'balanced' for tablets, 'fast'
@@ -492,7 +504,7 @@
           var subBlockH = hasSub ? 1.5 * subFit.lineHeight : 0;
           var gap = U * 0.055;
           var totalH = blockH + (hasSub ? gap + subBlockH : 0);
-          var top = H * 0.46 - totalH / 2;
+          var top = WIN_CY - totalH / 2 - U * 0.01;
 
           drawKinetic(c, {
             text: scene.title, lines: fitted.lines, x: W / 2, y: top + blockH / 2, size: fitted.size,
@@ -528,7 +540,7 @@
           var headH = hasHead ? headFit.lines.length * headFit.lineHeight : 0;
           var gap2 = hasHead ? U * 0.05 : 0;
           var totalH2 = headH + bodyH + gap2;
-          var top2 = H * 0.5 - totalH2 / 2;
+          var top2 = WIN_CY - totalH2 / 2;
 
           if (hasHead) {
             drawKinetic(c, {
@@ -552,7 +564,10 @@
             maxWidth: maxW, maxLines: 2, maxSize: U * 0.052, minSize: U * 0.032, weight: 800
           });
           var headH3 = scene.heading ? headFit3.lines.length * headFit3.lineHeight : 0;
-          var headTop = H * 0.2;
+          var rowH = U * 0.115;
+          var rowsH = Math.max(1, items.length) * rowH;
+          var stackH = headH3 + (scene.heading ? U * 0.09 : 0) + rowsH;
+          var headTop = WIN_CY - stackH / 2;
           if (scene.heading) {
             drawKinetic(c, {
               text: scene.heading, lines: headFit3.lines, x: W / 2, y: headTop + headH3 / 2, size: headFit3.size,
@@ -560,7 +575,6 @@
               reveal: clamp(ch.reveal * 1.6, 0, 1), fill: rgba(theme.accent, 1)
             });
           }
-          var rowH = U * 0.115;
           var startY = headTop + headH3 + U * 0.09;
           items.forEach(function (item, i) {
             var rp = clamp((ch.reveal - 0.14 - i * 0.12) / 0.3, 0, 1);
@@ -596,8 +610,9 @@
           var value = scene.value == null ? 0 : Number(scene.value);
           var shown = value * E.outExpo(clamp(ch.reveal * 1.2, 0, 1));
           var display = (scene.prefix || '') + (Number.isInteger(value) ? Math.round(shown).toLocaleString('en-US') : shown.toFixed(1)) + (scene.suffix || '');
+          var statY = WIN_CY - U * 0.045;
           drawKinetic(c, {
-            text: display, x: W / 2, y: H * 0.45, size: U * 0.19, align: 'center', weight: 800,
+            text: display, x: W / 2, y: statY, size: U * 0.19, align: 'center', weight: 800,
             reveal: 1, alpha: clamp(ch.reveal * 1.4, 0, 1), family: CFX.FONTS.mono,
             fill: accentGrad(0, 0, W, H), shimmer: shimmerPos
           });
@@ -605,12 +620,12 @@
             maxWidth: maxW, maxLines: 2, maxSize: U * 0.044, minSize: U * 0.03, weight: 600
           });
           drawKinetic(c, {
-            text: scene.label || '', lines: sFit.lines, x: W / 2, y: H * 0.45 + U * 0.15, size: sFit.size,
+            text: scene.label || '', lines: sFit.lines, x: W / 2, y: statY + U * 0.15, size: sFit.size,
             align: 'center', maxWidth: maxW, weight: 600,
             reveal: clamp((ch.reveal - 0.3) * 2, 0, 1), fill: rgba(theme.sub, 0.95)
           });
           var barW = U * 0.42;
-          drawRule(c, W / 2 - barW / 2, H * 0.45 + U * 0.21, barW * E.outExpo(clamp((ch.reveal - 0.35) * 1.6, 0, 1)),
+          drawRule(c, W / 2 - barW / 2, statY + U * 0.21, barW * E.outExpo(clamp((ch.reveal - 0.35) * 1.6, 0, 1)),
             Math.max(2, U * 0.005), theme.accent, theme.accent2);
           break;
         }
@@ -621,13 +636,13 @@
           c.fillStyle = rgba(theme.accent, 0.8);
           c.font = '900 ' + (U * 0.34) + 'px ' + CFX.FONTS.display;
           c.textAlign = 'center';
-          c.fillText('“', W / 2, H * 0.3);
+          c.fillText('“', W / 2, WIN_CY - U * 0.2);
           c.restore();
           var qFit = fitText(c, scene.text || '', {
             maxWidth: maxW * 0.84, maxLines: 5, maxSize: U * 0.06, minSize: U * 0.034, weight: 600, lineHeight: 1.36
           });
           var qH = qFit.lines.length * qFit.lineHeight;
-          var qTop = H * 0.52 - qH / 2;
+          var qTop = WIN_CY - qH / 2 - U * 0.012;
           drawKinetic(c, {
             text: scene.text || '', lines: qFit.lines, x: W / 2, y: qTop + qH / 2, size: qFit.size,
             align: 'center', maxWidth: maxW * 0.84, weight: 600, lineHeight: 1.36,
@@ -644,7 +659,7 @@
 
         case 'broll': {
           // pure motion design: concentric rings + energy bars, no text needed
-          var cx = W / 2, cy = H / 2;
+          var cx = W / 2, cy = WIN_CY - (scene.label ? U * 0.06 : 0);
           c.save();
           c.globalCompositeOperation = 'lighter';
           for (var i = 0; i < 5; i++) {
@@ -679,7 +694,7 @@
               maxWidth: maxW * 0.8, maxLines: 2, maxSize: U * 0.046, minSize: U * 0.03, weight: 700
             });
             drawKinetic(c, {
-              text: scene.label, lines: bFit.lines, x: W / 2, y: H * 0.78, size: bFit.size, align: 'center',
+              text: scene.label, lines: bFit.lines, x: W / 2, y: cy + U * 0.34, size: bFit.size, align: 'center',
               maxWidth: maxW * 0.8, weight: 700, reveal: clamp((ch.reveal - 0.35) * 1.8, 0, 1),
               fill: rgba(theme.text, 0.95)
             });
@@ -699,7 +714,7 @@
           var oGap = oSubFit ? U * 0.05 : 0;
           var oPill = scene.cta ? U * 0.095 + U * 0.07 : 0;
           var oTotal = oTitleH + oGap + oSubH + oPill;
-          var oTop = H * 0.5 - oTotal / 2;
+          var oTop = WIN_CY - oTotal / 2;
 
           drawKinetic(c, {
             text: scene.title || '', lines: oFit.lines, x: W / 2, y: oTop + oTitleH / 2, size: oFit.size,
@@ -748,6 +763,8 @@
     // nothing repeats and the total duration stays exact.
     function drawSceneExit(kind, p, t) {
       var e = E.inOutSine(clamp(p, 0, 1));
+      var out = E.outCubic(clamp(p, 0, 1));
+      var ctxRef = ctx;
       ctx.save();
       switch (kind) {
         case 'slide':
@@ -762,10 +779,59 @@
           break;
         case 'wipe':
           ctx.beginPath();
-          var dir = (Math.floor(t) % 2 === 0) ? 1 : -1;
-          ctx.rect(dir > 0 ? 0 : W * e, 0, W * (1 - e), H);
+          ctx.rect((Math.floor(t) % 2 === 0) ? 0 : W * e, 0, W * (1 - e), H);
           ctx.clip();
           break;
+        case 'maskCircle': {
+          var rad = Math.max(1, Math.hypot(W, H) * 0.5 * (1 - out) + U * 0.03);
+          ctx.beginPath();
+          ctx.arc(W / 2, WIN_CY, rad, 0, TAU);
+          ctx.clip();
+          break;
+        }
+        case 'maskBox': {
+          var hh = Math.max(1, WIN_H * (1 - out));
+          ctx.beginPath();
+          ctx.rect(0, WIN_CY - hh / 2, W, hh);
+          ctx.clip();
+          break;
+        }
+        case 'pageTurn': {
+          var k = Math.max(0.02, 1 - out);
+          ctx.globalAlpha = 0.4 + 0.6 * k;
+          ctx.translate(W, 0);
+          ctx.transform(k, 0, 0.08 * (1 - k), 1, 0, 0);
+          ctx.translate(-W, 0);
+          ctx.shadowColor = 'rgba(0,0,0,0.5)';
+          ctx.shadowBlur = U * 0.05;
+          ctx.shadowOffsetX = -U * 0.025;
+          break;
+        }
+        case 'blurZoom':
+          try { ctx.filter = 'blur(' + (e * 15).toFixed(1) + 'px)'; } catch (err) { }
+          ctx.globalAlpha = 1 - e * 0.75;
+          ctx.translate(W / 2, H / 2);
+          ctx.scale(1 + e * 0.3, 1 + e * 0.3);
+          ctx.translate(-W / 2, -H / 2);
+          break;
+        case 'whipPan': {
+          var dir = (Math.floor(t) % 2 === 0) ? -1 : 1;
+          ctx.globalAlpha = 1 - e * 0.7;
+          ctx.translate(dir * e * W * 1.05, 0);
+          break;
+        }
+        case 'bars': {
+          // the frame breaks into stripes that slide away alternately
+          var count = 12;
+          var bh = H / count;
+          ctx.globalAlpha = 1;
+          for (var b = 0; b < count; b++) {
+            var dirB = (b % 2 === 0) ? -1 : 1;
+            ctx.drawImage(layer, 0, b * bh, W, bh, dirB * out * W, b * bh, W, bh);
+          }
+          ctx.restore();
+          return;
+        }
         case 'glitch':
           ctx.globalAlpha = 1 - e * 0.85;
           break;
@@ -780,6 +846,101 @@
         ctx.drawImage(layer, 14 * e * Math.sin(t * 55), 0);
         ctx.drawImage(layer, -14 * e * Math.cos(t * 47), 0);
       }
+      ctx.restore();
+    }
+
+    /* ------------------------------------------------------------- captions */
+    function activeCue(t) {
+      for (var i = 0; i < captions.length; i++) {
+        if (t >= captions[i].start && t < captions[i].end) return captions[i];
+      }
+      return null;
+    }
+
+    function drawCaptions(t) {
+      if (!captionCfg.enabled || captionCfg.style === 'none' || !captions.length) return;
+      var cue = activeCue(t);
+      if (!cue) return;
+      var text = String(cue.text || '').replace(/\n/g, ' ');
+      if (!text) return;
+
+      var portrait = H > W;
+      var size = U * (portrait ? 0.05 : 0.04) * (captionCfg.scale || 1);
+      var maxW = W * (portrait ? 0.86 : 0.74);
+      var fit = fitText(ctx, text, { maxWidth: maxW, maxLines: 3, maxSize: size, minSize: U * 0.024, weight: 700, lineHeight: 1.3 });
+      var blockH = fit.lines.length * fit.lineHeight;
+      var y = WIN_BOTTOM - blockH / 2 - U * 0.02;
+      var padX = U * 0.035, padY = U * 0.022;
+
+      ctx.font = '700 ' + fit.size + 'px ' + CFX.FONTS.display;
+      var widest = 0;
+      fit.lines.forEach(function (line) {
+        var w = ctx.measureText(line).width;
+        if (w > widest) widest = w;
+      });
+      var plateW = Math.min(maxW + padX * 2, widest + padX * 2);
+      var plateX = (W - plateW) / 2;
+      var plateY = y - blockH / 2 - padY;
+      var plateH = blockH + padY * 2;
+      var radius = Math.min(U * 0.02, plateH / 2);
+
+      var fade = clamp(Math.min((t - cue.start) / 0.18, (cue.end - t) / 0.18), 0, 1);
+      ctx.save();
+      ctx.globalAlpha = 0.86 * fade;
+      ctx.fillStyle = 'rgba(6,10,18,0.74)';
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(plateX, plateY, plateW, plateH, radius);
+      else ctx.rect(plateX, plateY, plateW, plateH);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'screen';
+      ctx.globalAlpha = 0.4 * fade;
+      var edge = ctx.createLinearGradient(plateX, 0, plateX + plateW, 0);
+      edge.addColorStop(0, theme.accent2);
+      edge.addColorStop(0.5, 'rgba(255,255,255,0.35)');
+      edge.addColorStop(1, theme.accent);
+      ctx.strokeStyle = edge;
+      ctx.lineWidth = Math.max(1, U * 0.0028);
+      ctx.stroke();
+      ctx.restore();
+
+      var current = null;
+      if (captionCfg.style === 'karaoke' && cue.words && cue.words.length) {
+        for (var wi = 0; wi < cue.words.length; wi++) {
+          if (t >= cue.words[wi].s && t < cue.words[wi].e) {
+            current = String(cue.words[wi].w).replace(/[^\w\u0980-\u09FF]/g, '');
+            break;
+          }
+        }
+      }
+
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '700 ' + fit.size + 'px ' + CFX.FONTS.display;
+      fit.lines.forEach(function (line, li) {
+        var ly = plateY + padY + fit.lineHeight * (li + 0.5);
+        if (current) {
+          var words = line.split(' ');
+          var spaceW = ctx.measureText(' ').width;
+          var widths = words.map(function (word) { return ctx.measureText(word).width; });
+          var lineW = widths.reduce(function (a, b) { return a + b; }, 0) + spaceW * Math.max(0, words.length - 1);
+          var x = W / 2 - lineW / 2;
+          ctx.textAlign = 'left';
+          words.forEach(function (word, wj) {
+            var clean = word.replace(/[^\w\u0980-\u09FF]/g, '');
+            var isCurrent = clean && current && clean.indexOf(current) === 0;
+            ctx.globalAlpha = fade * (isCurrent ? 1 : 0.9);
+            ctx.fillStyle = isCurrent ? theme.accent2 : 'rgba(255,255,255,0.95)';
+            ctx.fillText(word, x, ly);
+            x += widths[wj] + spaceW;
+          });
+          ctx.textAlign = 'center';
+        } else {
+          ctx.globalAlpha = fade;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(line, W / 2, ly);
+        }
+      });
       ctx.restore();
     }
 
@@ -832,6 +993,8 @@
       } else {
         ctx.drawImage(layer, 0, 0);
       }
+
+      drawCaptions(t);
 
       // scene-entry flash (punchy cut-in)
       var flash = clamp(1 - cur.local / 0.18, 0, 1);
@@ -906,6 +1069,8 @@
       frameCount: Math.max(1, Math.floor(total * fps)),
       theme: theme,
       sceneAt: sceneAt,
+      captionAt: activeCue,
+      captions: captions,
       starts: starts,
       energyAt: energyAt,
       renderAt: drawFrameAt

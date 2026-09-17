@@ -1,6 +1,6 @@
 {
   "name": "cutfree-studio",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "description": "CutFree Studio — free browser video factory: auto-generated animated videos (WebCodecs + own WebM muxer + procedural music), plus the cutter/editor. No uploads, no server, no watermark.",
   "keywords": [

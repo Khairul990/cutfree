@@ -207,7 +207,7 @@
       }
     }
 
-    var aspect = input.aspect || '16:9';
+    var aspect = input.aspect || (input.shorts ? '9:16' : '16:9');
     var dims = {
       '16:9': [1920, 1080], '9:16': [1080, 1920], '1:1': [1080, 1080], '4:5': [1080, 1350]
     }[aspect] || [1920, 1080];
@@ -216,7 +216,7 @@
     var width = Math.round(dims[0] * scale / 2) * 2;
     var height = Math.round(dims[1] * scale / 2) * 2;
 
-    return {
+    var spec = {
       meta: {
         title: title,
         theme: theme,
@@ -227,6 +227,13 @@
         language: lang,
         aspect: aspect,
         perf: input.perf || 'high',
+        shorts: !!input.shorts,
+        safe: input.shorts ? { top: 0.11, bottom: 0.19 } : { top: 0.05, bottom: 0.08 },
+        captions: {
+          enabled: input.captions !== false && !!(input.captionCues && input.captionCues.length),
+          style: input.captionStyle || (input.shorts ? 'karaoke' : 'bar'),
+          scale: input.shorts ? 1.12 : 1
+        },
         logoDataUrl: input.logoDataUrl || null
       },
       fps: input.fps || 30,
@@ -234,6 +241,68 @@
       height: height,
       scenes: scenes
     };
+
+    // -------- captions: explicit cues win, a SRT string is parsed, otherwise
+    // we derive them from the narration timing estimation below (optional).
+    var cues = null;
+    if (input.captionCues && input.captionCues.length) cues = input.captionCues.slice();
+    else if (input.srt && CFX.captions) cues = CFX.captions.parse(input.srt);
+
+    if (cues && cues.length) {
+      var span = spec.scenes.reduce(function (a, x) { return a + x.dur; }, 0);
+      var last = cues[cues.length - 1].end;
+      if (input.fitCaptions !== false && last > 0.5 && span > 0.5 && Math.abs(last - span) > 0.8) {
+        cues = CFX.captions.fitTo(cues, span);
+      }
+      spec.captions = cues;
+      spec.meta.captions.enabled = input.captions !== false;
+      spec.meta.captions.hasWords = cues.some(function (c) { return c.words && c.words.length; });
+    }
+
+    return spec;
+  }
+
+  /* --------------------------------------------------- narration fit helpers */
+  // Re-time the scenes so every paragraph's scene lasts exactly as long as the
+  // narration measured for it (voice-over / TTS timings).
+  function fitToNarration(spec, timings, opts) {
+    if (!spec || !timings || !timings.segments || !timings.segments.length) return spec;
+    opts = opts || {};
+    var pad = opts.pad == null ? 0.35 : opts.pad;
+    var body = spec.scenes.filter(function (s) { return s.type !== 'intro' && s.type !== 'outro'; });
+    var segs = timings.segments;
+    if (!body.length) return spec;
+
+    var count = Math.min(body.length, segs.length);
+    for (var i = 0; i < count; i++) {
+      var dur = Math.max(opts.minScene || 1.4, (segs[i].end - segs[i].start) + pad);
+      body[i].dur = +dur.toFixed(2);
+    }
+    // if the script has more scenes than narration segments, keep the leftovers readable
+    for (var j = count; j < body.length; j++) body[j].dur = Math.max(1.6, Math.min(body[j].dur, 4));
+
+    if (opts.intro != null) spec.scenes[0].dur = opts.intro;
+    if (opts.outro != null) spec.scenes[spec.scenes.length - 1].dur = opts.outro;
+    return spec;
+  }
+
+  // Captions straight from measured word timings (or interpolated when the
+  // browser could not report boundary events).
+  function captionsFromTimings(timings, opts) {
+    if (!timings || !timings.segments) return [];
+    var cues = [];
+    timings.segments.forEach(function (seg) {
+      var words = seg.words && seg.words.length ? seg.words : CFX.captions.estimateWords(seg.text, seg.start, seg.end);
+      // note: 0 is a legitimate start time, so coalesce on "is a number", not truthiness
+      var pick = function (a, b) {
+        return (typeof a === 'number' && isFinite(a)) ? a : ((typeof b === 'number' && isFinite(b)) ? b : undefined);
+      };
+      var grouped = CFX.captions.fromWords(words.map(function (wd) {
+        return { word: wd.word || wd.w, start: pick(wd.start, wd.s), end: pick(wd.end, wd.e) };
+      }), opts);
+      grouped.forEach(function (c) { cues.push(c); });
+    });
+    return cues;
   }
 
   /* ------------------------------------------------------------ YouTube kit */
@@ -254,7 +323,8 @@
 
   function metadata(spec, opts) {
     opts = opts || {};
-    var title = (spec.meta.title || '').trim().slice(0, 95);
+    var shorts = !!spec.meta.shorts || spec.meta.aspect === '9:16';
+    var title = (spec.meta.title || '').trim().slice(0, shorts ? 90 : 95);
     var bn = spec.meta.language !== 'en';
     var lines = [];
     var tags = keywords(spec.meta.title + ' ' + spec.scenes.map(function (s) {
@@ -286,7 +356,16 @@
       lines.push(bn ? 'পুরো ভিডিওটাই এক বসায় দেখা যায় 🙂' : 'One sitting, no fluff 🙂');
     }
 
+    if (shorts) {
+      lines.push('');
+      lines.push(bn
+        ? '#Shorts — ৬০ সেকেন্ডের ভেতরে, ভার্টিকাল ৯:১৬, সেফ-জোন মেনে বানানো।'
+        : '#Shorts — vertical 9:16, under a minute, laid out inside the Shorts safe zone.');
+    }
+
     var hashtags = tags.slice(0, 5).map(function (t) { return '#' + t.replace(/[^\u0980-\u09FF\w]/g, ''); });
+    if (shorts) hashtags.unshift('#Shorts');
+    hashtags = hashtags.slice(0, 6);
     lines.push('');
     lines.push(bn ? '🔒 এই ভিডিওটি সম্পূর্ণ ব্রাউজারে, কোনো ওয়াটারমার্ক ছাড়া তৈরি।' : '🔒 Produced entirely in a browser with no watermark.');
     if (hashtags.length) lines.push('');
@@ -316,7 +395,9 @@
       publishAt: schedule,
       madeForKids: false,
       theme: spec.meta.theme,
-      mood: spec.meta.mood
+      mood: spec.meta.mood,
+      shorts: shorts,
+      suggestedTitle: shorts ? (title.length > 80 ? title.slice(0, 80) : title) : title
     };
   }
 
@@ -349,6 +430,15 @@
   CFX.director = {
     build: build,
     metadata: metadata,
+    fitToNarration: fitToNarration,
+    captionsFromTimings: captionsFromTimings,
+    shortsPreset: function (input) {
+      return Object.assign({}, input, {
+        shorts: true, aspect: '9:16',
+        durationTarget: Math.min(input && input.durationTarget ? input.durationTarget : 45, 58),
+        captionStyle: (input && input.captionStyle) || 'karaoke'
+      });
+    },
     batch: batch,
     splitBeats: splitBeats,
     classify: classify,

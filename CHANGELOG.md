@@ -3,6 +3,67 @@
 All notable changes to CutFree are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/).
 
+## [2.1.0] — 2026-09-17
+
+Voice-over, burned-in subtitles, Shorts, projects and offline — all still zero-cost
+and client-side. Everything below runs in the browser: no API keys, no uploads, no server.
+
+### Added — voice-over (`js/studio/voice.js`, panel ৩)
+- **TTS voice picker** (system `speechSynthesis`, language-aware, Bengali voices flagged),
+  rate 0.6–1.6× and a one-line voice test.
+- **Word-accurate timing** from `SpeechSynthesisUtterance.onboundary`; `measure()`
+  returns `{segments, duration, estimated}`. No voices / blocked synthesis falls back to
+  `estimatedTimings()` — the UI says “টাইমিং অনুমান করা হয়েছে” and carries on.
+- **In-browser voice-over capture:** `getDisplayMedia({audio})` + `MediaRecorder` records
+  the tab (i.e. the TTS narration) into one buffer, trimmed to the real start offset and
+  mixed with the soundtrack using the existing automatic ducking.
+- **`director.fitToNarration(spec, timings)`** — scene lengths follow the measured
+  narration (pad 0.35 s, floor 1.4 s) with an opt-out checkbox.
+
+### Added — subtitles (`js/studio/captions.js`)
+- `parse()` for **SRT/WebVTT** (tags stripped, multi-line cues, comma or dot ms),
+  `build()` for **SRT export** (42-char wrap, sane timestamps), `fromWords()`,
+  `estimateWords()`, `shift()`, `fitTo()`, `cueAt()`, `plainText()`.
+- **Burn-in renderer** in `engine.js`: dark plate + gradient border, **karaoke**
+  word-by-word highlight or a simple bar, placed above the safe-area bottom.
+- UI: **SRT/VTT import**, **SRT export** (imported cues win), caption style select
+  (`karaoke | bar | none`); captions are auto-derived from TTS timings when present.
+
+### Added — Shorts (`9:16`)
+- `director.shortsPreset()` + `meta.shorts/safe`: 9:16 aspect, duration ≤ 58 s,
+  karaoke captions, `#Shorts` in title/description, title trimmed to 90 chars.
+- **Safe-zone layout:** the engine keeps scene content inside `WIN_TOP…WIN_BOTTOM`
+  (11% top / 19% bottom cleared in Shorts, 5% / 8% otherwise) and captions sit above it.
+- One checkbox in the UI: `#fShorts` flips aspect, duration cap and caption style.
+
+### Added — transitions (5 → 11)
+- `maskCircle`, `maskBox`, `pageTurn`, `blurZoom`, `whipPan`, `bars` on top of
+  `fade/slide/zoom/wipe/glitch`. All exit-only, so no two scenes ever bleed together.
+
+### Added — projects & PWA
+- **Project save/load**: `*.cutfree.json` (`cutfree-studio-project` v2) with the whole
+  form, caption cues and measured timings; loading restores the workbench.
+- **Offline/PWA:** `sw.js` (cache-first shell, stale-replaced in the background) and
+  `manifest.webmanifest` — the studio installs and runs with the network off.
+
+### Changed
+- `fitText()` made width-aware (unbreakable words, 40 iterations) — long Bengali or
+  English copy shrinks instead of clipping.
+- File pickers in the brief card now use the same styled button as the new panels.
+- Test suites print a tally; the studio suite grew from 43 to **74 checks** and the
+  cutter suite from 25 to **30** (30/30 + 74/74 green, also against the single-file build).
+
+### Fixed
+- **SRT export could emit `NaN:NaN:NaN`** — a word starting at `0` was dropped by a
+  truthiness check in `captionsFromTimings()`, then `fitTo()` propagated NaN. Word times
+  are now coerced through `captions.num()` everywhere (`fromWords`, `build`, `fitTo`).
+- **Switching language wiped `#voiceRateVal`** (the rate label was inside a
+  `data-i18n` node), throwing on the next slider move — the live value now sits outside
+  the translated node and every access is guarded.
+- **Shorts toggle left the caption style on “bar”** and, on a fresh page, never rebuilt
+  the preview; the toggle now sets karaoke, caps the duration and rebuilds the plan.
+- Imported SRT cues were shadowed by the previously built plan on export.
+
 ## [2.0.0] — 2026-09-17
 
 The release that turned CutFree into a **video factory**: a script goes in, a

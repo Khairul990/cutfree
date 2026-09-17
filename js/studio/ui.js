@@ -63,7 +63,12 @@
     rendering: false,
     cancelRequested: false,
     thumbTime: null,
-    rendererKey: 0
+    rendererKey: 0,
+    timings: null,        // measured / estimated narration timing
+    voiceBuffer: null,    // captured or uploaded narration audio
+    srtCues: null,        // imported captions
+    voice: null,          // selected TTS voice entry
+    recording: false
   };
 
   /* ------------------------------------------------------------------ i18n UI */
@@ -112,16 +117,51 @@
         watermark: $('#fWatermark').value.trim(),
         showProgress: $('#fProgress').checked,
         logoDataUrl: S.logoImage ? S.logoImage.src : null,
-        language: window.CF_LANG === 'en' ? 'en' : 'bn'
+        language: window.CF_LANG === 'en' ? 'en' : 'bn',
+        shorts: $('#fShorts').checked,
+        captionStyle: $('#fCaptionStyle').value,
+        captionCues: S.srtCues || null,
+        fitCaptions: true
       }
     };
+  }
+
+  function narrationSegments(form) {
+    // one narration segment per script paragraph (same order the director uses)
+    var text = form.items[0].script || '';
+    return text.split(/\n\s*\n+/).map(function (b) { return b.replace(/\s+/g, ' ').trim(); }).filter(Boolean);
   }
 
   function buildSpec(item, options) {
     var opts = Object.assign({}, options, {
       title: item.title, script: item.script, seed: item.seed
     });
+
+    if (opts.shorts) {
+      opts.aspect = '9:16';
+      opts.durationTarget = Math.min(opts.durationTarget || 45, 58);
+      if (!opts.captionStyle || opts.captionStyle === 'bar') opts.captionStyle = 'karaoke';
+    }
+
     var spec = window.CFX.director.build(opts);
+
+    // narration first: measure/delivered timings drive the scene lengths...
+    if (S.timings && $('#fNarrFit').checked) {
+      window.CFX.director.fitToNarration(spec, S.timings);
+    }
+    // ...and the captions (an imported SRT wins over TTS timings)
+    if (S.srtCues && S.srtCues.length) {
+      spec.captions = window.CFX.captions.fitTo(S.srtCues, spec.scenes.reduce(function (a, x) { return a + x.dur; }, 0));
+      spec.meta.captions = Object.assign({}, spec.meta.captions, { enabled: $('#fCaptionStyle').value !== 'none' });
+    } else if (S.timings) {
+      var cues = window.CFX.director.captionsFromTimings(S.timings);
+      if (cues.length) {
+        spec.captions = window.CFX.captions.fitTo(cues, spec.scenes.reduce(function (a, x) { return a + x.dur; }, 0));
+        spec.meta.captions = Object.assign({}, spec.meta.captions, { enabled: $('#fCaptionStyle').value !== 'none' });
+      }
+    }
+    if (spec.meta.captions) spec.meta.captions.style = $('#fCaptionStyle').value;
+
     if (S.logoImage) spec.meta.logoImage = S.logoImage;
     return spec;
   }
@@ -579,6 +619,225 @@
     })();
   }
 
+
+  /* ------------------------------------------------------------ voice panel */
+  function fillVoiceList() {
+    var sel = $('#fVoicePick');
+    var lang = window.CF_LANG === 'en' ? 'en' : 'bn';
+    var wanted = store('cutfree.voice') || '';
+    return window.CFX.voice.voicesReady(1600).then(function (voices) {
+      sel.innerHTML = '';
+      if (!voices.length) {
+        var none = document.createElement('option');
+        none.value = '';
+        none.textContent = lang === 'en'
+          ? 'No system voice (timings will be estimated)'
+          : 'সিস্টেম ভয়েস নেই (টাইমিং অনুমান করা হবে)';
+        sel.appendChild(none);
+        S.voice = null;
+        $('#voiceHint').textContent = t('voiceNoVoices');
+        $('#btnVoiceTest').disabled = true;
+        return [];
+      }
+      voices.forEach(function (v) {
+        var o = document.createElement('option');
+        o.value = v.id;
+        o.textContent = v.name + ' · ' + (v.lang || '?') + (v.bengali ? ' 🇧🇩' : '');
+        sel.appendChild(o);
+      });
+      var pick = voices.find(function (v) { return v.id === wanted; }) || window.CFX.voice.pickVoice(voices, lang === 'bn' ? 'bn' : 'en');
+      if (pick) { sel.value = pick.id; S.voice = pick; }
+      $('#voiceHint').textContent = t('voiceHint');
+      return voices;
+    });
+  }
+
+  function voiceRate() { return parseFloat($('#fVoiceRate').value) || 1; }
+
+  function testVoice() {
+    var form = readForm();
+    var segs = narrationSegments(form);
+    var line = (segs[0] || $('#fTitle').value || 'CutFree Studio').slice(0, 160);
+    window.CFX.voice.stop();
+    var utter = new SpeechSynthesisUtterance(line);
+    if (S.voice && S.voice.voice) utter.voice = S.voice.voice;
+    utter.lang = (S.voice && S.voice.lang) || 'bn-BD';
+    utter.rate = voiceRate();
+    speechSynthesis.speak(utter);
+    toast(t('stVoiceSpeaking'));
+  }
+
+  function showVoiceNote(msg, kind) {
+    var el = $('#voiceHint');
+    el.textContent = msg;
+    el.classList.remove('ok', 'warn');
+    if (kind) el.classList.add(kind);
+  }
+
+  function measureNarration(recordAudio) {
+    var form = readForm();
+    var segs = narrationSegments(form);
+    if (!segs.length) { toast(t('stNeedScript')); return Promise.resolve(null); }
+    if (window.CFX.voice.supported() && S.voice && !recordAudio) {
+      toast(t('stMeasuring'));
+    }
+
+    var opts = {
+      voice: S.voice,
+      rate: voiceRate(),
+      lang: (S.voice && S.voice.lang) || 'bn-BD',
+      onProgress: function (p, i, n) {
+        setProgress(p, t('stMeasuring') + ' · ' + i + '/' + n);
+      }
+    };
+    $('#progressWrap').hidden = false;
+
+    var run = recordAudio && window.CFX.voice.canCapture()
+      ? window.CFX.voice.record(segs, opts).then(function (res) {
+        if (res.buffer) {
+          S.voiceBuffer = window.CFX.voice.trimToOffset(res.buffer, res.offset);
+          showVoiceNote(t('voiceRecorded'), 'ok');
+        } else {
+          showVoiceNote(t('voiceNoCapture'), 'warn');
+        }
+        return res.timings;
+      })['catch'](function (err) {
+        showVoiceNote(err && err.message === 'no-audio-track' ? t('voiceNoTrack') : t('voiceCaptureFail'), 'warn');
+        return null;
+      })
+      : window.CFX.voice.measure(segs, opts);
+
+    if (!recordAudio && (recordAudio !== undefined) && !S.voice) {
+      // no TTS voice available: still give the user timings to work with
+    }
+
+    return run.then(function (timings) {
+      $('#progressWrap').hidden = true;
+      if (!timings) return null;
+      S.timings = timings;
+      var kind = timings.estimated ? t('voiceEstimated') : t('voiceMeasured');
+      if (!recordAudio) showVoiceNote(kind + ' · ' + fmtTime(timings.duration), timings.estimated ? 'warn' : 'ok');
+      toast(kind + ' · ' + fmtTime(timings.duration));
+      return buildCurrentPlan();
+    });
+  }
+
+  /* ---------------------------------------------------------------- captions */
+  function exportSrt() {
+    var cues = (S.srtCues && S.srtCues.length) ? S.srtCues
+      : ((S.spec && S.spec.captions && S.spec.captions.length) ? S.spec.captions : null);
+    if (!cues && S.timings) cues = window.CFX.director.captionsFromTimings(S.timings);
+    if (!cues || !cues.length) {
+      if (!S.spec) { toast(t('stThumbNeed')); return; }
+      // fall back to one cue per scene so the user always gets a usable file
+      var starts = []; var acc = 0;
+      S.spec.scenes.forEach(function (sc) { starts.push([acc, acc + sc.dur]); acc += sc.dur; });
+      cues = S.spec.scenes.map(function (sc, i) {
+        var text = [sc.title, sc.heading, sc.body, sc.text].filter(Boolean).join(' — ') ||
+          (sc.items ? sc.items.join(' • ') : '');
+        return { start: starts[i][0], end: starts[i][1], text: text };
+      }).filter(function (c) { return c.text; });
+    }
+    if (!cues.length) { toast(t('stNoCaptions')); return; }
+    var srt = window.CFX.captions.build(cues);
+    var name = slug(S.spec ? S.spec.meta.title : 'captions') + '.srt';
+    window.CFX.publish.downloadBlob(new Blob([srt], { type: 'text/plain' }), name);
+    toast(t('stSrtDone', { n: cues.length }));
+  }
+
+  function importSrt(file) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      var cues = window.CFX.captions.parse(String(reader.result || ''));
+      if (!cues.length) { toast(t('stSrtFail')); return; }
+      S.srtCues = cues;
+      showVoiceNote(t('stSrtLoaded', { n: cues.length }), 'ok');
+      toast(t('stSrtLoaded', { n: cues.length }));
+      buildCurrentPlan();
+    };
+    reader.readAsText(file);
+  }
+
+  /* ---------------------------------------------------------------- project */
+  function saveProject() {
+    var project = {
+      format: 'cutfree-studio-project',
+      version: 2,
+      savedAt: new Date().toISOString(),
+      form: {
+        title: $('#fTitle').value,
+        script: $('#fScript').value,
+        theme: $('.swatch.on') ? $('.swatch.on').dataset.theme : null,
+        mood: $('#fMood').value,
+        aspect: $('#fAspect').value,
+        quality: $('#fQuality').value,
+        fps: $('#fFps').value,
+        perf: $('#fPerf').value,
+        duration: $('#fDuration').value,
+        watermark: $('#fWatermark').value,
+        music: $('#fMusic').checked,
+        progress: $('#fProgress').checked,
+        captionStyle: $('#fCaptionStyle').value,
+        shorts: $('#fShorts').checked,
+        voiceId: $('#fVoicePick').value,
+        voiceRate: $('#fVoiceRate').value,
+        narrationFit: $('#fNarrFit').checked,
+        privacy: $('#fPrivacy').value,
+        schedule: $('#fSchedule').value,
+        clientId: $('#fClientId').value
+      },
+      captions: S.srtCues || (S.spec && S.spec.captions) || null,
+      timings: S.timings || null
+    };
+    window.CFX.publish.downloadBlob(
+      new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' }),
+      slug($('#fTitle').value || 'cutfree-project') + '.cutfree.json'
+    );
+    toast(t('stProjectSaved'));
+  }
+
+  function loadProject(file) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      var data;
+      try { data = JSON.parse(String(reader.result || '{}')); } catch (e) { toast(t('stProjectFail')); return; }
+      var f = data.form || {};
+      if (f.title != null) $('#fTitle').value = f.title;
+      if (f.script != null) $('#fScript').value = f.script;
+      if (f.theme && window.CFX.THEMES[f.theme]) {
+        $('#themePicker').dataset.current = f.theme;
+        $$('.swatch').forEach(function (s2) { s2.classList.toggle('on', s2.dataset.theme === f.theme); });
+      }
+      if (f.mood) $('#fMood').value = f.mood;
+      if (f.aspect) $('#fAspect').value = f.aspect;
+      if (f.quality) $('#fQuality').value = f.quality;
+      if (f.fps) $('#fFps').value = f.fps;
+      if (f.perf) $('#fPerf').value = f.perf;
+      if (f.duration) $('#fDuration').value = f.duration;
+      if (f.watermark != null) $('#fWatermark').value = f.watermark;
+      $('#fMusic').checked = f.music !== false;
+      $('#fProgress').checked = f.progress !== false;
+      if (f.captionStyle) $('#fCaptionStyle').value = f.captionStyle;
+      $('#fShorts').checked = !!f.shorts;
+      if (f.voiceId) { $('#fVoicePick').value = f.voiceId; }
+      if (f.voiceRate) {
+        $('#fVoiceRate').value = f.voiceRate;
+        var rvL = $('#voiceRateVal');
+        if (rvL) rvL.textContent = parseFloat(f.voiceRate).toFixed(2);
+      }
+      $('#fNarrFit').checked = f.narrationFit !== false;
+      if (f.privacy) $('#fPrivacy').value = f.privacy;
+      if (f.schedule) $('#fSchedule').value = f.schedule;
+      if (f.clientId) $('#fClientId').value = f.clientId;
+      S.srtCues = data.captions || null;
+      S.timings = data.timings || null;
+      $$('.swatch').forEach(function (s2) { s2.classList.toggle('on', s2.dataset.theme === ($('#themePicker').dataset.current || '')); });
+      toast(t('stProjectLoaded'));
+      buildCurrentPlan();
+    };
+    reader.readAsText(file);
+  }
+
   /* --------------------------------------------------------------- controls */
   function renderThemePicker() {
     var box = $('#themePicker');
@@ -648,6 +907,46 @@
     applyStrings();
     updateEnginePill();
     $('#fClientId').value = store('cutfree.clientId') || '';
+
+    // voice panel
+    fillVoiceList();
+    $('#fVoicePick').addEventListener('change', function () {
+      var voice = (window.CFX.voice.listVoices() || []).find(function (v) { return v.id === this.value; }.bind(this));
+      S.voice = voice || null;
+      store('cutfree.voice', this.value);
+    });
+    $('#fVoiceRate').addEventListener('input', function () {
+      var rv = $('#voiceRateVal');
+      if (rv) rv.textContent = parseFloat(this.value).toFixed(2);
+      store('cutfree.voiceRate', this.value);
+    });
+    if (store('cutfree.voiceRate')) {
+      $('#fVoiceRate').value = store('cutfree.voiceRate');
+      var rv0 = $('#voiceRateVal');
+      if (rv0) rv0.textContent = parseFloat(store('cutfree.voiceRate')).toFixed(2);
+    }
+    $('#btnVoiceTest').addEventListener('click', testVoice);
+    $('#btnMeasure').addEventListener('click', function () { measureNarration(false); });
+    $('#btnRecordVoice').addEventListener('click', function () {
+      if (!window.CFX.voice.canCapture()) { showVoiceNote(t('voiceNoCapture'), 'warn'); toast(t('voiceNoCapture')); return; }
+      if (S.playing) pause();
+      measureNarration(true);
+    });
+    $('#btnSrtExport').addEventListener('click', exportSrt);
+    $('#fSrt').addEventListener('change', function () { if (this.files && this.files[0]) importSrt(this.files[0]); });
+    $('#fShorts').addEventListener('change', function () {
+      if (this.checked) {
+        $('#fAspect').value = '9:16';
+        $('#fCaptionStyle').value = 'karaoke';   // captions are the point in Shorts
+        $('#fDuration').value = String(Math.min(parseFloat($('#fDuration').value) || 45, 58));
+        if (S.spec) buildCurrentPlan();
+      }
+    });
+    $('#fCaptionStyle').addEventListener('change', function () {
+      if (S.spec) { S.spec.meta.captions = Object.assign({}, S.spec.meta.captions, { style: this.value, enabled: this.value !== 'none' }); paint(); }
+    });
+    $('#btnSaveProject').addEventListener('click', saveProject);
+    $('#fProject').addEventListener('change', function () { if (this.files && this.files[0]) loadProject(this.files[0]); });
 
     // mobile / low-core devices default to the cheaper render mode
     var small = (navigator.hardwareConcurrency || 8) <= 4 || Math.min(screen.width, screen.height) < 700;

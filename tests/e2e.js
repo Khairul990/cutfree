@@ -32,8 +32,10 @@ function serve() {
   return new Promise(function (r) { server.listen(PORT, '127.0.0.1', function () { r(server); }); });
 }
 let failures = 0;
+let checks = 0;
 function check(name, ok, extra) {
   console.log((ok ? '  PASS  ' : '  FAIL  ') + name + (extra !== undefined ? '  →  ' + JSON.stringify(extra) : ''));
+  checks++;
   if (!ok) failures++;
 }
 
@@ -251,7 +253,7 @@ async function exportAndMeasure(page, label) {
   console.log('\n== 11. page errors ==');
   check('no uncaught page errors', pageErrors.length === 0, pageErrors);
 
-  console.log('\n' + (failures === 0 ? '✅ ALL CHECKS PASSED' : '❌ ' + failures + ' CHECK(S) FAILED'));
+  console.log('\n' + (failures === 0 ? '✅ ALL CHECKS PASSED' : '❌ ' + failures + ' CHECK(S) FAILED') + '  (' + (checks - failures) + '/' + checks + ')');
   await browser.close();
   server.close();
   process.exit(failures === 0 ? 0 : 1);

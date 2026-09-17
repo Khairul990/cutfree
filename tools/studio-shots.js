@@ -60,6 +60,61 @@ Subscribe for the next build.`;
   await page.waitForTimeout(1200);
   await page.screenshot({ path: path.join(DOCS, 'studio-workbench.png') });
 
+  // the voice-over / subtitle / project panel, straight from the UI
+  await page.evaluate(() => {
+    document.querySelector('#fVoicePick').scrollIntoView({ block: 'center' });
+  });
+  await page.waitForTimeout(600);
+  const panel = await page.locator('.panel-card').first().boundingBox();
+  const vp = page.viewportSize();
+  if (panel) {
+    await page.screenshot({
+      path: path.join(DOCS, 'studio-voice.png'),
+      clip: {
+        x: Math.max(0, panel.x), y: Math.max(0, panel.y),
+        width: Math.min(panel.width, vp.width - Math.max(0, panel.x)),
+        height: Math.min(panel.height, vp.height - Math.max(0, panel.y))
+      }
+    });
+  }
+
+  // Shorts mode: 9:16 preview with karaoke captions inside the safe zone
+  await page.check('#fShorts');
+  await page.evaluate(async () => {
+    // give the preview something to say so the karaoke plate is visible
+    const cues = [];
+    let t = 0.4;
+    'Shorts mode keeps every line inside the safe zone.'.split(' ').forEach(w => {
+      cues.push({ start: t, end: t + 0.42, text: w, words: [{ w: w, s: t, e: t + 0.42 }] });
+      t += 0.45;
+    });
+    const blob = new Blob([[
+      '1', '00:00:00,400 --> 00:00:05,600', 'Shorts mode keeps every line inside the safe zone.', ''
+    ].join('\n')], { type: 'text/plain' });
+    const file = new File([blob], 'shorts.srt', { type: 'text/plain' });
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    const input = document.querySelector('#fSrt');
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await page.waitForTimeout(400);
+  await page.click('#btnBuild');
+  await page.waitForFunction(() => {
+    const c = document.querySelector('#preview');
+    return c && c.height > c.width;
+  }, null, { timeout: 60000 });
+  // park the playhead inside the first cue so the karaoke plate is on screen
+  await page.evaluate(() => {
+    const scrub = document.querySelector('#scrub');
+    scrub.value = String(1000 * (1.3 / 12));            // ~1.3s of the whole video
+    scrub.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await page.waitForTimeout(400);
+  await page.evaluate(() => document.getElementById('workbench').scrollIntoView());
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: path.join(DOCS, 'studio-shorts.png') });
+
   // a real frame montage + a sample thumbnail, rendered by the engine itself
   const shots = await page.evaluate(async (demo) => {
     const spec = CFX.director.build({

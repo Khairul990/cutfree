@@ -69,9 +69,11 @@ def inline_page(src_name: str, out_name: str) -> int:
 
     # 4) markdown links that only exist in the repo shouldn't 404 in a single file
     html = html.replace('href="README.md"', 'href="https://github.com/"').replace('href="tests/e2e.js"', 'href="#"')
+    # the manifest is a same-origin fetch (service worker), so leave it as a link
 
     left = [m for m in re.findall(r'(?:src|href)="(?!#|data:|https?:|mailto:)[^"]+"', html)
             if not m.endswith('.html"')                              # page-to-page links
+            and 'manifest.webmanifest' not in m                      # fetched by the SW, not the page
             and not re.search(r"[+'\\]", m)]                       # JS string templates
     if left:
         print(f"  ! {src_name}: references left un-inlined: {left[:4]}", file=sys.stderr)
