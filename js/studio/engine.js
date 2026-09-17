@@ -103,6 +103,10 @@
   }
 
   /* ------------------------------------------------------------ text helpers */
+  function isRTL(text) {
+    return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(String(text || ''));
+  }
+
   function wrapLines(ctx, text, maxWidth) {
     var paragraphs = String(text == null ? '' : text).split('\n');
     var lines = [];
@@ -125,9 +129,12 @@
   // draws text word by word: reveal 0..1 controls how much has landed
   function drawKinetic(ctx, o) {
     var size = o.size;
-    var family = o.family || CFX.FONTS.display;
+    var isArabic = isRTL(o.text || (o.lines ? o.lines.join(' ') : ''));
+    var family = o.family || (isArabic ? CFX.FONTS.arabic : CFX.FONTS.display);
     var weight = o.weight || 700;
     ctx.font = weight + ' ' + size + 'px ' + family;
+    if (isArabic) ctx.direction = 'rtl';
+    else ctx.direction = 'ltr';
     var maxWidth = o.maxWidth || ctx.canvas.width;
     var theme = ctx.__cfxTheme || CFX.THEMES.aurora;   // drawKinetic lives outside the renderer scope
     var lines = o.lines || wrapLines(ctx, o.text, maxWidth);
@@ -1328,10 +1335,18 @@
       gradEpoch++;
 
       // camera: slow push per scene keeps everything alive
+      var isHook = cur.index === 0 || !!cur.scene.isHook;
+      var hookShakeX = 0, hookShakeY = 0;
+      if (isHook && cur.local < 0.45) {
+        var hookIntensity = 1 - cur.local / 0.45;
+        hookShakeX = Math.sin(cur.local * 65) * U * 0.012 * hookIntensity;
+        hookShakeY = Math.cos(cur.local * 55) * U * 0.009 * hookIntensity;
+      }
+
       var cam = {
         zoom: 1.035 + 0.045 * cur.progress + 0.02 * energyAt(t),
-        ox: Math.sin(starts[cur.index] * 0.7 + t * 0.1) * U * 0.012,
-        oy: Math.cos(t * 0.09) * U * 0.008,
+        ox: Math.sin(starts[cur.index] * 0.7 + t * 0.1) * U * 0.012 + hookShakeX,
+        oy: Math.cos(t * 0.09) * U * 0.008 + hookShakeY,
         drift: cur.progress
       };
 
@@ -1352,6 +1367,10 @@
 
       var layerPainted = false;   // the layer canvas is stale unless we just painted it
       var contentScale = 1 + 0.024 * cur.progress + 0.008 * energyAt(t);
+      if (isHook && cur.local < 0.5) {
+        var hookPunch = clamp(1 - cur.local / 0.5, 0, 1);
+        contentScale += E.outBack(hookPunch) * 0.08;
+      }
       if (!exiting) {
         // no transition: paint the scene with 3D parallax camera
         ctx.save();
@@ -1388,12 +1407,13 @@
 
       drawCaptions(t, cur.scene);
 
-      // scene-entry flash (punchy cut-in)
-      var flash = clamp(1 - cur.local / 0.18, 0, 1);
+      // scene-entry flash (punchy cut-in) + powerful viral hook flare
+      var flashDur = isHook ? 0.35 : 0.18;
+      var flash = clamp(1 - cur.local / flashDur, 0, 1);
       if (flash > 0) {
         ctx.save();
         ctx.globalCompositeOperation = 'screen';
-        ctx.globalAlpha = 0.16 * flash;
+        ctx.globalAlpha = (isHook ? 0.28 : 0.16) * flash;
         var fg = ctx.createLinearGradient(0, 0, W, H);
         fg.addColorStop(0, theme.accent);
         fg.addColorStop(1, theme.accent2);

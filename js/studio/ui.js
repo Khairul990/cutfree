@@ -1294,6 +1294,20 @@
           mood: 'uplifting',
           shorts: true
         }
+      },
+      calligraphy: {
+        bn: {
+          title: 'বিসমিল্লাহির রাহমানির রাহিম — পবিত্র বাণীর মাধুর্য',
+          script: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\n\n“নিশ্চয় কষ্টের সাথেই রয়েছে স্বস্তি।” — আল-কুরআন\n\nধৈর্য এবং প্রার্থনাই সকল সংকটের শ্রেষ্ঠ অবলম্বন।\n\nশান্তিময় জীবন গড়তে হৃদয়কে প্রশান্ত রাখুন।',
+          theme: 'arabicGold',
+          mood: 'ambient'
+        },
+        en: {
+          title: 'In The Name of Allah — Spiritual Reflection',
+          script: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\n\n“Verily, with hardship comes ease.” — Holy Quran\n\nPatience and faith illuminate the darkest paths of existence.\n\nMay peace and light guide every heartbeat of your soul.',
+          theme: 'arabicGold',
+          mood: 'ambient'
+        }
       }
     };
 

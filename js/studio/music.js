@@ -364,17 +364,65 @@
       }
     }
 
-    // ---- procedural transition SFX
-    if (opts.sfx !== false && Array.isArray(opts.sfxTimes)) {
+    // ---- procedural cinematic SFX suite
+    if (opts.sfx !== false) {
       var sfxGain = opts.sfxGain == null ? 0.24 : opts.sfxGain;
-      opts.sfxTimes.forEach(function (st) {
-        if (st > 0.15 && st < seconds - 0.3) {
-          addTransitionWhoosh(ctx, st, sfxGain);
-        }
-      });
+      // viral hook opener impact
+      addCinematicBoom(ctx, 0.02, 0.42);
+
+      if (Array.isArray(opts.sfxTimes)) {
+        opts.sfxTimes.forEach(function (st) {
+          if (st > 0.15 && st < seconds - 0.3) {
+            addTransitionWhoosh(ctx, st, sfxGain);
+            addCinematicBoom(ctx, st, 0.18);
+          }
+        });
+      }
     }
 
     return ctx.startRendering();
+  }
+
+  function addCinematicBoom(ctx, when, targetGain) {
+    var dur = 1.35;
+    var t0 = Math.max(0.001, when);
+    var osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(78, t0);
+    osc.frequency.exponentialRampToValueAtTime(28, t0 + dur);
+
+    var gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.linearRampToValueAtTime(targetGain || 0.38, t0 + 0.035);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    try { osc.start(t0); osc.stop(t0 + dur); } catch (e) { }
+  }
+
+  function addTensionRiser(ctx, when, targetGain) {
+    var dur = 0.85;
+    var t0 = Math.max(0.001, when - dur);
+    var noise = makeNoiseBuffer(ctx, dur);
+    var src = ctx.createBufferSource();
+    src.buffer = noise;
+
+    var filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.Q.value = 4.0;
+    filter.frequency.setValueAtTime(160, t0);
+    filter.frequency.exponentialRampToValueAtTime(2400, t0 + dur);
+
+    var gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(targetGain || 0.26, t0 + dur * 0.95);
+    gain.gain.linearRampToValueAtTime(0.0001, t0 + dur);
+
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    try { src.start(t0); } catch (e) { }
   }
 
   function addTransitionWhoosh(ctx, when, targetGain) {

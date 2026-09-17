@@ -163,6 +163,19 @@
       grain: 0.06,
       vignette: 0.55,
       aurora: true
+    },
+    arabicGold: {
+      name: { bn: 'অ্যারাবিক ক্যালিগ্রাফি গোল্ড', en: 'Arabic Calligraphy Gold' },
+      bg: '#040b14',
+      blobs: ['#f59e0b', '#10b981', '#fbbf24', '#064e3b'],
+      text: '#fffdf5',
+      sub: '#fef3c7',
+      accent: '#fbbf24',
+      accent2: '#34d399',
+      blend: ['screen', 'color-dodge', 'lighter'],
+      grain: 0.08,
+      vignette: 0.65,
+      aurora: true
     }
   };
 
@@ -176,7 +189,8 @@
   };
 
   var FONTS = {
-    display: '"Hind Siliguri","Noto Sans Bengali","Nirmala UI",system-ui,"Segoe UI",sans-serif',
+    display: '"Amiri","Scheherazade New","Hind Siliguri","Noto Sans Bengali","Nirmala UI",system-ui,"Segoe UI",sans-serif',
+    arabic: '"Amiri","Scheherazade New","Noto Naskh Arabic","Traditional Arabic",serif',
     mono: 'ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'
   };
 

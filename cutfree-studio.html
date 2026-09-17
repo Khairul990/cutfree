@@ -745,6 +745,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
           <button class="btn ghost tiny wizard-btn" type="button" data-template="motivation">🚀 মোটিভেশন</button>
           <button class="btn ghost tiny wizard-btn" type="button" data-template="story">📖 গল্প</button>
           <button class="btn ghost tiny wizard-btn" type="button" data-template="shorts">🔥 শর্টস হুক</button>
+          <button class="btn ghost tiny wizard-btn" type="button" data-template="calligraphy">🕌 ক্যালিগ্রাফি</button>
         </div>
 
         <label class="field">
@@ -1774,6 +1775,19 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       grain: 0.06,
       vignette: 0.55,
       aurora: true
+    },
+    arabicGold: {
+      name: { bn: 'অ্যারাবিক ক্যালিগ্রাফি গোল্ড', en: 'Arabic Calligraphy Gold' },
+      bg: '#040b14',
+      blobs: ['#f59e0b', '#10b981', '#fbbf24', '#064e3b'],
+      text: '#fffdf5',
+      sub: '#fef3c7',
+      accent: '#fbbf24',
+      accent2: '#34d399',
+      blend: ['screen', 'color-dodge', 'lighter'],
+      grain: 0.08,
+      vignette: 0.65,
+      aurora: true
     }
   };
 
@@ -1787,7 +1801,8 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
   };
 
   var FONTS = {
-    display: '"Hind Siliguri","Noto Sans Bengali","Nirmala UI",system-ui,"Segoe UI",sans-serif',
+    display: '"Amiri","Scheherazade New","Hind Siliguri","Noto Sans Bengali","Nirmala UI",system-ui,"Segoe UI",sans-serif',
+    arabic: '"Amiri","Scheherazade New","Noto Naskh Arabic","Traditional Arabic",serif',
     mono: 'ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'
   };
 
@@ -1905,6 +1920,10 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
   }
 
   /* ------------------------------------------------------------ text helpers */
+  function isRTL(text) {
+    return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(String(text || ''));
+  }
+
   function wrapLines(ctx, text, maxWidth) {
     var paragraphs = String(text == null ? '' : text).split('\n');
     var lines = [];
@@ -1927,9 +1946,12 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
   // draws text word by word: reveal 0..1 controls how much has landed
   function drawKinetic(ctx, o) {
     var size = o.size;
-    var family = o.family || CFX.FONTS.display;
+    var isArabic = isRTL(o.text || (o.lines ? o.lines.join(' ') : ''));
+    var family = o.family || (isArabic ? CFX.FONTS.arabic : CFX.FONTS.display);
     var weight = o.weight || 700;
     ctx.font = weight + ' ' + size + 'px ' + family;
+    if (isArabic) ctx.direction = 'rtl';
+    else ctx.direction = 'ltr';
     var maxWidth = o.maxWidth || ctx.canvas.width;
     var theme = ctx.__cfxTheme || CFX.THEMES.aurora;   // drawKinetic lives outside the renderer scope
     var lines = o.lines || wrapLines(ctx, o.text, maxWidth);
@@ -3130,10 +3152,18 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       gradEpoch++;
 
       // camera: slow push per scene keeps everything alive
+      var isHook = cur.index === 0 || !!cur.scene.isHook;
+      var hookShakeX = 0, hookShakeY = 0;
+      if (isHook && cur.local < 0.45) {
+        var hookIntensity = 1 - cur.local / 0.45;
+        hookShakeX = Math.sin(cur.local * 65) * U * 0.012 * hookIntensity;
+        hookShakeY = Math.cos(cur.local * 55) * U * 0.009 * hookIntensity;
+      }
+
       var cam = {
         zoom: 1.035 + 0.045 * cur.progress + 0.02 * energyAt(t),
-        ox: Math.sin(starts[cur.index] * 0.7 + t * 0.1) * U * 0.012,
-        oy: Math.cos(t * 0.09) * U * 0.008,
+        ox: Math.sin(starts[cur.index] * 0.7 + t * 0.1) * U * 0.012 + hookShakeX,
+        oy: Math.cos(t * 0.09) * U * 0.008 + hookShakeY,
         drift: cur.progress
       };
 
@@ -3154,6 +3184,10 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
 
       var layerPainted = false;   // the layer canvas is stale unless we just painted it
       var contentScale = 1 + 0.024 * cur.progress + 0.008 * energyAt(t);
+      if (isHook && cur.local < 0.5) {
+        var hookPunch = clamp(1 - cur.local / 0.5, 0, 1);
+        contentScale += E.outBack(hookPunch) * 0.08;
+      }
       if (!exiting) {
         // no transition: paint the scene with 3D parallax camera
         ctx.save();
@@ -3190,12 +3224,13 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
 
       drawCaptions(t, cur.scene);
 
-      // scene-entry flash (punchy cut-in)
-      var flash = clamp(1 - cur.local / 0.18, 0, 1);
+      // scene-entry flash (punchy cut-in) + powerful viral hook flare
+      var flashDur = isHook ? 0.35 : 0.18;
+      var flash = clamp(1 - cur.local / flashDur, 0, 1);
       if (flash > 0) {
         ctx.save();
         ctx.globalCompositeOperation = 'screen';
-        ctx.globalAlpha = 0.16 * flash;
+        ctx.globalAlpha = (isHook ? 0.28 : 0.16) * flash;
         var fg = ctx.createLinearGradient(0, 0, W, H);
         fg.addColorStop(0, theme.accent);
         fg.addColorStop(1, theme.accent2);
@@ -3650,17 +3685,65 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       }
     }
 
-    // ---- procedural transition SFX
-    if (opts.sfx !== false && Array.isArray(opts.sfxTimes)) {
+    // ---- procedural cinematic SFX suite
+    if (opts.sfx !== false) {
       var sfxGain = opts.sfxGain == null ? 0.24 : opts.sfxGain;
-      opts.sfxTimes.forEach(function (st) {
-        if (st > 0.15 && st < seconds - 0.3) {
-          addTransitionWhoosh(ctx, st, sfxGain);
-        }
-      });
+      // viral hook opener impact
+      addCinematicBoom(ctx, 0.02, 0.42);
+
+      if (Array.isArray(opts.sfxTimes)) {
+        opts.sfxTimes.forEach(function (st) {
+          if (st > 0.15 && st < seconds - 0.3) {
+            addTransitionWhoosh(ctx, st, sfxGain);
+            addCinematicBoom(ctx, st, 0.18);
+          }
+        });
+      }
     }
 
     return ctx.startRendering();
+  }
+
+  function addCinematicBoom(ctx, when, targetGain) {
+    var dur = 1.35;
+    var t0 = Math.max(0.001, when);
+    var osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(78, t0);
+    osc.frequency.exponentialRampToValueAtTime(28, t0 + dur);
+
+    var gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.linearRampToValueAtTime(targetGain || 0.38, t0 + 0.035);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    try { osc.start(t0); osc.stop(t0 + dur); } catch (e) { }
+  }
+
+  function addTensionRiser(ctx, when, targetGain) {
+    var dur = 0.85;
+    var t0 = Math.max(0.001, when - dur);
+    var noise = makeNoiseBuffer(ctx, dur);
+    var src = ctx.createBufferSource();
+    src.buffer = noise;
+
+    var filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.Q.value = 4.0;
+    filter.frequency.setValueAtTime(160, t0);
+    filter.frequency.exponentialRampToValueAtTime(2400, t0 + dur);
+
+    var gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(targetGain || 0.26, t0 + dur * 0.95);
+    gain.gain.linearRampToValueAtTime(0.0001, t0 + dur);
+
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    try { src.start(t0); } catch (e) { }
   }
 
   function addTransitionWhoosh(ctx, when, targetGain) {
@@ -6052,6 +6135,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       type: 'intro', dur: 3.4,
       title: title,
       subtitle: hook.slice(0, 90),
+      isHook: true,
       transitionOut: 'zoom'
     });
 
@@ -6274,8 +6358,14 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
     }
 
     var hashtags = tags.slice(0, 5).map(function (t) { return '#' + t.replace(/[^\u0980-\u09FF\w]/g, ''); });
-    if (shorts) hashtags.unshift('#Shorts');
-    hashtags = hashtags.slice(0, 6);
+    if (shorts) {
+      hashtags = ['#Shorts', '#Viral', '#Trending'].concat(hashtags);
+    } else {
+      hashtags = ['#Video', '#Education'].concat(hashtags);
+    }
+    hashtags = hashtags.slice(0, 8);
+    lines.push('');
+    lines.push(hashtags.join(' '));
     lines.push('');
     lines.push(bn ? '🔒 এই ভিডিওটি সম্পূর্ণ ব্রাউজারে, কোনো ওয়াটারমার্ক ছাড়া তৈরি।' : '🔒 Produced entirely in a browser with no watermark.');
     if (hashtags.length) lines.push('');
@@ -8009,6 +8099,20 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
           theme: 'vaporwave',
           mood: 'uplifting',
           shorts: true
+        }
+      },
+      calligraphy: {
+        bn: {
+          title: 'বিসমিল্লাহির রাহমানির রাহিম — পবিত্র বাণীর মাধুর্য',
+          script: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\n\n“নিশ্চয় কষ্টের সাথেই রয়েছে স্বস্তি।” — আল-কুরআন\n\nধৈর্য এবং প্রার্থনাই সকল সংকটের শ্রেষ্ঠ অবলম্বন।\n\nশান্তিময় জীবন গড়তে হৃদয়কে প্রশান্ত রাখুন।',
+          theme: 'arabicGold',
+          mood: 'ambient'
+        },
+        en: {
+          title: 'In The Name of Allah — Spiritual Reflection',
+          script: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\n\n“Verily, with hardship comes ease.” — Holy Quran\n\nPatience and faith illuminate the darkest paths of existence.\n\nMay peace and light guide every heartbeat of your soul.',
+          theme: 'arabicGold',
+          mood: 'ambient'
         }
       }
     };

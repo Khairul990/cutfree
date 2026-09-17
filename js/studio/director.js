@@ -142,6 +142,7 @@
       type: 'intro', dur: 3.4,
       title: title,
       subtitle: hook.slice(0, 90),
+      isHook: true,
       transitionOut: 'zoom'
     });
 
@@ -364,8 +365,14 @@
     }
 
     var hashtags = tags.slice(0, 5).map(function (t) { return '#' + t.replace(/[^\u0980-\u09FF\w]/g, ''); });
-    if (shorts) hashtags.unshift('#Shorts');
-    hashtags = hashtags.slice(0, 6);
+    if (shorts) {
+      hashtags = ['#Shorts', '#Viral', '#Trending'].concat(hashtags);
+    } else {
+      hashtags = ['#Video', '#Education'].concat(hashtags);
+    }
+    hashtags = hashtags.slice(0, 8);
+    lines.push('');
+    lines.push(hashtags.join(' '));
     lines.push('');
     lines.push(bn ? '🔒 এই ভিডিওটি সম্পূর্ণ ব্রাউজারে, কোনো ওয়াটারমার্ক ছাড়া তৈরি।' : '🔒 Produced entirely in a browser with no watermark.');
     if (hashtags.length) lines.push('');
