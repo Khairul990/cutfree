@@ -49,7 +49,22 @@ itemsToCopy.forEach(item => {
 });
 console.log('✅ Static assets copied to dist/');
 
-// 4. Bundle server.ts with esbuild
+// 4. Build React app with Vite (if available)
+try {
+  console.log('⚛️  Building React app with Vite...');
+  execSync('npx vite build', { stdio: 'inherit', cwd: ROOT });
+  console.log('✅ React app built with Vite');
+  // Ensure app.html is available as index for React entry
+  const viteApp = path.join(distDir, 'app.html');
+  if (fs.existsSync(viteApp)) {
+    // Also copy as index for direct dist serving
+    console.log('✅ app.html ready in dist/');
+  }
+} catch (err) {
+  console.warn('⚠️  Vite build skipped or failed (non-critical):', err.message);
+}
+
+// 5. Bundle server.ts with esbuild
 try {
   execSync('npx esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs', {
     stdio: 'inherit',

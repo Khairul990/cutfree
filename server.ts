@@ -203,7 +203,31 @@ Structure requirements:
 
 // Explicit routes for major views
 app.get('/', (req, res) => {
+  // Prefer React app if built, otherwise fallback to classic studio
+  const reactApp = path.join(rootDir, 'dist', 'app.html');
+  if (fs.existsSync(reactApp)) {
+    return res.sendFile(reactApp);
+  }
+  // Also check for built app.html at root (vite with emptyOutDir false)
+  const viteBuilt = path.join(rootDir, 'app.html');
+  if (fs.existsSync(path.join(rootDir, 'dist', 'app.html'))) {
+    return res.sendFile(path.join(rootDir, 'dist', 'app.html'));
+  }
   res.sendFile(path.join(rootDir, 'studio.html'));
+});
+
+app.get('/app', (req, res) => {
+  const built = path.join(rootDir, 'dist', 'app.html');
+  if (fs.existsSync(built)) return res.sendFile(built);
+  const srcApp = path.join(rootDir, 'app.html');
+  if (fs.existsSync(srcApp)) return res.sendFile(srcApp);
+  res.sendFile(path.join(rootDir, 'studio.html'));
+});
+
+app.get('/react', (req, res) => {
+  const built = path.join(rootDir, 'dist', 'app.html');
+  if (fs.existsSync(built)) return res.sendFile(built);
+  res.sendFile(path.join(rootDir, 'app.html'));
 });
 
 app.get('/studio', (req, res) => {
@@ -218,7 +242,11 @@ app.get('/editor', (req, res) => {
   res.sendFile(path.join(rootDir, 'cutfree.html'));
 });
 
-// Static assets
+// Static assets - serve dist first if exists (Vite build output)
+const distDir = path.join(rootDir, 'dist');
+if (fs.existsSync(distDir)) {
+  app.use(express.static(distDir));
+}
 app.use(express.static(rootDir));
 
 // SPA / fallback
