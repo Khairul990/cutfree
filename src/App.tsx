@@ -1991,7 +1991,7 @@ export default function App() {
                 <span className="font-extrabold tracking-tight text-[15px]">CutFree</span>
                 <span className="text-[#5b8dff] font-extrabold text-[15px]">Studio</span>
                 <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1a2440] border border-[#2a365c] text-[#8cb4ff]">
-                  v2.3 • Gemini AI
+                  v2.4 • Factory
                 </span>
               </div>
               <div className="text-[11px] text-[#8d9cc2] hidden sm:block -mt-0.5">
@@ -2021,6 +2021,16 @@ export default function App() {
             >
               ✂️ {isBn ? "এডিটর" : "Editor"}
             </a>
+            <button
+              onClick={() => {
+                setActiveTab("script");
+                handleAutoVideo();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="hidden md:inline-flex items-center gap-1.5 text-xs font-black px-4 py-2 rounded-full bg-gradient-to-br from-[#5b8dff] to-[#22d3ee] text-white shadow-lg shadow-[#5b8dff]/20 hover:brightness-110 transition"
+            >
+              <Film className="w-3.5 h-3.5" /> {isBn ? "ভিডিও তৈরি করুন" : "Create Video"}
+            </button>
             <button
               onClick={() => setLang((v) => (v === "bn" ? "en" : "bn"))}
               className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-full bg-white text-[#0d1120] hover:bg-[#e9eefb] transition"
@@ -2112,6 +2122,84 @@ export default function App() {
                   <div className="flex items-start gap-2 text-[11px] leading-relaxed text-[#a3b4dc] bg-[#0f1124]/60 rounded-xl px-3 py-2 border border-[#2e1065]/50">
                     <Zap className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[#c4b5fd]" />
                     <span>{aiStatus}</span>
+                  </div>
+                </div>
+
+                {/* HERO — সবচেয়ে বড় ভিডিও তৈরি বাটন (বাংলা) */}
+                <div className="rounded-2xl bg-gradient-to-br from-[#5b8dff] via-[#7c5cff] to-[#22d3ee] p-[1.5px] shadow-xl">
+                  <div className="rounded-[15px] bg-gradient-to-br from-[#0f1124] to-[#1a1540] p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#5b8dff] to-[#b06cff] grid place-items-center text-white font-black shadow-lg">▶</span>
+                      <div className="leading-tight">
+                        <div className="text-[15px] font-black text-white leading-none">{isBn ? "ভিডিও তৈরি করুন — লাইন বাই লাইন" : "Create Video — line by line"}</div>
+                        <div className="text-[11px] text-[#a3b4dc]">{isBn ? "প্রতি লাইন = এক সিন • ছবি যোগ করুন • এক ক্লিকে ভিডিও" : "Each line = one scene • add image • one-click video"}</div>
+                      </div>
+                      <span className="ml-auto hidden sm:flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-black">100% FREE</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      <button onClick={() => bgInputRef.current?.click()} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#1e2a4a] border border-[#2a365c] text-white font-bold text-[12px] hover:border-[#5b8dff] hover:bg-[#23325a] transition">
+                        <ImageIcon className="w-4 h-4" /> {isBn ? "ছবি যোগ করুন" : "Add image"}
+                      </button>
+                      <button onClick={() => voiceInputRef.current?.click()} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#1e2a4a] border border-[#2a365c] text-white font-bold text-[12px] hover:border-[#2dd4bf] hover:bg-[#1a3a3a] transition">
+                        <FileAudio className="w-4 h-4" /> {isBn ? "ভয়েস যোগ করুন" : "Add voice"}
+                      </button>
+                    </div>
+                    <button onClick={handleAutoVideo} className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-gradient-to-br from-[#5b8dff] to-[#22d3ee] text-white font-black text-[16px] shadow-lg shadow-[#5b8dff]/30 hover:brightness-110 active:scale-[0.99] transition">
+                      <Film className="w-6 h-6" /> {isBn ? "▶ ভিডিও তৈরি করুন" : "▶ Create Video"} <ArrowRight className="w-5 h-5" />
+                    </button>
+                    <div className="mt-2 text-center text-[11px] text-[#8d9cc2]">{isBn ? "স্ক্রিপ্ট লিখুন → ছবি/ভয়েস (ঐচ্ছিক) → তৈরি → এক্সপোর্ট" : "Write script → add image/voice (optional) → create → export"}</div>
+                    {(bgImage || voiceFile) && (
+                      <div className="mt-2 flex flex-wrap gap-1.5 justify-center">
+                        {bgImage && <span className="px-2 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-black flex items-center gap-1"><ImageIcon className="w-3 h-3" /> {bgName.slice(0,18)}</span>}
+                        {voiceFile && <span className="px-2 py-1 rounded-full bg-[#2dd4bf] text-[#021018] text-[10px] font-black flex items-center gap-1"><FileAudio className="w-3 h-3" /> {voiceName.slice(0,18)}</span>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Line-by-line builder — প্রতিটি লাইন আলাদা কার্ড */}
+                <div className="rounded-2xl bg-[#0f1124] border border-[#232d47] p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-[11px] font-extrabold tracking-widest uppercase text-[#8d9cc2] flex items-center gap-1.5"><Type className="w-3.5 h-3.5" /> {isBn ? "লাইন বাই লাইন এডিটর" : "Line-by-line editor"} • {script.split("\n").filter(s=>s.trim()).length} {isBn ? "লাইন" : "lines"}</div>
+                    <button onClick={() => setScript(s => s + "\nনতুন লাইন এখানে লিখুন")} className="px-3 py-1.5 rounded-full bg-[#5b8dff] text-white text-[11px] font-black hover:brightness-110 active:scale-95 transition">+ {isBn ? "লাইন যোগ" : "Add line"}</button>
+                  </div>
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-[#2a365c]">
+                    {script.split("\n").map((line, idx) => (
+                      <div key={idx} className="flex gap-2 items-start p-2 rounded-xl bg-[#151b2e] border border-[#232d47] group focus-within:border-[#5b8dff]/50 transition">
+                        <span className="w-7 h-7 rounded-lg bg-[#1a2440] border border-[#2a365c] grid place-items-center text-[11px] font-black text-[#8cb4ff] shrink-0 mt-0.5">{idx+1}</span>
+                        <textarea
+                          value={line}
+                          onChange={(e) => {
+                            const parts = script.split("\n");
+                            parts[idx] = e.target.value;
+                            setScript(parts.join("\n"));
+                          }}
+                          rows={1}
+                          placeholder={isBn ? `লাইন ${idx+1} — এখানে লিখুন (ফাঁকা লাইন = নতুন সিন)` : `Line ${idx+1} — write here (blank = new scene)`}
+                          className="flex-1 min-h-[36px] bg-transparent outline-none text-[13px] leading-relaxed placeholder:text-[#5a6a9a] resize-none py-1"
+                        />
+                        <button
+                          onClick={() => {
+                            const parts = script.split("\n");
+                            parts.splice(idx, 1);
+                            setScript(parts.join("\n") || " ");
+                          }}
+                          className="w-7 h-7 rounded-lg bg-[#1a233e] border border-[#2a365c] grid place-items-center text-[#8d9cc2] hover:border-[#ef4444] hover:text-[#fecaca] transition shrink-0"
+                          title="Delete"
+                        >×</button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <button onClick={() => bgInputRef.current?.click()} className={`py-2.5 rounded-xl border font-bold text-[12px] flex items-center justify-center gap-1.5 transition ${bgImage ? "bg-emerald-500 border-emerald-500 text-white" : "bg-[#151b2e] border-[#232d47] text-white hover:border-[#5b8dff]"}`}>
+                      <ImageIcon className="w-4 h-4" /> {bgImage ? (isBn ? `ছবি: ${bgName.slice(0,12)}` : `Image: ${bgName.slice(0,12)}`) : isBn ? "ব্যাকগ্রাউন্ড ছবি" : "Background image"}
+                    </button>
+                    <button onClick={handleAutoVideo} className="py-2.5 rounded-xl bg-gradient-to-br from-[#5b8dff] to-[#22d3ee] text-white font-black text-[12px] flex items-center justify-center gap-1.5 hover:brightness-110 transition">
+                      <Film className="w-4 h-4" /> {isBn ? "প্রিভিউ আপডেট" : "Update preview"}
+                    </button>
+                  </div>
+                  <div className="mt-2 text-[11px] leading-relaxed text-[#6b7bb0] bg-[#0b0f1e] rounded-xl px-3 py-2 border border-[#232d47]">
+                    {isBn ? '💡 টিপস: প্রতি লাইন = এক সিন। ফাঁকা লাইন দিয়ে সিন ভাগ করুন। - দিয়ে বুলেট, ৯৫% দিয়ে স্ট্যাট, "উক্তি" — নাম দিয়ে কোট। ছবি দিলে সব সিনে কভার + থিম ওভারলে হবে।' : '💡 Tip: each line = scene. Blank line splits scenes. - for bullets, 95% for stat, "quote" — name for quote. Image becomes cover + theme wash.'}
                   </div>
                 </div>
 
