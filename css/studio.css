@@ -271,3 +271,65 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
 .align-chip span { color: rgba(226,235,255,.82); }
 .field.inline { flex-direction: row; align-items: center; gap: 8px; }
 .field.inline select { width: auto; min-width: 150px; }
+
+/* ---------------- script wizard & audio mixer ---------------- */
+.wizard-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  background: rgba(34, 211, 238, 0.05);
+  border: 1px dashed rgba(34, 211, 238, 0.22);
+  border-radius: 10px;
+}
+.wizard-label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--brand2);
+  margin-right: 4px;
+}
+.btn.tiny {
+  padding: 4px 9px;
+  font-size: 0.72rem;
+  border-radius: 7px;
+  line-height: 1.2;
+}
+.wizard-btn:hover {
+  background: rgba(34, 211, 238, 0.16);
+  border-color: var(--brand2);
+  color: #fff;
+}
+.align-chip-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.align-chip-content {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex: 1;
+  min-width: 0;
+}
+.align-chip-nudge {
+  display: flex;
+  gap: 3px;
+  margin-left: 8px;
+}
+.nudge-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border-radius: 4px;
+  font-size: 10px;
+  padding: 2px 5px;
+  cursor: pointer;
+  line-height: 1;
+}
+.nudge-btn:hover {
+  background: var(--brand2);
+  color: #000;
+}

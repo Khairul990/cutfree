@@ -69,6 +69,14 @@
       <aside class="panel-card">
         <h3 class="card-title" data-i18n="srcTitle">১ · ব্রিফ / স্ক্রিপ্ট</h3>
 
+        <div class="wizard-row" id="scriptWizard">
+          <span class="wizard-label" data-i18n="wizardTitle">⚡ ১-ক্লিক স্ক্রিপ্ট:</span>
+          <button class="btn ghost tiny wizard-btn" type="button" data-template="facts">💡 অজানা তথ্য</button>
+          <button class="btn ghost tiny wizard-btn" type="button" data-template="motivation">🚀 মোটিভেশন</button>
+          <button class="btn ghost tiny wizard-btn" type="button" data-template="story">📖 গল্প</button>
+          <button class="btn ghost tiny wizard-btn" type="button" data-template="shorts">🔥 শর্টস হুক</button>
+        </div>
+
         <label class="field">
           <span data-i18n="fTitle">ভিডিওর টাইটেল</span>
           <input type="text" id="fTitle" placeholder="যেমন: ৫ মিনিটে ওয়েব ডিজাইন শিখুন" />
@@ -194,6 +202,35 @@
           <input type="checkbox" id="fMusic" checked />
           <span data-i18n="fMusic">প্রসিডিউরাল মিউজিক (নিজস্ব, কপিরাইট-ফ্রি)</span>
         </label>
+
+        <div class="card-inner-box" style="margin: 8px 0 14px; padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;">
+          <h4 class="mini-title" style="margin-top:0; font-size: 0.85rem; color: var(--brand2);" data-i18n="mixerTitle">🎛️ অডিও মিক্সার ও সাউন্ড</h4>
+          <div class="two-col">
+            <label class="field">
+              <span>মিউজিক ভলিউম: <strong id="musicVolVal">85%</strong></span>
+              <input type="range" id="fMusicVol" min="0" max="150" value="85" step="5" />
+            </label>
+            <label class="field">
+              <span>ভয়েস ভলিউম: <strong id="voiceVolVal">100%</strong></span>
+              <input type="range" id="fVoiceVol" min="0" max="150" value="100" step="5" />
+            </label>
+          </div>
+          <div class="two-col">
+            <label class="field">
+              <span data-i18n="fDuckLevel">ভয়েসে মিউজিক ডাকিং</span>
+              <select id="fDuckLevel">
+                <option value="0.2">হালকা (২০%)</option>
+                <option value="0.32" selected>ভারসাম্যপূর্ণ (৩২%)</option>
+                <option value="0.45">মাঝারি (৪৫%)</option>
+                <option value="1">ডাকিং বন্ধ</option>
+              </select>
+            </label>
+            <label class="field checkbox" style="margin-top: 20px;">
+              <input type="checkbox" id="fSfx" checked />
+              <span data-i18n="fSfx">সিন পরিবর্তনে Whoosh SFX</span>
+            </label>
+          </div>
+        </div>
         <label class="field checkbox">
           <input type="checkbox" id="fProgress" checked />
           <span data-i18n="fProgressBar">নিচে প্রোগ্রেস বার</span>

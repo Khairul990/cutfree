@@ -618,6 +618,68 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
 .align-chip span { color: rgba(226,235,255,.82); }
 .field.inline { flex-direction: row; align-items: center; gap: 8px; }
 .field.inline select { width: auto; min-width: 150px; }
+
+/* ---------------- script wizard & audio mixer ---------------- */
+.wizard-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  background: rgba(34, 211, 238, 0.05);
+  border: 1px dashed rgba(34, 211, 238, 0.22);
+  border-radius: 10px;
+}
+.wizard-label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--brand2);
+  margin-right: 4px;
+}
+.btn.tiny {
+  padding: 4px 9px;
+  font-size: 0.72rem;
+  border-radius: 7px;
+  line-height: 1.2;
+}
+.wizard-btn:hover {
+  background: rgba(34, 211, 238, 0.16);
+  border-color: var(--brand2);
+  color: #fff;
+}
+.align-chip-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.align-chip-content {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex: 1;
+  min-width: 0;
+}
+.align-chip-nudge {
+  display: flex;
+  gap: 3px;
+  margin-left: 8px;
+}
+.nudge-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border-radius: 4px;
+  font-size: 10px;
+  padding: 2px 5px;
+  cursor: pointer;
+  line-height: 1;
+}
+.nudge-btn:hover {
+  background: var(--brand2);
+  color: #000;
+}
 </style>
 </head>
 <body class="studio">
@@ -636,7 +698,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       <a href="index.html" data-i18n="navEditor">এডিটর</a>
       <a href="#pipeline" data-i18n="navPipeline">পাইপলাইন</a>
       <a href="#publish" data-i18n="navPublish">পাবলিশ</a>
-      <a href="https://github.com/" data-i18n="navDocs">ডকস</a>
+      <a href="https://github.com/Khairul990/cutfree" data-i18n="navDocs">ডকস</a>
     </nav>
     <div class="head-actions">
       <span class="pill live" id="enginePill">—</span>
@@ -676,6 +738,14 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       <!-- ---------- left: the brief ---------- -->
       <aside class="panel-card">
         <h3 class="card-title" data-i18n="srcTitle">১ · ব্রিফ / স্ক্রিপ্ট</h3>
+
+        <div class="wizard-row" id="scriptWizard">
+          <span class="wizard-label" data-i18n="wizardTitle">⚡ ১-ক্লিক স্ক্রিপ্ট:</span>
+          <button class="btn ghost tiny wizard-btn" type="button" data-template="facts">💡 অজানা তথ্য</button>
+          <button class="btn ghost tiny wizard-btn" type="button" data-template="motivation">🚀 মোটিভেশন</button>
+          <button class="btn ghost tiny wizard-btn" type="button" data-template="story">📖 গল্প</button>
+          <button class="btn ghost tiny wizard-btn" type="button" data-template="shorts">🔥 শর্টস হুক</button>
+        </div>
 
         <label class="field">
           <span data-i18n="fTitle">ভিডিওর টাইটেল</span>
@@ -802,6 +872,35 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
           <input type="checkbox" id="fMusic" checked />
           <span data-i18n="fMusic">প্রসিডিউরাল মিউজিক (নিজস্ব, কপিরাইট-ফ্রি)</span>
         </label>
+
+        <div class="card-inner-box" style="margin: 8px 0 14px; padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;">
+          <h4 class="mini-title" style="margin-top:0; font-size: 0.85rem; color: var(--brand2);" data-i18n="mixerTitle">🎛️ অডিও মিক্সার ও সাউন্ড</h4>
+          <div class="two-col">
+            <label class="field">
+              <span>মিউজিক ভলিউম: <strong id="musicVolVal">85%</strong></span>
+              <input type="range" id="fMusicVol" min="0" max="150" value="85" step="5" />
+            </label>
+            <label class="field">
+              <span>ভয়েস ভলিউম: <strong id="voiceVolVal">100%</strong></span>
+              <input type="range" id="fVoiceVol" min="0" max="150" value="100" step="5" />
+            </label>
+          </div>
+          <div class="two-col">
+            <label class="field">
+              <span data-i18n="fDuckLevel">ভয়েসে মিউজিক ডাকিং</span>
+              <select id="fDuckLevel">
+                <option value="0.2">হালকা (২০%)</option>
+                <option value="0.32" selected>ভারসাম্যপূর্ণ (৩২%)</option>
+                <option value="0.45">মাঝারি (৪৫%)</option>
+                <option value="1">ডাকিং বন্ধ</option>
+              </select>
+            </label>
+            <label class="field checkbox" style="margin-top: 20px;">
+              <input type="checkbox" id="fSfx" checked />
+              <span data-i18n="fSfx">সিন পরিবর্তনে Whoosh SFX</span>
+            </label>
+          </div>
+        </div>
         <label class="field checkbox">
           <input type="checkbox" id="fProgress" checked />
           <span data-i18n="fProgressBar">নিচে প্রোগ্রেস বার</span>
@@ -1269,6 +1368,8 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       b1: '৯০%+ ওয়েব ব্রাউজারে চলে', b2: 'ফোন-কম্পিউটার দুটোতেই',
       b3: 'নিজের মিউজিক, কপিরাইট-ফ্রি', b4: 'YouTube-রেডি ফাইল + শিডিউল',
       srcTitle: '১ · ব্রিফ / স্ক্রিপ্ট', fTitle: 'ভিডিওর টাইটেল',
+      wizardTitle: '⚡ ১-ক্লিক স্ক্রিপ্ট:', mixerTitle: '🎛️ অডিও মিক্সার ও সাউন্ড',
+      fDuckLevel: 'ভয়েসে মিউজিক ডাকিং', fSfx: 'সিন পরিবর্তনে Whoosh SFX',
       fScript: 'স্ক্রিপ্ট (প্রতি প্যারাগ্রাফ = একটা সিন)',
       sampleBatch: 'নমুনা ব্যাচ', clearBrief: 'খালি করুন',
       storyTitle: '২ · স্টোরি মোড — ভয়েস ট্র্যাক',
@@ -1378,6 +1479,8 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       b1: 'Runs on 90%+ of browsers', b2: 'Phone and desktop',
       b3: 'Original copyright-free music', b4: 'YouTube-ready file + schedule',
       srcTitle: '1 · Brief / script', fTitle: 'Video title',
+      wizardTitle: '⚡ 1-Click Script:', mixerTitle: '🎛️ Audio Mixer & Sound',
+      fDuckLevel: 'Music Ducking on Voice', fSfx: 'Transition Whoosh SFX',
       fScript: 'Script (each paragraph becomes a scene)',
       sampleBatch: 'Sample batch', clearBrief: 'Clear',
       storyTitle: '2 · Story mode — voice tracking',
@@ -1619,6 +1722,58 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       grain: 0.07,
       vignette: 0.6,
       aurora: false
+    },
+    cyberMatrix: {
+      name: { bn: 'সাইবার ম্যাট্রিক্স', en: 'Cyber Matrix' },
+      bg: '#020906',
+      blobs: ['#00ff66', '#00f0ff', '#10b981', '#064e3b'],
+      text: '#e6fff4',
+      sub: '#86efac',
+      accent: '#00ff66',
+      accent2: '#00f0ff',
+      blend: ['color-dodge', 'screen', 'lighter'],
+      grain: 0.08,
+      vignette: 0.65,
+      aurora: true
+    },
+    vaporwave: {
+      name: { bn: 'ভেপরওয়েভ সানসেট', en: 'Vaporwave Sunset' },
+      bg: '#10041a',
+      blobs: ['#ff3399', '#7928ca', '#ff0080', '#00dfd8'],
+      text: '#ffffff',
+      sub: '#fbcfe8',
+      accent: '#ff3399',
+      accent2: '#00dfd8',
+      blend: ['screen', 'color-dodge', 'overlay'],
+      grain: 0.07,
+      vignette: 0.5,
+      aurora: true
+    },
+    obsidianLuxury: {
+      name: { bn: 'অবসিডিয়ান লাক্সারি', en: 'Obsidian Luxury' },
+      bg: '#050505',
+      blobs: ['#f59e0b', '#d97706', '#fbbf24', '#78350f'],
+      text: '#fffbeb',
+      sub: '#fde68a',
+      accent: '#fbbf24',
+      accent2: '#f59e0b',
+      blend: ['screen', 'overlay', 'lighter'],
+      grain: 0.09,
+      vignette: 0.75,
+      aurora: true
+    },
+    royalEmerald: {
+      name: { bn: 'রয়্যাল এমারল্ড', en: 'Royal Emerald' },
+      bg: '#02120d',
+      blobs: ['#059669', '#10b981', '#34d399', '#0284c7'],
+      text: '#ecfdf5',
+      sub: '#a7f3d0',
+      accent: '#10b981',
+      accent2: '#38bdf8',
+      blend: ['screen', 'soft-light', 'lighter'],
+      grain: 0.06,
+      vignette: 0.55,
+      aurora: true
     }
   };
 
@@ -1832,27 +1987,42 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
           ctx.globalAlpha = clamp(p * 1.15, 0, 1) * (o.alpha == null ? 1 : o.alpha);
 
           if (active && o.activeStyle !== 'none') {
-            // the word being spoken right now: soft pill + accent + glow
+            // the word being spoken right now: spring bounce + soft pill + accent + glow
+            var wordProg = tw ? clamp((now - tw.s) / Math.max(0.001, tw.e - tw.s), 0, 1) : 0.5;
+            var popScale = 1 + 0.08 * Math.sin(wordProg * Math.PI);
+            var cx = x + dx + widths[wi] / 2;
+            var cy = wy - size * 0.25;
+
             ctx.save();
-            ctx.globalAlpha *= 0.9;
-            ctx.fillStyle = rgba(theme.accent, 0.22);
-            roundRectPath(ctx, x + dx - size * 0.12, wy - size * 0.62, widths[wi] + size * 0.24, size * 1.18, size * 0.24);
+            ctx.translate(cx, cy);
+            ctx.scale(popScale, popScale);
+            ctx.translate(-cx, -cy);
+
+            ctx.save();
+            ctx.globalAlpha *= 0.92;
+            ctx.fillStyle = rgba(theme.accent, 0.25);
+            roundRectPath(ctx, x + dx - size * 0.14, wy - size * 0.65, widths[wi] + size * 0.28, size * 1.22, size * 0.26);
             ctx.fill();
             ctx.restore();
+
             ctx.fillStyle = mixHex(theme.accent, '#ffffff', 0.25);
-            ctx.shadowColor = rgba(theme.accent, 0.85);
-            ctx.shadowBlur = size * 0.5;
+            ctx.shadowColor = rgba(theme.accent, 0.95);
+            ctx.shadowBlur = size * 0.55;
+            ctx.fillText(word, x + dx, wy + dy);
+            ctx.restore();
           } else if (emphasised) {
             ctx.fillStyle = accentGradientFor(ctx, x + dx, wy - size * 0.5, widths[wi] + 2, size);
             ctx.shadowColor = rgba(theme.accent, 0.35);
             ctx.shadowBlur = size * 0.22;
+            ctx.fillText(word, x + dx, wy + dy);
+            ctx.shadowBlur = 0;
           } else if (active && o.activeStyle === 'none') {
             ctx.fillStyle = mixHex(theme.accent, '#ffffff', 0.2);
+            ctx.fillText(word, x + dx, wy + dy);
           } else {
             ctx.fillStyle = fill || '#fff';
+            ctx.fillText(word, x + dx, wy + dy);
           }
-          ctx.fillText(word, x + dx, wy + dy);
-          ctx.shadowBlur = 0;
           if (o.emphasisUnderline && emphasised) {
             ctx.save();
             ctx.globalAlpha *= 0.75;
@@ -2983,12 +3153,23 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       var exiting = (hasNext && timeLeft < exitLen) || (!hasNext && t > total - 0.4);
 
       var layerPainted = false;   // the layer canvas is stale unless we just painted it
+      var contentScale = 1 + 0.024 * cur.progress + 0.008 * energyAt(t);
       if (!exiting) {
-        // no transition: paint the scene straight onto the finished frame
+        // no transition: paint the scene with 3D parallax camera
+        ctx.save();
+        ctx.translate(W / 2 + cam.ox * 0.45, H / 2 + cam.oy * 0.45);
+        ctx.scale(contentScale, contentScale);
+        ctx.translate(-W / 2, -H / 2);
         drawSceneContent(ctx, cur.scene, cur.local, cur.progress);
+        ctx.restore();
       } else {
         lx.clearRect(0, 0, W, H);
+        lx.save();
+        lx.translate(W / 2 + cam.ox * 0.45, H / 2 + cam.oy * 0.45);
+        lx.scale(contentScale, contentScale);
+        lx.translate(-W / 2, -H / 2);
         drawSceneContent(lx, cur.scene, cur.local, cur.progress);
+        lx.restore();
         layerPainted = true;
       }
 
@@ -3469,7 +3650,42 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       }
     }
 
+    // ---- procedural transition SFX
+    if (opts.sfx !== false && Array.isArray(opts.sfxTimes)) {
+      var sfxGain = opts.sfxGain == null ? 0.24 : opts.sfxGain;
+      opts.sfxTimes.forEach(function (st) {
+        if (st > 0.15 && st < seconds - 0.3) {
+          addTransitionWhoosh(ctx, st, sfxGain);
+        }
+      });
+    }
+
     return ctx.startRendering();
+  }
+
+  function addTransitionWhoosh(ctx, when, targetGain) {
+    var dur = 0.36;
+    var t0 = Math.max(0.001, when - 0.16);
+    var noise = makeNoiseBuffer(ctx, dur);
+    var src = ctx.createBufferSource();
+    src.buffer = noise;
+
+    var filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.Q.value = 3.5;
+    filter.frequency.setValueAtTime(320, t0);
+    filter.frequency.exponentialRampToValueAtTime(2400, t0 + dur * 0.5);
+    filter.frequency.exponentialRampToValueAtTime(380, t0 + dur);
+
+    var gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.linearRampToValueAtTime(targetGain || 0.24, t0 + dur * 0.45);
+    gain.gain.linearRampToValueAtTime(0.0001, t0 + dur);
+
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    try { src.start(t0); } catch (e) { }
   }
 
   /* ---------------------------------------------------------- energy profile */
@@ -6717,15 +6933,31 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
     var total = spec.scenes.reduce(function (a, s) { return a + s.dur; }, 0);
     var jobs = [];
 
+    var musicGain = ($('#fMusicVol') ? parseFloat($('#fMusicVol').value) : 85) / 100;
+    var voiceGain = ($('#fVoiceVol') ? parseFloat($('#fVoiceVol').value) : 100) / 100;
+    var duckLevel = $('#fDuckLevel') ? parseFloat($('#fDuckLevel').value) : 0.32;
+    var sfx = $('#fSfx') ? $('#fSfx').checked : true;
+    var sfxTimes = [];
+    var acc = 0;
+    spec.scenes.forEach(function (sc) {
+      if (acc > 0) sfxTimes.push(acc);
+      acc += sc.dur;
+    });
+
     if (withMusic || S.voiceBuffer) {
       var mood = spec.meta.mood;
       jobs.push(window.CFX.music.render(mood, total, { seed: spec.meta.seed }).then(function (music) {
         S.musicBuffer = music;
-        if (S.voiceBuffer) {
+        if (S.voiceBuffer || sfx) {
           return window.CFX.music.mix({
             music: music, voice: S.voiceBuffer, seconds: total,
             voiceStart: spec.meta.voiceStart || 0,
-            sampleRate: music.sampleRate, channels: 2
+            sampleRate: music.sampleRate, channels: 2,
+            musicGain: musicGain,
+            voiceGain: voiceGain,
+            duckLevel: duckLevel,
+            sfx: sfx,
+            sfxTimes: sfxTimes
           }).then(function (mixed) {
             return mixed;
           });
@@ -7301,15 +7533,34 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
     c.fillStyle = '#ff5c8a';
     c.fillRect(px - 1, 0, 2, cssH);
 
-    // paragraph chips under the canvas
+    // paragraph chips under the canvas with timing nudge controls
     var list = $('#alignList');
     list.innerHTML = '';
     (track.paragraphs || []).forEach(function (p, i) {
-      var chip = document.createElement('button');
-      chip.type = 'button';
+      var chip = document.createElement('div');
       chip.className = 'align-chip';
-      chip.innerHTML = '<b>' + fmtTime(p.start) + '</b><span>' + String(p.text).slice(0, 46) + '</span>';
-      chip.addEventListener('click', function () { seekAudio(p.start); });
+      chip.innerHTML = '<div class="align-chip-inner">' +
+        '<div class="align-chip-content"><b>' + fmtTime(p.start) + '</b><span>' + String(p.text).slice(0, 42) + '</span></div>' +
+        '<div class="align-chip-nudge">' +
+          '<button type="button" class="nudge-btn nudge-prev" title="-0.2s">-0.2s</button>' +
+          '<button type="button" class="nudge-btn nudge-next" title="+0.2s">+0.2s</button>' +
+        '</div></div>';
+
+      chip.querySelector('.align-chip-content').addEventListener('click', function () { seekAudio(p.start); });
+      chip.querySelector('.nudge-prev').addEventListener('click', function (e) {
+        e.stopPropagation();
+        p.start = Math.max(0, Math.round((p.start - 0.2) * 100) / 100);
+        renderAlign();
+        seekAudio(p.start);
+        if (S.spec) buildCurrentPlan();
+      });
+      chip.querySelector('.nudge-next').addEventListener('click', function (e) {
+        e.stopPropagation();
+        p.start = Math.round((p.start + 0.2) * 100) / 100;
+        renderAlign();
+        seekAudio(p.start);
+        if (S.spec) buildCurrentPlan();
+      });
       list.appendChild(chip);
     });
   }
@@ -7679,12 +7930,134 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
     $('#fStoryStyle').addEventListener('change', function () {
       if (S.spec && S.spec.meta && S.spec.meta.story) buildCurrentPlan();
     });
-    $('#alignCanvas').addEventListener('click', function (e) {
+
+    // align canvas: drag & click live audio/video scrubbing
+    var alignDragging = false;
+    function scrubAlign(e) {
       if (!S.track) return;
-      var rect = this.getBoundingClientRect();
-      var frac = (e.clientX - rect.left) / Math.max(1, rect.width);
+      var canvas = $('#alignCanvas');
+      var rect = canvas.getBoundingClientRect();
+      var frac = clamp((e.clientX - rect.left) / Math.max(1, rect.width), 0, 1);
       seekAudio(frac * (S.track.duration || 0));
+    }
+    $('#alignCanvas').addEventListener('mousedown', function (e) {
+      alignDragging = true;
+      scrubAlign(e);
     });
+    window.addEventListener('mousemove', function (e) {
+      if (alignDragging) scrubAlign(e);
+    });
+    window.addEventListener('mouseup', function () {
+      alignDragging = false;
+    });
+
+    // script wizard templates
+    var TEMPLATES = {
+      facts: {
+        bn: {
+          title: '৩টি অবিশ্বাস্য বৈজ্ঞানিক তথ্য',
+          script: 'আপনি কি জানেন মহাবিশ্বে এমন কিছু অদ্ভুত ঘটনা ঘটে যা আমাদের কল্পনাকেও হার মানায়?\n\nশুক্র গ্রহে এক দিন এক বছরের চেয়েও লম্বা! কারণ এটি নিজের অক্ষে অত্যন্ত ধীরে ঘোরে।\n\nসাগরে থাকা নীল তিমির হৃদপিণ্ড একটি ছোট প্রাইভেট কারের সমান বড়!\n\n৯৮% মানুষ এই অদ্ভুত তথ্যগুলো জানে না।\n\nপ্রতিদিন এমন দারুণ কিছু শিখতে এখনই সাবস্ক্রাইব করুন!',
+          theme: 'cyberMatrix',
+          mood: 'tech'
+        },
+        en: {
+          title: '3 Mind-Blowing Scientific Facts',
+          script: 'Did you know that our universe holds mysteries stranger than fiction?\n\nA day on Venus is actually longer than its entire year because of its ultra-slow rotation.\n\nThe heart of a giant blue whale is as large as an entire car!\n\n98% of people never knew this extraordinary truth.\n\nSubscribe now for your daily dose of fascinating knowledge!',
+          theme: 'cyberMatrix',
+          mood: 'tech'
+        }
+      },
+      motivation: {
+        bn: {
+          title: 'হার মেনো না — আজকের কষ্টই আগামীকালের শক্তি',
+          script: '“সাফল্য কোনো হঠাৎ ঘটা ঘটনা নয়, এটি নিরলস পরিশ্রমের ফসল।” — লেখক\n\nযেখানে অন্যরা হাল ছেড়ে দেয়, ঠিক সেখান থেকেই প্রকৃত বিজয়ীর যাত্রা শুরু হয়।\n\nকঠিন সময় চিরকাল থাকে না, কিন্তু অদম্য ইচ্ছাশক্তি চিরকাল বিজয়ী হয়।\n\n১০০% বিশ্বাস রাখো নিজের ওপর — নতুন ইতিহাস তুমিই গড়বে!',
+          theme: 'obsidianLuxury',
+          mood: 'epic'
+        },
+        en: {
+          title: 'Never Give Up — Your Struggle Builds Strength',
+          script: '“Success is not accidental; it is the natural reward of relentless discipline.” — Author\n\nWhere ordinary minds surrender, champions take their boldest leap forward.\n\nTough days never last forever, but fierce determination conquers all.\n\n100% belief in your destiny makes you truly unstoppable!',
+          theme: 'obsidianLuxury',
+          mood: 'epic'
+        }
+      },
+      story: {
+        bn: {
+          title: 'এক ফোঁটা জলের উপলব্ধি',
+          script: 'মরুভূমির তপ্ত বালুর ওপর দিয়ে হেঁটে যাচ্ছিল এক ক্লান্ত পথিক।\n\nএক বৃদ্ধ জ্ঞানী তাকে বললেন, জীবনে সম্পদের চেয়ে ভালোবাসার মূল্য অনেক বেশি।\n\nসেই ছোট্ট কথাটি পথিকের মনের সব অহংকার চিরতরে মুছে দিল।\n\nভালোবাসুন সবাইকে, সময় ফুরিয়ে যাওয়ার আগেই।',
+          theme: 'royalEmerald',
+          mood: 'cinematic'
+        },
+        en: {
+          title: 'The Real Wealth of a Soul',
+          script: 'A weary traveler was searching for gold beneath the burning sun.\n\nA wise sage stopped him and smiled: gold cannot purchase peace or kindness.\n\nThat brief realization changed the course of his entire lifetime.\n\nCherish love and kindness before the hourglass runs dry.',
+          theme: 'royalEmerald',
+          mood: 'cinematic'
+        }
+      },
+      shorts: {
+        bn: {
+          title: 'কম্পিউটারের এই সিক্রেট শর্টকাট জানলে সময় বাঁচবে ১০ গুণ! #Shorts',
+          script: 'এই ছোট্ট ট্রিকটি আপনার কাজ করার গতি দ্বিগুণ করে দেবে!\n\n- Win + V চাপলে সেভ হওয়া পুরো ক্লিপবোর্ড হিস্টোরি খুলে যাবে\n- Alt + Tab দিয়ে দ্রুত অ্যাপ পরিবর্তন করুন\n- Ctrl + Shift + Esc নিমেষেই টাস্ক ম্যানেজার ওপেন করে\n\nভিডিওটি সেভ করে রাখুন এবং বন্ধুদের সাথে শেয়ার করুন!',
+          theme: 'vaporwave',
+          mood: 'uplifting',
+          shorts: true
+        },
+        en: {
+          title: 'Top Secret Keyboard Hacks That Save Hours! #Shorts',
+          script: 'These lightning-fast computer shortcuts will supercharge your workflow!\n\n- Press Win + V to unlock your entire clipboard memory\n- Use Alt + Tab to glide effortlessly between windows\n- Hit Ctrl + Shift + Esc to trigger Task Manager directly\n\nDouble-tap, bookmark, and share with your friends!',
+          theme: 'vaporwave',
+          mood: 'uplifting',
+          shorts: true
+        }
+      }
+    };
+
+    $$('.wizard-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var key = this.dataset.template;
+        var tpl = TEMPLATES[key] && TEMPLATES[key][window.CF_LANG === 'en' ? 'en' : 'bn'];
+        if (!tpl) return;
+        $('#fTitle').value = tpl.title;
+        $('#fScript').value = tpl.script;
+        if (tpl.theme && window.CFX.THEMES[tpl.theme]) {
+          $$('.swatch').forEach(function (s) { s.classList.toggle('on', s.dataset.theme === tpl.theme); });
+        }
+        if (tpl.mood && $('#fMood')) $('#fMood').value = tpl.mood;
+        if (tpl.shorts) {
+          $('#fAspect').value = '9:16';
+          $('#fCaptionStyle').value = 'karaoke';
+        }
+        toast(window.CF_LANG === 'en' ? 'Template loaded — building plan...' : 'টেমপ্লেট লোড হয়েছে — প্ল্যান তৈরি হচ্ছে...');
+        buildCurrentPlan();
+        setTimeout(play, 800);
+      });
+    });
+
+    // audio mixer live listeners
+    if ($('#fMusicVol')) {
+      $('#fMusicVol').addEventListener('input', function () {
+        $('#musicVolVal').textContent = this.value + '%';
+        if (S.spec) buildCurrentPlan();
+      });
+    }
+    if ($('#fVoiceVol')) {
+      $('#fVoiceVol').addEventListener('input', function () {
+        $('#voiceVolVal').textContent = this.value + '%';
+        if (S.spec) buildCurrentPlan();
+      });
+    }
+    if ($('#fDuckLevel')) {
+      $('#fDuckLevel').addEventListener('change', function () {
+        if (S.spec) buildCurrentPlan();
+      });
+    }
+    if ($('#fSfx')) {
+      $('#fSfx').addEventListener('change', function () {
+        if (S.spec) buildCurrentPlan();
+      });
+    }
+
     $('#btnSaveProject').addEventListener('click', saveProject);
     $('#fProject').addEventListener('change', function () { if (this.files && this.files[0]) loadProject(this.files[0]); });
 

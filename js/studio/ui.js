@@ -217,15 +217,31 @@
     var total = spec.scenes.reduce(function (a, s) { return a + s.dur; }, 0);
     var jobs = [];
 
+    var musicGain = ($('#fMusicVol') ? parseFloat($('#fMusicVol').value) : 85) / 100;
+    var voiceGain = ($('#fVoiceVol') ? parseFloat($('#fVoiceVol').value) : 100) / 100;
+    var duckLevel = $('#fDuckLevel') ? parseFloat($('#fDuckLevel').value) : 0.32;
+    var sfx = $('#fSfx') ? $('#fSfx').checked : true;
+    var sfxTimes = [];
+    var acc = 0;
+    spec.scenes.forEach(function (sc) {
+      if (acc > 0) sfxTimes.push(acc);
+      acc += sc.dur;
+    });
+
     if (withMusic || S.voiceBuffer) {
       var mood = spec.meta.mood;
       jobs.push(window.CFX.music.render(mood, total, { seed: spec.meta.seed }).then(function (music) {
         S.musicBuffer = music;
-        if (S.voiceBuffer) {
+        if (S.voiceBuffer || sfx) {
           return window.CFX.music.mix({
             music: music, voice: S.voiceBuffer, seconds: total,
             voiceStart: spec.meta.voiceStart || 0,
-            sampleRate: music.sampleRate, channels: 2
+            sampleRate: music.sampleRate, channels: 2,
+            musicGain: musicGain,
+            voiceGain: voiceGain,
+            duckLevel: duckLevel,
+            sfx: sfx,
+            sfxTimes: sfxTimes
           }).then(function (mixed) {
             return mixed;
           });
@@ -801,15 +817,34 @@
     c.fillStyle = '#ff5c8a';
     c.fillRect(px - 1, 0, 2, cssH);
 
-    // paragraph chips under the canvas
+    // paragraph chips under the canvas with timing nudge controls
     var list = $('#alignList');
     list.innerHTML = '';
     (track.paragraphs || []).forEach(function (p, i) {
-      var chip = document.createElement('button');
-      chip.type = 'button';
+      var chip = document.createElement('div');
       chip.className = 'align-chip';
-      chip.innerHTML = '<b>' + fmtTime(p.start) + '</b><span>' + String(p.text).slice(0, 46) + '</span>';
-      chip.addEventListener('click', function () { seekAudio(p.start); });
+      chip.innerHTML = '<div class="align-chip-inner">' +
+        '<div class="align-chip-content"><b>' + fmtTime(p.start) + '</b><span>' + String(p.text).slice(0, 42) + '</span></div>' +
+        '<div class="align-chip-nudge">' +
+          '<button type="button" class="nudge-btn nudge-prev" title="-0.2s">-0.2s</button>' +
+          '<button type="button" class="nudge-btn nudge-next" title="+0.2s">+0.2s</button>' +
+        '</div></div>';
+
+      chip.querySelector('.align-chip-content').addEventListener('click', function () { seekAudio(p.start); });
+      chip.querySelector('.nudge-prev').addEventListener('click', function (e) {
+        e.stopPropagation();
+        p.start = Math.max(0, Math.round((p.start - 0.2) * 100) / 100);
+        renderAlign();
+        seekAudio(p.start);
+        if (S.spec) buildCurrentPlan();
+      });
+      chip.querySelector('.nudge-next').addEventListener('click', function (e) {
+        e.stopPropagation();
+        p.start = Math.round((p.start + 0.2) * 100) / 100;
+        renderAlign();
+        seekAudio(p.start);
+        if (S.spec) buildCurrentPlan();
+      });
       list.appendChild(chip);
     });
   }
@@ -1179,12 +1214,134 @@
     $('#fStoryStyle').addEventListener('change', function () {
       if (S.spec && S.spec.meta && S.spec.meta.story) buildCurrentPlan();
     });
-    $('#alignCanvas').addEventListener('click', function (e) {
+
+    // align canvas: drag & click live audio/video scrubbing
+    var alignDragging = false;
+    function scrubAlign(e) {
       if (!S.track) return;
-      var rect = this.getBoundingClientRect();
-      var frac = (e.clientX - rect.left) / Math.max(1, rect.width);
+      var canvas = $('#alignCanvas');
+      var rect = canvas.getBoundingClientRect();
+      var frac = clamp((e.clientX - rect.left) / Math.max(1, rect.width), 0, 1);
       seekAudio(frac * (S.track.duration || 0));
+    }
+    $('#alignCanvas').addEventListener('mousedown', function (e) {
+      alignDragging = true;
+      scrubAlign(e);
     });
+    window.addEventListener('mousemove', function (e) {
+      if (alignDragging) scrubAlign(e);
+    });
+    window.addEventListener('mouseup', function () {
+      alignDragging = false;
+    });
+
+    // script wizard templates
+    var TEMPLATES = {
+      facts: {
+        bn: {
+          title: '৩টি অবিশ্বাস্য বৈজ্ঞানিক তথ্য',
+          script: 'আপনি কি জানেন মহাবিশ্বে এমন কিছু অদ্ভুত ঘটনা ঘটে যা আমাদের কল্পনাকেও হার মানায়?\n\nশুক্র গ্রহে এক দিন এক বছরের চেয়েও লম্বা! কারণ এটি নিজের অক্ষে অত্যন্ত ধীরে ঘোরে।\n\nসাগরে থাকা নীল তিমির হৃদপিণ্ড একটি ছোট প্রাইভেট কারের সমান বড়!\n\n৯৮% মানুষ এই অদ্ভুত তথ্যগুলো জানে না।\n\nপ্রতিদিন এমন দারুণ কিছু শিখতে এখনই সাবস্ক্রাইব করুন!',
+          theme: 'cyberMatrix',
+          mood: 'tech'
+        },
+        en: {
+          title: '3 Mind-Blowing Scientific Facts',
+          script: 'Did you know that our universe holds mysteries stranger than fiction?\n\nA day on Venus is actually longer than its entire year because of its ultra-slow rotation.\n\nThe heart of a giant blue whale is as large as an entire car!\n\n98% of people never knew this extraordinary truth.\n\nSubscribe now for your daily dose of fascinating knowledge!',
+          theme: 'cyberMatrix',
+          mood: 'tech'
+        }
+      },
+      motivation: {
+        bn: {
+          title: 'হার মেনো না — আজকের কষ্টই আগামীকালের শক্তি',
+          script: '“সাফল্য কোনো হঠাৎ ঘটা ঘটনা নয়, এটি নিরলস পরিশ্রমের ফসল।” — লেখক\n\nযেখানে অন্যরা হাল ছেড়ে দেয়, ঠিক সেখান থেকেই প্রকৃত বিজয়ীর যাত্রা শুরু হয়।\n\nকঠিন সময় চিরকাল থাকে না, কিন্তু অদম্য ইচ্ছাশক্তি চিরকাল বিজয়ী হয়।\n\n১০০% বিশ্বাস রাখো নিজের ওপর — নতুন ইতিহাস তুমিই গড়বে!',
+          theme: 'obsidianLuxury',
+          mood: 'epic'
+        },
+        en: {
+          title: 'Never Give Up — Your Struggle Builds Strength',
+          script: '“Success is not accidental; it is the natural reward of relentless discipline.” — Author\n\nWhere ordinary minds surrender, champions take their boldest leap forward.\n\nTough days never last forever, but fierce determination conquers all.\n\n100% belief in your destiny makes you truly unstoppable!',
+          theme: 'obsidianLuxury',
+          mood: 'epic'
+        }
+      },
+      story: {
+        bn: {
+          title: 'এক ফোঁটা জলের উপলব্ধি',
+          script: 'মরুভূমির তপ্ত বালুর ওপর দিয়ে হেঁটে যাচ্ছিল এক ক্লান্ত পথিক।\n\nএক বৃদ্ধ জ্ঞানী তাকে বললেন, জীবনে সম্পদের চেয়ে ভালোবাসার মূল্য অনেক বেশি।\n\nসেই ছোট্ট কথাটি পথিকের মনের সব অহংকার চিরতরে মুছে দিল।\n\nভালোবাসুন সবাইকে, সময় ফুরিয়ে যাওয়ার আগেই।',
+          theme: 'royalEmerald',
+          mood: 'cinematic'
+        },
+        en: {
+          title: 'The Real Wealth of a Soul',
+          script: 'A weary traveler was searching for gold beneath the burning sun.\n\nA wise sage stopped him and smiled: gold cannot purchase peace or kindness.\n\nThat brief realization changed the course of his entire lifetime.\n\nCherish love and kindness before the hourglass runs dry.',
+          theme: 'royalEmerald',
+          mood: 'cinematic'
+        }
+      },
+      shorts: {
+        bn: {
+          title: 'কম্পিউটারের এই সিক্রেট শর্টকাট জানলে সময় বাঁচবে ১০ গুণ! #Shorts',
+          script: 'এই ছোট্ট ট্রিকটি আপনার কাজ করার গতি দ্বিগুণ করে দেবে!\n\n- Win + V চাপলে সেভ হওয়া পুরো ক্লিপবোর্ড হিস্টোরি খুলে যাবে\n- Alt + Tab দিয়ে দ্রুত অ্যাপ পরিবর্তন করুন\n- Ctrl + Shift + Esc নিমেষেই টাস্ক ম্যানেজার ওপেন করে\n\nভিডিওটি সেভ করে রাখুন এবং বন্ধুদের সাথে শেয়ার করুন!',
+          theme: 'vaporwave',
+          mood: 'uplifting',
+          shorts: true
+        },
+        en: {
+          title: 'Top Secret Keyboard Hacks That Save Hours! #Shorts',
+          script: 'These lightning-fast computer shortcuts will supercharge your workflow!\n\n- Press Win + V to unlock your entire clipboard memory\n- Use Alt + Tab to glide effortlessly between windows\n- Hit Ctrl + Shift + Esc to trigger Task Manager directly\n\nDouble-tap, bookmark, and share with your friends!',
+          theme: 'vaporwave',
+          mood: 'uplifting',
+          shorts: true
+        }
+      }
+    };
+
+    $$('.wizard-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var key = this.dataset.template;
+        var tpl = TEMPLATES[key] && TEMPLATES[key][window.CF_LANG === 'en' ? 'en' : 'bn'];
+        if (!tpl) return;
+        $('#fTitle').value = tpl.title;
+        $('#fScript').value = tpl.script;
+        if (tpl.theme && window.CFX.THEMES[tpl.theme]) {
+          $$('.swatch').forEach(function (s) { s.classList.toggle('on', s.dataset.theme === tpl.theme); });
+        }
+        if (tpl.mood && $('#fMood')) $('#fMood').value = tpl.mood;
+        if (tpl.shorts) {
+          $('#fAspect').value = '9:16';
+          $('#fCaptionStyle').value = 'karaoke';
+        }
+        toast(window.CF_LANG === 'en' ? 'Template loaded — building plan...' : 'টেমপ্লেট লোড হয়েছে — প্ল্যান তৈরি হচ্ছে...');
+        buildCurrentPlan();
+        setTimeout(play, 800);
+      });
+    });
+
+    // audio mixer live listeners
+    if ($('#fMusicVol')) {
+      $('#fMusicVol').addEventListener('input', function () {
+        $('#musicVolVal').textContent = this.value + '%';
+        if (S.spec) buildCurrentPlan();
+      });
+    }
+    if ($('#fVoiceVol')) {
+      $('#fVoiceVol').addEventListener('input', function () {
+        $('#voiceVolVal').textContent = this.value + '%';
+        if (S.spec) buildCurrentPlan();
+      });
+    }
+    if ($('#fDuckLevel')) {
+      $('#fDuckLevel').addEventListener('change', function () {
+        if (S.spec) buildCurrentPlan();
+      });
+    }
+    if ($('#fSfx')) {
+      $('#fSfx').addEventListener('change', function () {
+        if (S.spec) buildCurrentPlan();
+      });
+    }
+
     $('#btnSaveProject').addEventListener('click', saveProject);
     $('#fProject').addEventListener('change', function () { if (this.files && this.files[0]) loadProject(this.files[0]); });
 

@@ -185,27 +185,42 @@
           ctx.globalAlpha = clamp(p * 1.15, 0, 1) * (o.alpha == null ? 1 : o.alpha);
 
           if (active && o.activeStyle !== 'none') {
-            // the word being spoken right now: soft pill + accent + glow
+            // the word being spoken right now: spring bounce + soft pill + accent + glow
+            var wordProg = tw ? clamp((now - tw.s) / Math.max(0.001, tw.e - tw.s), 0, 1) : 0.5;
+            var popScale = 1 + 0.08 * Math.sin(wordProg * Math.PI);
+            var cx = x + dx + widths[wi] / 2;
+            var cy = wy - size * 0.25;
+
             ctx.save();
-            ctx.globalAlpha *= 0.9;
-            ctx.fillStyle = rgba(theme.accent, 0.22);
-            roundRectPath(ctx, x + dx - size * 0.12, wy - size * 0.62, widths[wi] + size * 0.24, size * 1.18, size * 0.24);
+            ctx.translate(cx, cy);
+            ctx.scale(popScale, popScale);
+            ctx.translate(-cx, -cy);
+
+            ctx.save();
+            ctx.globalAlpha *= 0.92;
+            ctx.fillStyle = rgba(theme.accent, 0.25);
+            roundRectPath(ctx, x + dx - size * 0.14, wy - size * 0.65, widths[wi] + size * 0.28, size * 1.22, size * 0.26);
             ctx.fill();
             ctx.restore();
+
             ctx.fillStyle = mixHex(theme.accent, '#ffffff', 0.25);
-            ctx.shadowColor = rgba(theme.accent, 0.85);
-            ctx.shadowBlur = size * 0.5;
+            ctx.shadowColor = rgba(theme.accent, 0.95);
+            ctx.shadowBlur = size * 0.55;
+            ctx.fillText(word, x + dx, wy + dy);
+            ctx.restore();
           } else if (emphasised) {
             ctx.fillStyle = accentGradientFor(ctx, x + dx, wy - size * 0.5, widths[wi] + 2, size);
             ctx.shadowColor = rgba(theme.accent, 0.35);
             ctx.shadowBlur = size * 0.22;
+            ctx.fillText(word, x + dx, wy + dy);
+            ctx.shadowBlur = 0;
           } else if (active && o.activeStyle === 'none') {
             ctx.fillStyle = mixHex(theme.accent, '#ffffff', 0.2);
+            ctx.fillText(word, x + dx, wy + dy);
           } else {
             ctx.fillStyle = fill || '#fff';
+            ctx.fillText(word, x + dx, wy + dy);
           }
-          ctx.fillText(word, x + dx, wy + dy);
-          ctx.shadowBlur = 0;
           if (o.emphasisUnderline && emphasised) {
             ctx.save();
             ctx.globalAlpha *= 0.75;
@@ -1336,12 +1351,23 @@
       var exiting = (hasNext && timeLeft < exitLen) || (!hasNext && t > total - 0.4);
 
       var layerPainted = false;   // the layer canvas is stale unless we just painted it
+      var contentScale = 1 + 0.024 * cur.progress + 0.008 * energyAt(t);
       if (!exiting) {
-        // no transition: paint the scene straight onto the finished frame
+        // no transition: paint the scene with 3D parallax camera
+        ctx.save();
+        ctx.translate(W / 2 + cam.ox * 0.45, H / 2 + cam.oy * 0.45);
+        ctx.scale(contentScale, contentScale);
+        ctx.translate(-W / 2, -H / 2);
         drawSceneContent(ctx, cur.scene, cur.local, cur.progress);
+        ctx.restore();
       } else {
         lx.clearRect(0, 0, W, H);
+        lx.save();
+        lx.translate(W / 2 + cam.ox * 0.45, H / 2 + cam.oy * 0.45);
+        lx.scale(contentScale, contentScale);
+        lx.translate(-W / 2, -H / 2);
         drawSceneContent(lx, cur.scene, cur.local, cur.progress);
+        lx.restore();
         layerPainted = true;
       }
 

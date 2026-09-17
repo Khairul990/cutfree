@@ -23,7 +23,7 @@
   "license": "MIT",
   "scripts": {
     "start": "python3 -m http.server 8080",
-    "build": "python3 tools/build-single-file.py",
+    "build": "node tools/build-single-file.js",
     "test": "node tests/e2e.js",
     "test:studio": "node tests/studio.e2e.js",
     "test:all": "node tests/e2e.js && node tests/studio.e2e.js",

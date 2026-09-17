@@ -364,7 +364,42 @@
       }
     }
 
+    // ---- procedural transition SFX
+    if (opts.sfx !== false && Array.isArray(opts.sfxTimes)) {
+      var sfxGain = opts.sfxGain == null ? 0.24 : opts.sfxGain;
+      opts.sfxTimes.forEach(function (st) {
+        if (st > 0.15 && st < seconds - 0.3) {
+          addTransitionWhoosh(ctx, st, sfxGain);
+        }
+      });
+    }
+
     return ctx.startRendering();
+  }
+
+  function addTransitionWhoosh(ctx, when, targetGain) {
+    var dur = 0.36;
+    var t0 = Math.max(0.001, when - 0.16);
+    var noise = makeNoiseBuffer(ctx, dur);
+    var src = ctx.createBufferSource();
+    src.buffer = noise;
+
+    var filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.Q.value = 3.5;
+    filter.frequency.setValueAtTime(320, t0);
+    filter.frequency.exponentialRampToValueAtTime(2400, t0 + dur * 0.5);
+    filter.frequency.exponentialRampToValueAtTime(380, t0 + dur);
+
+    var gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.linearRampToValueAtTime(targetGain || 0.24, t0 + dur * 0.45);
+    gain.gain.linearRampToValueAtTime(0.0001, t0 + dur);
+
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    try { src.start(t0); } catch (e) { }
   }
 
   /* ---------------------------------------------------------- energy profile */

@@ -111,6 +111,58 @@
       grain: 0.07,
       vignette: 0.6,
       aurora: false
+    },
+    cyberMatrix: {
+      name: { bn: 'সাইবার ম্যাট্রিক্স', en: 'Cyber Matrix' },
+      bg: '#020906',
+      blobs: ['#00ff66', '#00f0ff', '#10b981', '#064e3b'],
+      text: '#e6fff4',
+      sub: '#86efac',
+      accent: '#00ff66',
+      accent2: '#00f0ff',
+      blend: ['color-dodge', 'screen', 'lighter'],
+      grain: 0.08,
+      vignette: 0.65,
+      aurora: true
+    },
+    vaporwave: {
+      name: { bn: 'ভেপরওয়েভ সানসেট', en: 'Vaporwave Sunset' },
+      bg: '#10041a',
+      blobs: ['#ff3399', '#7928ca', '#ff0080', '#00dfd8'],
+      text: '#ffffff',
+      sub: '#fbcfe8',
+      accent: '#ff3399',
+      accent2: '#00dfd8',
+      blend: ['screen', 'color-dodge', 'overlay'],
+      grain: 0.07,
+      vignette: 0.5,
+      aurora: true
+    },
+    obsidianLuxury: {
+      name: { bn: 'অবসিডিয়ান লাক্সারি', en: 'Obsidian Luxury' },
+      bg: '#050505',
+      blobs: ['#f59e0b', '#d97706', '#fbbf24', '#78350f'],
+      text: '#fffbeb',
+      sub: '#fde68a',
+      accent: '#fbbf24',
+      accent2: '#f59e0b',
+      blend: ['screen', 'overlay', 'lighter'],
+      grain: 0.09,
+      vignette: 0.75,
+      aurora: true
+    },
+    royalEmerald: {
+      name: { bn: 'রয়্যাল এমারল্ড', en: 'Royal Emerald' },
+      bg: '#02120d',
+      blobs: ['#059669', '#10b981', '#34d399', '#0284c7'],
+      text: '#ecfdf5',
+      sub: '#a7f3d0',
+      accent: '#10b981',
+      accent2: '#38bdf8',
+      blend: ['screen', 'soft-light', 'lighter'],
+      grain: 0.06,
+      vignette: 0.55,
+      aurora: true
     }
   };
 
