@@ -163,11 +163,11 @@
             frame.close();
             i++;
             if (onProgress) onProgress(i / frameCount, i, frameCount);
-            if (videoEncoder.encodeQueueSize > 6) {
-              return whenQueueDrains(videoEncoder, 2, shouldCancel).then(nextFrame);
+            if (videoEncoder.encodeQueueSize > 4) {
+              return whenQueueDrains(videoEncoder, 1, shouldCancel).then(nextFrame);
             }
-            // yield to the event loop every few frames so the UI stays alive
-            if (i % 3 === 0) return sleep(0).then(nextFrame);
+            // yield to the event loop periodically so GC can reclaim frames
+            if (i % 8 === 0) return sleep(1).then(nextFrame);
             return nextFrame();
           })();
         }

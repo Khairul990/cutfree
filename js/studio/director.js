@@ -196,14 +196,14 @@
       transitionOut: 'fade'
     });
 
-    // fit the requested total duration
+    // fit the requested total duration (supporting up to 10-20 minutes)
     if (input.durationTarget) {
       var raw = scenes.reduce(function (s, sc) { return s + sc.dur; }, 0);
-      var factor = Math.max(0.55, Math.min(2.2, input.durationTarget / raw));
+      var factor = Math.max(0.4, Math.min(8.0, input.durationTarget / raw));
       if (Math.abs(factor - 1) > 0.02) {
         scenes.forEach(function (sc) {
-          sc.dur = Math.max(1.6, sc.dur * factor);
-          if (sc.type === 'stat' || sc.type === 'broll') sc.dur = Math.max(1.8, Math.min(4.5, sc.dur));
+          sc.dur = Math.max(1.6, Math.min(18.0, sc.dur * factor));
+          if (sc.type === 'stat' || sc.type === 'broll') sc.dur = Math.max(2.0, Math.min(7.5, sc.dur));
         });
       }
     }

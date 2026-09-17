@@ -63,11 +63,60 @@
 
   <!-- ================= WORKBENCH ================= -->
   <section class="wrap" id="workbench">
+
+    <!-- ================= 1. PROJECT HUB ================= -->
+    <div class="project-hub-box" id="projectHub">
+      <div class="project-hub-head">
+        <h3 data-i18n="projectHubTitle">📁 ১ · প্রজেক্ট কন্ট্রোল হাব</h3>
+        <div class="project-actions-row">
+          <button class="btn ghost small" id="btnNewProject" type="button" data-i18n="btnNewProject">✨ নতুন প্রজেক্ট</button>
+          <button class="btn ghost small" id="btnSaveProject" type="button" data-i18n="ctaSaveProject">💾 সেভ (.json)</button>
+          <label class="btn ghost small file-btn">
+            <input type="file" id="fProject" accept=".json,application/json" hidden />
+            <span data-i18n="ctaLoadProject">📂 লোড (.json)</span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="two-col">
+        <label class="field">
+          <span data-i18n="fTitle">ভিডিওর টাইটেল / প্রজেক্টের নাম</span>
+          <input type="text" id="fTitle" placeholder="যেমন: ৫ মিনিটে ওয়েব ডিজাইন শিখুন" />
+        </label>
+        <label class="field">
+          <span data-i18n="fWatermark">ওয়াটারমার্ক / চ্যানেল হ্যান্ডেল</span>
+          <input type="text" id="fWatermark" placeholder="@yourchannel" />
+        </label>
+      </div>
+
+      <div class="field" style="margin-top: 10px;">
+        <span style="font-weight:600; color:var(--brand2);" data-i18n="fProjectPresetLabel">ভিডিও টাইপ ও দৈর্ঘ্য প্রিসেট:</span>
+        <div class="preset-grid" id="presetGrid">
+          <button class="preset-btn" type="button" data-preset="shorts">
+            <span>⚡ ৬০ সেঃ শর্টস</span>
+            <span class="preset-sub">9:16 · কাইনেটিক কারাওকে</span>
+          </button>
+          <button class="preset-btn" type="button" data-preset="5min">
+            <span>⏱️ ৫ মিনিট ভিডিও</span>
+            <span class="preset-sub">16:9 · ব্যালেন্সড স্টোরি</span>
+          </button>
+          <button class="preset-btn active" type="button" data-preset="10min">
+            <span>📽️ ১০ মিনিট এক্সপ্লেইনার</span>
+            <span class="preset-sub">16:9 · ডিপ চ্যাপ্টারস</span>
+          </button>
+          <button class="preset-btn" type="button" data-preset="20min">
+            <span>🎬 ২০ মিনিট ডকুমেন্টারি</span>
+            <span class="preset-sub">16:9 · মেগা ন্যারেশন</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="studio-grid">
 
       <!-- ---------- left: the brief ---------- -->
       <aside class="panel-card">
-        <h3 class="card-title" data-i18n="srcTitle">১ · ব্রিফ / স্ক্রিপ্ট</h3>
+        <h3 class="card-title" data-i18n="srcTitle">২ · এআই স্ক্রিপ্ট ও ভাইরাল কনটেন্ট</h3>
 
         <div class="wizard-row" id="scriptWizard">
           <span class="wizard-label" data-i18n="wizardTitle">⚡ ১-ক্লিক স্ক্রিপ্ট:</span>
@@ -76,12 +125,9 @@
           <button class="btn ghost tiny wizard-btn" type="button" data-template="story">📖 গল্প</button>
           <button class="btn ghost tiny wizard-btn" type="button" data-template="shorts">🔥 শর্টস হুক</button>
           <button class="btn ghost tiny wizard-btn" type="button" data-template="calligraphy">🕌 ক্যালিগ্রাফি</button>
+          <button class="btn ghost tiny wizard-btn" type="button" data-template="explainer10">🏛️ ১০ মিনিট এক্সপ্লেইনার</button>
+          <button class="btn ghost tiny wizard-btn" type="button" data-template="docu20">🌌 ২০ মিনিট ডকুমেন্টারি</button>
         </div>
-
-        <label class="field">
-          <span data-i18n="fTitle">ভিডিওর টাইটেল</span>
-          <input type="text" id="fTitle" placeholder="যেমন: ৫ মিনিটে ওয়েব ডিজাইন শিখুন" />
-        </label>
 
         <label class="field">
           <span data-i18n="fScript">স্ক্রিপ্ট (প্রতি প্যারাগ্রাফ = একটা সিন)</span>
@@ -93,8 +139,7 @@
           <button class="btn ghost small" type="button" id="btnClearBrief" data-i18n="clearBrief">খালি করুন</button>
         </div>
 
-
-        <h3 class="card-title" data-i18n="storyTitle">২ · স্টোরি মোড — ভয়েস ট্র্যাক</h3>
+        <h3 class="card-title" data-i18n="storyTitle">স্টোরি মোড — ভয়েস ট্র্যাক</h3>
         <label class="field checkbox">
           <input type="checkbox" id="fStory" />
           <span data-i18n="fStory">স্টোরি মোড (ভয়েস ট্র্যাক করে গল্পের ভিডিও)</span>
@@ -140,7 +185,51 @@
           <p class="hint" data-i18n="stAlignHint">ওয়েভফর্মে ক্লিক করে সেই মুহূর্তে যান · নিচের লাইনে ক্লিক করে লাইন ধরে শুনুন</p>
         </div>
 
-        <h3 class="card-title" data-i18n="lookTitle">২ · লুক ও ফিল</h3>
+        <h4 class="mini-title" data-i18n="voiceTitle">ভয়েসওভার ও সাবটাইটেল</h4>
+        <div class="two-col">
+          <label class="field">
+            <span data-i18n="fVoicePick">TTS ভয়েস</span>
+            <select id="fVoicePick"></select>
+          </label>
+          <label class="field">
+            <span><span data-i18n="fVoiceRate">গতি</span>: <b id="voiceRateVal">1.0</b>×</span>
+            <input type="range" id="fVoiceRate" min="0.6" max="1.6" step="0.05" value="1" />
+          </label>
+        </div>
+        <div class="brief-row wrap">
+          <button class="btn ghost small" id="btnVoiceTest" type="button" data-i18n="ctaVoiceTest">🔊 ভয়েস চেক</button>
+          <button class="btn ghost small" id="btnMeasure" type="button" data-i18n="ctaMeasure">⏱ টাইমিং মাপুন</button>
+          <button class="btn ghost small" id="btnRecordVoice" type="button" data-i18n="ctaRecordVoice">🎙 ভয়েসওভার রেকর্ড</button>
+        </div>
+        <p class="hint" id="voiceHint" data-i18n="voiceHint"></p>
+        <label class="field checkbox">
+          <input type="checkbox" id="fNarrFit" checked />
+          <span data-i18n="fNarrFit">সিনের দৈর্ঘ্য ন্যারেশনের সাথে মিলিয়ে নাও</span>
+        </label>
+
+        <div class="brief-row wrap">
+          <label class="btn ghost small file-btn">
+            <input type="file" id="fSrt" accept=".srt,.vtt,.txt" hidden />
+            <span data-i18n="ctaSrtImport">📄 SRT / VTT ইমপোর্ট</span>
+          </label>
+          <button class="btn ghost small" id="btnSrtExport" type="button" data-i18n="ctaSrtExport">⬇️ SRT এক্সপোর্ট</button>
+        </div>
+        <div class="two-col">
+          <label class="field">
+            <span data-i18n="fCaptionStyle">সাবটাইটেল স্টাইল</span>
+            <select id="fCaptionStyle">
+              <option value="karaoke" data-i18n="capKaraoke">কারাওকে (শব্দ হাইলাইট)</option>
+              <option value="bar" selected data-i18n="capBar">সিম্পল বার</option>
+              <option value="none" data-i18n="capNone">কোনোটাই না</option>
+            </select>
+          </label>
+          <label class="field checkbox">
+            <input type="checkbox" id="fShorts" />
+            <span data-i18n="fShorts">Shorts মোড (9:16 + safe zone + #Shorts)</span>
+          </label>
+        </div>
+
+        <h3 class="card-title" data-i18n="lookTitle" style="margin-top: 24px;">৩ · লুক, থিম ও অডিও মিক্সার</h3>
         <div class="theme-picker" id="themePicker"></div>
 
         <div class="two-col">
@@ -182,7 +271,7 @@
         <div class="two-col">
           <label class="field">
             <span data-i18n="fDuration">টার্গেট দৈর্ঘ্য (সেকেন্ড)</span>
-            <input type="number" id="fDuration" min="10" max="600" step="5" value="45" />
+            <input type="number" id="fDuration" min="10" max="1200" step="5" value="600" />
           </label>
           <label class="field">
             <span data-i18n="fPerf">পারফরম্যান্স মোড</span>
@@ -193,11 +282,6 @@
             </select>
           </label>
         </div>
-
-        <label class="field">
-          <span data-i18n="fWatermark">ওয়াটারমার্ক / চ্যানেল</span>
-          <input type="text" id="fWatermark" placeholder="@yourchannel" />
-        </label>
 
         <label class="field checkbox">
           <input type="checkbox" id="fMusic" checked />
@@ -232,6 +316,7 @@
             </label>
           </div>
         </div>
+
         <label class="field checkbox">
           <input type="checkbox" id="fProgress" checked />
           <span data-i18n="fProgressBar">নিচে প্রোগ্রেস বার</span>
@@ -245,62 +330,6 @@
           </label>
         </div>
 
-
-        <h3 class="card-title" data-i18n="voiceTitle">৩ · ভয়েসওভার ও সাবটাইটেল</h3>
-        <div class="two-col">
-          <label class="field">
-            <span data-i18n="fVoicePick">TTS ভয়েস</span>
-            <select id="fVoicePick"></select>
-          </label>
-          <label class="field">
-            <span><span data-i18n="fVoiceRate">গতি</span>: <b id="voiceRateVal">1.0</b>×</span>
-            <input type="range" id="fVoiceRate" min="0.6" max="1.6" step="0.05" value="1" />
-          </label>
-        </div>
-        <div class="brief-row wrap">
-          <button class="btn ghost small" id="btnVoiceTest" type="button" data-i18n="ctaVoiceTest">🔊 ভয়েস চেক</button>
-          <button class="btn ghost small" id="btnMeasure" type="button" data-i18n="ctaMeasure">⏱ টাইমিং মাপুন</button>
-          <button class="btn ghost small" id="btnRecordVoice" type="button" data-i18n="ctaRecordVoice">🎙 ভয়েসওভার রেকর্ড</button>
-        </div>
-        <p class="hint" id="voiceHint" data-i18n="voiceHint"></p>
-        <label class="field checkbox">
-          <input type="checkbox" id="fNarrFit" checked />
-          <span data-i18n="fNarrFit">সিনের দৈর্ঘ্য ন্যারেশনের সাথে মিলিয়ে নাও</span>
-        </label>
-
-        <h4 class="mini-title" data-i18n="subsTitle">সাবটাইটেল</h4>
-        <div class="brief-row wrap">
-          <label class="btn ghost small file-btn">
-            <input type="file" id="fSrt" accept=".srt,.vtt,.txt" hidden />
-            <span data-i18n="ctaSrtImport">📄 SRT / VTT ইমপোর্ট</span>
-          </label>
-          <button class="btn ghost small" id="btnSrtExport" type="button" data-i18n="ctaSrtExport">⬇️ SRT এক্সপোর্ট</button>
-        </div>
-        <div class="two-col">
-          <label class="field">
-            <span data-i18n="fCaptionStyle">সাবটাইটেল স্টাইল</span>
-            <select id="fCaptionStyle">
-              <option value="karaoke" data-i18n="capKaraoke">কারাওকে (শব্দ হাইলাইট)</option>
-              <option value="bar" selected data-i18n="capBar">সিম্পল বার</option>
-              <option value="none" data-i18n="capNone">কোনোটাই না</option>
-            </select>
-          </label>
-          <label class="field checkbox">
-            <input type="checkbox" id="fShorts" />
-            <span data-i18n="fShorts">Shorts মোড (9:16 + safe zone + #Shorts)</span>
-          </label>
-        </div>
-        <p class="hint" data-i18n="shortsHint"></p>
-
-        <h4 class="mini-title" data-i18n="projectTitle">প্রজেক্ট</h4>
-        <div class="brief-row wrap">
-          <button class="btn ghost small" id="btnSaveProject" type="button" data-i18n="ctaSaveProject">💾 সেভ (.json)</button>
-          <label class="btn ghost small file-btn">
-            <input type="file" id="fProject" accept=".json,application/json" hidden />
-            <span data-i18n="ctaLoadProject">📂 লোড</span>
-          </label>
-        </div>
-
         <div class="panel-actions">
           <button class="btn primary wide" id="btnBuild" type="button" data-i18n="ctaBuildPlan">প্ল্যান বানাও (প্রিভিউ)</button>
           <button class="btn wide" id="btnQueue" type="button" data-i18n="ctaQueue">সব ভিডিও কিউতে দাও</button>
@@ -310,7 +339,7 @@
       <!-- ---------- center: preview ---------- -->
       <section class="panel-card preview-card">
         <div class="card-head">
-          <h3 class="card-title" data-i18n="previewTitle">৩ · লাইভ প্রিভিউ</h3>
+          <h3 class="card-title" data-i18n="previewTitle">৪ · ডিরেক্টর লাইভ প্রিভিউ</h3>
           <span class="chip" id="sceneChip">—</span>
         </div>
         <div class="preview-holder" id="previewHolder">
@@ -326,8 +355,8 @@
         <div class="scene-strip" id="sceneStrip"></div>
         <div class="plan-stats" id="planStats"></div>
 
-        <div class="card-head">
-          <h3 class="card-title" data-i18n="renderTitle">৪ · রেন্ডার</h3>
+        <div class="card-head" style="margin-top: 24px;">
+          <h3 class="card-title" data-i18n="renderTitle">৫ · ভিডিও এক্সপোর্ট ও ১-ক্লিক ডাউনলোড</h3>
           <span class="chip" id="renderChip">—</span>
         </div>
         <div class="render-row">
@@ -338,6 +367,16 @@
         <div class="progress" id="progressWrap" hidden>
           <div class="bar"><i id="progressBar"></i></div>
           <div class="progress-row"><span id="progressText">0%</span><span id="progressNote"></span></div>
+        </div>
+
+        <div class="download-action-box" id="downloadBox">
+          <button class="btn-direct-download" id="btnDirectDl" type="button" data-i18n="ctaDirectDownload">
+            <span>⬇️ ভিডিও ডাউনলোড করুন (.mp4 / .webm)</span>
+          </button>
+          <label class="field checkbox" style="margin: 0; font-size: 0.82rem;">
+            <input type="checkbox" id="fAutoDl" checked />
+            <span data-i18n="fAutoDl">রেন্ডার শেষ হলে সাথে সাথে অটো ডাউনলোড</span>
+          </label>
         </div>
       </section>
 

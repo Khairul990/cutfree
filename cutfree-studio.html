@@ -680,6 +680,112 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
   background: var(--brand2);
   color: #000;
 }
+
+/* ================= PROJECT HUB & PRESET STYLES ================= */
+.project-hub-box {
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.08), rgba(99, 102, 241, 0.05));
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+.project-hub-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.project-hub-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--brand2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.project-actions-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 12px 0 6px;
+}
+@media (min-width: 600px) {
+  .preset-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.preset-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--fg);
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+.preset-btn:hover {
+  background: rgba(34, 211, 238, 0.15);
+  border-color: var(--brand2);
+  transform: translateY(-1px);
+}
+.preset-btn.active {
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.25), rgba(99, 102, 241, 0.25));
+  border-color: var(--brand2);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.3);
+}
+.preset-btn span.preset-sub {
+  font-size: 0.68rem;
+  color: var(--muted);
+  font-weight: 400;
+}
+.preset-btn.active span.preset-sub {
+  color: #cffafe;
+}
+.download-action-box {
+  margin-top: 14px;
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(5, 150, 105, 0.06));
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.btn-direct-download {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  border: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+  transition: all 0.2s ease;
+}
+.btn-direct-download:hover {
+  background: linear-gradient(135deg, #34d399, #059669);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.6);
+  transform: translateY(-1px);
+}
 </style>
 </head>
 <body class="studio">
@@ -733,11 +839,60 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
 
   <!-- ================= WORKBENCH ================= -->
   <section class="wrap" id="workbench">
+
+    <!-- ================= 1. PROJECT HUB ================= -->
+    <div class="project-hub-box" id="projectHub">
+      <div class="project-hub-head">
+        <h3 data-i18n="projectHubTitle">📁 ১ · প্রজেক্ট কন্ট্রোল হাব</h3>
+        <div class="project-actions-row">
+          <button class="btn ghost small" id="btnNewProject" type="button" data-i18n="btnNewProject">✨ নতুন প্রজেক্ট</button>
+          <button class="btn ghost small" id="btnSaveProject" type="button" data-i18n="ctaSaveProject">💾 সেভ (.json)</button>
+          <label class="btn ghost small file-btn">
+            <input type="file" id="fProject" accept=".json,application/json" hidden />
+            <span data-i18n="ctaLoadProject">📂 লোড (.json)</span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="two-col">
+        <label class="field">
+          <span data-i18n="fTitle">ভিডিওর টাইটেল / প্রজেক্টের নাম</span>
+          <input type="text" id="fTitle" placeholder="যেমন: ৫ মিনিটে ওয়েব ডিজাইন শিখুন" />
+        </label>
+        <label class="field">
+          <span data-i18n="fWatermark">ওয়াটারমার্ক / চ্যানেল হ্যান্ডেল</span>
+          <input type="text" id="fWatermark" placeholder="@yourchannel" />
+        </label>
+      </div>
+
+      <div class="field" style="margin-top: 10px;">
+        <span style="font-weight:600; color:var(--brand2);" data-i18n="fProjectPresetLabel">ভিডিও টাইপ ও দৈর্ঘ্য প্রিসেট:</span>
+        <div class="preset-grid" id="presetGrid">
+          <button class="preset-btn" type="button" data-preset="shorts">
+            <span>⚡ ৬০ সেঃ শর্টস</span>
+            <span class="preset-sub">9:16 · কাইনেটিক কারাওকে</span>
+          </button>
+          <button class="preset-btn" type="button" data-preset="5min">
+            <span>⏱️ ৫ মিনিট ভিডিও</span>
+            <span class="preset-sub">16:9 · ব্যালেন্সড স্টোরি</span>
+          </button>
+          <button class="preset-btn active" type="button" data-preset="10min">
+            <span>📽️ ১০ মিনিট এক্সপ্লেইনার</span>
+            <span class="preset-sub">16:9 · ডিপ চ্যাপ্টারস</span>
+          </button>
+          <button class="preset-btn" type="button" data-preset="20min">
+            <span>🎬 ২০ মিনিট ডকুমেন্টারি</span>
+            <span class="preset-sub">16:9 · মেগা ন্যারেশন</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="studio-grid">
 
       <!-- ---------- left: the brief ---------- -->
       <aside class="panel-card">
-        <h3 class="card-title" data-i18n="srcTitle">১ · ব্রিফ / স্ক্রিপ্ট</h3>
+        <h3 class="card-title" data-i18n="srcTitle">২ · এআই স্ক্রিপ্ট ও ভাইরাল কনটেন্ট</h3>
 
         <div class="wizard-row" id="scriptWizard">
           <span class="wizard-label" data-i18n="wizardTitle">⚡ ১-ক্লিক স্ক্রিপ্ট:</span>
@@ -746,12 +901,9 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
           <button class="btn ghost tiny wizard-btn" type="button" data-template="story">📖 গল্প</button>
           <button class="btn ghost tiny wizard-btn" type="button" data-template="shorts">🔥 শর্টস হুক</button>
           <button class="btn ghost tiny wizard-btn" type="button" data-template="calligraphy">🕌 ক্যালিগ্রাফি</button>
+          <button class="btn ghost tiny wizard-btn" type="button" data-template="explainer10">🏛️ ১০ মিনিট এক্সপ্লেইনার</button>
+          <button class="btn ghost tiny wizard-btn" type="button" data-template="docu20">🌌 ২০ মিনিট ডকুমেন্টারি</button>
         </div>
-
-        <label class="field">
-          <span data-i18n="fTitle">ভিডিওর টাইটেল</span>
-          <input type="text" id="fTitle" placeholder="যেমন: ৫ মিনিটে ওয়েব ডিজাইন শিখুন" />
-        </label>
 
         <label class="field">
           <span data-i18n="fScript">স্ক্রিপ্ট (প্রতি প্যারাগ্রাফ = একটা সিন)</span>
@@ -763,8 +915,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
           <button class="btn ghost small" type="button" id="btnClearBrief" data-i18n="clearBrief">খালি করুন</button>
         </div>
 
-
-        <h3 class="card-title" data-i18n="storyTitle">২ · স্টোরি মোড — ভয়েস ট্র্যাক</h3>
+        <h3 class="card-title" data-i18n="storyTitle">স্টোরি মোড — ভয়েস ট্র্যাক</h3>
         <label class="field checkbox">
           <input type="checkbox" id="fStory" />
           <span data-i18n="fStory">স্টোরি মোড (ভয়েস ট্র্যাক করে গল্পের ভিডিও)</span>
@@ -810,7 +961,51 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
           <p class="hint" data-i18n="stAlignHint">ওয়েভফর্মে ক্লিক করে সেই মুহূর্তে যান · নিচের লাইনে ক্লিক করে লাইন ধরে শুনুন</p>
         </div>
 
-        <h3 class="card-title" data-i18n="lookTitle">২ · লুক ও ফিল</h3>
+        <h4 class="mini-title" data-i18n="voiceTitle">ভয়েসওভার ও সাবটাইটেল</h4>
+        <div class="two-col">
+          <label class="field">
+            <span data-i18n="fVoicePick">TTS ভয়েস</span>
+            <select id="fVoicePick"></select>
+          </label>
+          <label class="field">
+            <span><span data-i18n="fVoiceRate">গতি</span>: <b id="voiceRateVal">1.0</b>×</span>
+            <input type="range" id="fVoiceRate" min="0.6" max="1.6" step="0.05" value="1" />
+          </label>
+        </div>
+        <div class="brief-row wrap">
+          <button class="btn ghost small" id="btnVoiceTest" type="button" data-i18n="ctaVoiceTest">🔊 ভয়েস চেক</button>
+          <button class="btn ghost small" id="btnMeasure" type="button" data-i18n="ctaMeasure">⏱ টাইমিং মাপুন</button>
+          <button class="btn ghost small" id="btnRecordVoice" type="button" data-i18n="ctaRecordVoice">🎙 ভয়েসওভার রেকর্ড</button>
+        </div>
+        <p class="hint" id="voiceHint" data-i18n="voiceHint"></p>
+        <label class="field checkbox">
+          <input type="checkbox" id="fNarrFit" checked />
+          <span data-i18n="fNarrFit">সিনের দৈর্ঘ্য ন্যারেশনের সাথে মিলিয়ে নাও</span>
+        </label>
+
+        <div class="brief-row wrap">
+          <label class="btn ghost small file-btn">
+            <input type="file" id="fSrt" accept=".srt,.vtt,.txt" hidden />
+            <span data-i18n="ctaSrtImport">📄 SRT / VTT ইমপোর্ট</span>
+          </label>
+          <button class="btn ghost small" id="btnSrtExport" type="button" data-i18n="ctaSrtExport">⬇️ SRT এক্সপোর্ট</button>
+        </div>
+        <div class="two-col">
+          <label class="field">
+            <span data-i18n="fCaptionStyle">সাবটাইটেল স্টাইল</span>
+            <select id="fCaptionStyle">
+              <option value="karaoke" data-i18n="capKaraoke">কারাওকে (শব্দ হাইলাইট)</option>
+              <option value="bar" selected data-i18n="capBar">সিম্পল বার</option>
+              <option value="none" data-i18n="capNone">কোনোটাই না</option>
+            </select>
+          </label>
+          <label class="field checkbox">
+            <input type="checkbox" id="fShorts" />
+            <span data-i18n="fShorts">Shorts মোড (9:16 + safe zone + #Shorts)</span>
+          </label>
+        </div>
+
+        <h3 class="card-title" data-i18n="lookTitle" style="margin-top: 24px;">৩ · লুক, থিম ও অডিও মিক্সার</h3>
         <div class="theme-picker" id="themePicker"></div>
 
         <div class="two-col">
@@ -852,7 +1047,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
         <div class="two-col">
           <label class="field">
             <span data-i18n="fDuration">টার্গেট দৈর্ঘ্য (সেকেন্ড)</span>
-            <input type="number" id="fDuration" min="10" max="600" step="5" value="45" />
+            <input type="number" id="fDuration" min="10" max="1200" step="5" value="600" />
           </label>
           <label class="field">
             <span data-i18n="fPerf">পারফরম্যান্স মোড</span>
@@ -863,11 +1058,6 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
             </select>
           </label>
         </div>
-
-        <label class="field">
-          <span data-i18n="fWatermark">ওয়াটারমার্ক / চ্যানেল</span>
-          <input type="text" id="fWatermark" placeholder="@yourchannel" />
-        </label>
 
         <label class="field checkbox">
           <input type="checkbox" id="fMusic" checked />
@@ -902,6 +1092,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
             </label>
           </div>
         </div>
+
         <label class="field checkbox">
           <input type="checkbox" id="fProgress" checked />
           <span data-i18n="fProgressBar">নিচে প্রোগ্রেস বার</span>
@@ -915,62 +1106,6 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
           </label>
         </div>
 
-
-        <h3 class="card-title" data-i18n="voiceTitle">৩ · ভয়েসওভার ও সাবটাইটেল</h3>
-        <div class="two-col">
-          <label class="field">
-            <span data-i18n="fVoicePick">TTS ভয়েস</span>
-            <select id="fVoicePick"></select>
-          </label>
-          <label class="field">
-            <span><span data-i18n="fVoiceRate">গতি</span>: <b id="voiceRateVal">1.0</b>×</span>
-            <input type="range" id="fVoiceRate" min="0.6" max="1.6" step="0.05" value="1" />
-          </label>
-        </div>
-        <div class="brief-row wrap">
-          <button class="btn ghost small" id="btnVoiceTest" type="button" data-i18n="ctaVoiceTest">🔊 ভয়েস চেক</button>
-          <button class="btn ghost small" id="btnMeasure" type="button" data-i18n="ctaMeasure">⏱ টাইমিং মাপুন</button>
-          <button class="btn ghost small" id="btnRecordVoice" type="button" data-i18n="ctaRecordVoice">🎙 ভয়েসওভার রেকর্ড</button>
-        </div>
-        <p class="hint" id="voiceHint" data-i18n="voiceHint"></p>
-        <label class="field checkbox">
-          <input type="checkbox" id="fNarrFit" checked />
-          <span data-i18n="fNarrFit">সিনের দৈর্ঘ্য ন্যারেশনের সাথে মিলিয়ে নাও</span>
-        </label>
-
-        <h4 class="mini-title" data-i18n="subsTitle">সাবটাইটেল</h4>
-        <div class="brief-row wrap">
-          <label class="btn ghost small file-btn">
-            <input type="file" id="fSrt" accept=".srt,.vtt,.txt" hidden />
-            <span data-i18n="ctaSrtImport">📄 SRT / VTT ইমপোর্ট</span>
-          </label>
-          <button class="btn ghost small" id="btnSrtExport" type="button" data-i18n="ctaSrtExport">⬇️ SRT এক্সপোর্ট</button>
-        </div>
-        <div class="two-col">
-          <label class="field">
-            <span data-i18n="fCaptionStyle">সাবটাইটেল স্টাইল</span>
-            <select id="fCaptionStyle">
-              <option value="karaoke" data-i18n="capKaraoke">কারাওকে (শব্দ হাইলাইট)</option>
-              <option value="bar" selected data-i18n="capBar">সিম্পল বার</option>
-              <option value="none" data-i18n="capNone">কোনোটাই না</option>
-            </select>
-          </label>
-          <label class="field checkbox">
-            <input type="checkbox" id="fShorts" />
-            <span data-i18n="fShorts">Shorts মোড (9:16 + safe zone + #Shorts)</span>
-          </label>
-        </div>
-        <p class="hint" data-i18n="shortsHint"></p>
-
-        <h4 class="mini-title" data-i18n="projectTitle">প্রজেক্ট</h4>
-        <div class="brief-row wrap">
-          <button class="btn ghost small" id="btnSaveProject" type="button" data-i18n="ctaSaveProject">💾 সেভ (.json)</button>
-          <label class="btn ghost small file-btn">
-            <input type="file" id="fProject" accept=".json,application/json" hidden />
-            <span data-i18n="ctaLoadProject">📂 লোড</span>
-          </label>
-        </div>
-
         <div class="panel-actions">
           <button class="btn primary wide" id="btnBuild" type="button" data-i18n="ctaBuildPlan">প্ল্যান বানাও (প্রিভিউ)</button>
           <button class="btn wide" id="btnQueue" type="button" data-i18n="ctaQueue">সব ভিডিও কিউতে দাও</button>
@@ -980,7 +1115,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       <!-- ---------- center: preview ---------- -->
       <section class="panel-card preview-card">
         <div class="card-head">
-          <h3 class="card-title" data-i18n="previewTitle">৩ · লাইভ প্রিভিউ</h3>
+          <h3 class="card-title" data-i18n="previewTitle">৪ · ডিরেক্টর লাইভ প্রিভিউ</h3>
           <span class="chip" id="sceneChip">—</span>
         </div>
         <div class="preview-holder" id="previewHolder">
@@ -996,8 +1131,8 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
         <div class="scene-strip" id="sceneStrip"></div>
         <div class="plan-stats" id="planStats"></div>
 
-        <div class="card-head">
-          <h3 class="card-title" data-i18n="renderTitle">৪ · রেন্ডার</h3>
+        <div class="card-head" style="margin-top: 24px;">
+          <h3 class="card-title" data-i18n="renderTitle">৫ · ভিডিও এক্সপোর্ট ও ১-ক্লিক ডাউনলোড</h3>
           <span class="chip" id="renderChip">—</span>
         </div>
         <div class="render-row">
@@ -1008,6 +1143,16 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
         <div class="progress" id="progressWrap" hidden>
           <div class="bar"><i id="progressBar"></i></div>
           <div class="progress-row"><span id="progressText">0%</span><span id="progressNote"></span></div>
+        </div>
+
+        <div class="download-action-box" id="downloadBox">
+          <button class="btn-direct-download" id="btnDirectDl" type="button" data-i18n="ctaDirectDownload">
+            <span>⬇️ ভিডিও ডাউনলোড করুন (.mp4 / .webm)</span>
+          </button>
+          <label class="field checkbox" style="margin: 0; font-size: 0.82rem;">
+            <input type="checkbox" id="fAutoDl" checked />
+            <span data-i18n="fAutoDl">রেন্ডার শেষ হলে সাথে সাথে অটো ডাউনলোড</span>
+          </label>
         </div>
       </section>
 
@@ -1368,12 +1513,19 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       ctaGenerate: '🎬 ভিডিও বানাও', ctaDemo: 'ডেমো স্ক্রিপ্ট বসাও',
       b1: '৯০%+ ওয়েব ব্রাউজারে চলে', b2: 'ফোন-কম্পিউটার দুটোতেই',
       b3: 'নিজের মিউজিক, কপিরাইট-ফ্রি', b4: 'YouTube-রেডি ফাইল + শিডিউল',
-      srcTitle: '১ · ব্রিফ / স্ক্রিপ্ট', fTitle: 'ভিডিওর টাইটেল',
-      wizardTitle: '⚡ ১-ক্লিক স্ক্রিপ্ট:', mixerTitle: '🎛️ অডিও মিক্সার ও সাউন্ড',
+      projectHubTitle: '১ · প্রজেক্ট কন্ট্রোল হাব',
+      btnNewProject: '✨ নতুন প্রজেক্ট',
+      fProjectPresetLabel: 'ভিডিও টাইপ ও দৈর্ঘ্য প্রিসেট:',
+      presetShorts: '⚡ ৬০ সেঃ শর্টস (9:16)',
+      preset5Min: '⏱️ ৫ মিনিট ভিডিও (16:9)',
+      preset10Min: '📽️ ১০ মিনিট এক্সপ্লেইনার (16:9)',
+      preset20Min: '🎬 ২০ মিনিট ডকুমেন্টারি (16:9)',
+      srcTitle: '২ · এআই স্ক্রিপ্ট ও ভাইরাল কনটেন্ট', fTitle: 'ভিডিওর টাইটেল',
+      wizardTitle: '⚡ ১-ক্লিক এআই স্ক্রিপ্ট:', mixerTitle: '🎛️ অডিও মিক্সার ও সাউন্ড',
       fDuckLevel: 'ভয়েসে মিউজিক ডাকিং', fSfx: 'সিন পরিবর্তনে Whoosh SFX',
       fScript: 'স্ক্রিপ্ট (প্রতি প্যারাগ্রাফ = একটা সিন)',
       sampleBatch: 'নমুনা ব্যাচ', clearBrief: 'খালি করুন',
-      storyTitle: '২ · স্টোরি মোড — ভয়েস ট্র্যাক',
+      storyTitle: 'স্টোরি মোড — ভয়েস ট্র্যাক',
       fStory: 'স্টোরি মোড (ভয়েস ট্র্যাক করে গল্পের ভিডিও)',
       storyHint: 'গল্পের টেক্সট লিখে ভয়েসটা দিন — ভয়েস ট্র্যাক করে প্রতিটা শব্দ কখন বলা হচ্ছে বের করা হয়, তারপর সেই মুহূর্তেই শব্দ ফুটিয়ে তোলে টাইপোগ্রাফি। পর্দার লাইনটাই এখানে ক্যাপশন; বিরতির জায়গায় বসে বিরতি কার্ড। চাইলে আলাদা সাবটাইটেলও দিতে পারেন — সেটাই তখন প্রাধান্য পাবে।',
       ctaTrack: '🎧 ভয়েস ট্র্যাক করুন',
@@ -1390,15 +1542,17 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       ctaEstimate: '🎧 আবার ট্র্যাক',
       stAlignHint: 'ওয়েভফর্মে ক্লিক করে সেই মুহূর্তে যান · নিচের লাইনে ক্লিক করে লাইন ধরে শুনুন',
       stQuotaLow: 'গল্পের টেক্সট আর ভয়েসের দৈর্ঘ্য মিলছে না',
-      lookTitle: '৩ · লুক ও ফিল', fMood: 'মিউজিক মুড', fAspect: 'অ্যাসপেক্ট',
+      lookTitle: '৩ · লুক, থিম ও অডিও মিক্সার', fMood: 'মিউজিক মুড', fAspect: 'অ্যাসপেক্ট',
       fQuality: 'কোয়ালিটি', fFps: 'ফ্রেম রেট', fDuration: 'টার্গেট দৈর্ঘ্য (সেকেন্ড)',
       fPerf: 'পারফরম্যান্স মোড', perfHigh: 'হাই (ডেস্কটপ)', perfBal: 'ব্যালেন্সড', perfFast: 'ফাস্ট (ফোন / লম্বা ভিডিও)',
       fWatermark: 'ওয়াটারমার্ক / চ্যানেল', fMusic: 'প্রসিডিউরাল মিউজিক (নিজস্ব, কপিরাইট-ফ্রি)',
       fProgressBar: 'নিচে প্রোগ্রেস বার', fVoice: 'ভয়েসওভার (ঐচ্ছিক — mp3/wav)', fLogo: 'ব্র্যান্ড লোগো (ঐচ্ছিক — png/svg)',
       ctaBuildPlan: 'প্ল্যান বানাও (প্রিভিউ)', ctaQueue: 'সব ভিডিও কিউতে দাও',
-      previewTitle: '৫ · লাইভ প্রিভিউ', renderTitle: '৬ · রেন্ডার',
+      previewTitle: '৪ · ডিরেক্টর লাইভ প্রিভিউ', renderTitle: '৫ · ভিডিও এক্সপোর্ট ও ১-ক্লিক ডাউনলোড',
       ctaRender: '⚡ ফাস্ট রেন্ডার (WebCodecs)', ctaRenderCompat: '🎥 MP4 / কম্প্যাট রেন্ডার', ctaCancel: 'বাতিল',
-      publishTitle: '৭ · পাবলিশ (YouTube)', ctaThumb: 'থাম্বনেইল রেন্ডার', ctaThumbDl: 'ডাউনলোড PNG',
+      ctaDirectDownload: '⬇️ ভিডিও ডাউনলোড করুন (.mp4 / .webm)',
+      fAutoDl: 'রেন্ডার শেষ হলে সাথে সাথে অটো ডাউনলোড',
+      publishTitle: 'ইউটিউব পাবলিশ কিট', ctaThumb: 'থাম্বনেইল রেন্ডার', ctaThumbDl: 'ডাউনলোড PNG',
       fYtTitle: 'YouTube টাইটেল', fYtDesc: 'ডেসক্রিপশন (চ্যাপ্টার সহ)', fYtTags: 'ট্যাগ',
       fPrivacy: 'প্রাইভেসি', fSchedule: 'শিডিউল শুরু (তারিখ)',
       ctaCopy: 'মেটাডেটা কপি', ctaOpenStudio: 'YouTube Studio খুলুন',
@@ -1479,12 +1633,19 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       ctaGenerate: '🎬 Make the video', ctaDemo: 'Load a demo script',
       b1: 'Runs on 90%+ of browsers', b2: 'Phone and desktop',
       b3: 'Original copyright-free music', b4: 'YouTube-ready file + schedule',
-      srcTitle: '1 · Brief / script', fTitle: 'Video title',
-      wizardTitle: '⚡ 1-Click Script:', mixerTitle: '🎛️ Audio Mixer & Sound',
+      projectHubTitle: '1 · Project Command Hub',
+      btnNewProject: '✨ New Project',
+      fProjectPresetLabel: 'Video Format & Duration Presets:',
+      presetShorts: '⚡ 60s Shorts (9:16)',
+      preset5Min: '⏱️ 5-Min Video (16:9)',
+      preset10Min: '📽️ 10-Min Explainer (16:9)',
+      preset20Min: '🎬 20-Min Documentary (16:9)',
+      srcTitle: '2 · AI Script & Storytelling', fTitle: 'Video title',
+      wizardTitle: '⚡ 1-Click AI Script:', mixerTitle: '🎛️ Audio Mixer & Sound',
       fDuckLevel: 'Music Ducking on Voice', fSfx: 'Transition Whoosh SFX',
       fScript: 'Script (each paragraph becomes a scene)',
       sampleBatch: 'Sample batch', clearBrief: 'Clear',
-      storyTitle: '2 · Story mode — voice tracking',
+      storyTitle: 'Story mode — voice tracking',
       fStory: 'Story mode (track the voice and turn the story into a video)',
       storyHint: 'Write the story, hand over the voice — we track it, find out when every word is spoken, and drive the typography from that. The line on screen is the caption; real pauses become beat cards. Bring your own subtitle file and it takes over instead.',
       ctaTrack: '🎧 Track the voice',
@@ -1501,15 +1662,17 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       ctaEstimate: '🎧 Track again',
       stAlignHint: 'Click the waveform to jump to that moment · click a line below to hear it',
       stQuotaLow: 'The script and the voice length do not line up',
-      lookTitle: '3 · Look & feel', fMood: 'Music mood', fAspect: 'Aspect',
+      lookTitle: '3 · Themes, Visuals & Audio Mixer', fMood: 'Music mood', fAspect: 'Aspect',
       fQuality: 'Quality', fFps: 'Frame rate', fDuration: 'Target length (seconds)',
       fPerf: 'Performance mode', perfHigh: 'High (desktop)', perfBal: 'Balanced', perfFast: 'Fast (phone / long videos)',
       fWatermark: 'Watermark / channel', fMusic: 'Procedural music (original, copyright-free)',
       fProgressBar: 'Progress bar at the bottom', fVoice: 'Voice-over (optional — mp3/wav)', fLogo: 'Brand logo (optional — png/svg)',
       ctaBuildPlan: 'Build the plan (preview)', ctaQueue: 'Queue every video',
-      previewTitle: '5 · Live preview', renderTitle: '6 · Render',
+      previewTitle: '4 · Live Director Preview', renderTitle: '5 · Full Video Export & 1-Click Download',
       ctaRender: '⚡ Fast render (WebCodecs)', ctaRenderCompat: '🎥 MP4 / compat render', ctaCancel: 'Cancel',
-      publishTitle: '7 · Publish (YouTube)', ctaThumb: 'Render thumbnail', ctaThumbDl: 'Download PNG',
+      ctaDirectDownload: '⬇️ Download Video (.mp4 / .webm)',
+      fAutoDl: 'Auto-download immediately on render completion',
+      publishTitle: 'YouTube Publish Kit', ctaThumb: 'Render thumbnail', ctaThumbDl: 'Download PNG',
       fYtTitle: 'YouTube title', fYtDesc: 'Description (with chapters)', fYtTags: 'Tags',
       fPrivacy: 'Privacy', fSchedule: 'Schedule start (date)',
       ctaCopy: 'Copy metadata', ctaOpenStudio: 'Open YouTube Studio',
@@ -5591,7 +5754,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       return el(ID.SimpleBlock, concat([head, new Uint8Array([flag]), packet.data]));
     }
 
-    function buildClusters() {
+    function buildClustersList() {
       packets.sort(function (a, b) { return a.tsUs - b.tsUs; });
       var clusters = [], i = 0;
       var MAX_MS = 2000;                              // <= 2 s per cluster
@@ -5607,10 +5770,10 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
         }
         clusters.push(el(ID.Cluster, concat(body)));
       }
-      return concat(clusters);
+      return clusters;
     }
 
-    // finalize(durationSeconds) -> Blob
+    // finalize(durationSeconds) -> Blob (memory-safe streaming for 10-20 min videos)
     function finalize(durationSeconds) {
       var header = el(ID.EBML, concat([
         uel(ID.EBMLVersion, 1),
@@ -5635,8 +5798,12 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
         audioPrivate ? trackEntryAudio() : bytes(0)
       ]));
 
-      var segment = el(ID.Segment, concat([info, tracks, buildClusters()]));
-      return new Blob([header, segment], { type: 'video/webm' });
+      var clusters = buildClustersList();
+      var clustersLen = 0;
+      for (var ci = 0; ci < clusters.length; ci++) clustersLen += clusters[ci].length;
+      var segPayloadLen = info.length + tracks.length + clustersLen;
+      var segHead = concat([idBytes(ID.Segment), vint(segPayloadLen), info, tracks]);
+      return new Blob([header, segHead].concat(clusters), { type: 'video/webm' });
     }
 
     return {
@@ -5826,11 +5993,11 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
             frame.close();
             i++;
             if (onProgress) onProgress(i / frameCount, i, frameCount);
-            if (videoEncoder.encodeQueueSize > 6) {
-              return whenQueueDrains(videoEncoder, 2, shouldCancel).then(nextFrame);
+            if (videoEncoder.encodeQueueSize > 4) {
+              return whenQueueDrains(videoEncoder, 1, shouldCancel).then(nextFrame);
             }
-            // yield to the event loop every few frames so the UI stays alive
-            if (i % 3 === 0) return sleep(0).then(nextFrame);
+            // yield to the event loop periodically so GC can reclaim frames
+            if (i % 8 === 0) return sleep(1).then(nextFrame);
             return nextFrame();
           })();
         }
@@ -6189,14 +6356,14 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       transitionOut: 'fade'
     });
 
-    // fit the requested total duration
+    // fit the requested total duration (supporting up to 10-20 minutes)
     if (input.durationTarget) {
       var raw = scenes.reduce(function (s, sc) { return s + sc.dur; }, 0);
-      var factor = Math.max(0.55, Math.min(2.2, input.durationTarget / raw));
+      var factor = Math.max(0.4, Math.min(8.0, input.durationTarget / raw));
       if (Math.abs(factor - 1) > 0.02) {
         scenes.forEach(function (sc) {
-          sc.dur = Math.max(1.6, sc.dur * factor);
-          if (sc.type === 'stat' || sc.type === 'broll') sc.dur = Math.max(1.8, Math.min(4.5, sc.dur));
+          sc.dur = Math.max(1.6, Math.min(18.0, sc.dur * factor));
+          if (sc.type === 'stat' || sc.type === 'broll') sc.dur = Math.max(2.0, Math.min(7.5, sc.dur));
         });
       }
     }
@@ -7420,6 +7587,14 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
         mode: result.mode,
         variant: result.mode === 'mediarecorder' ? 'compat' : ''
       });
+      S.lastRendered = {
+        blob: result.blob,
+        ext: result.ext,
+        name: slug(S.spec.meta.title || 'video') + '.' + result.ext
+      };
+      if ($('#fAutoDl') && $('#fAutoDl').checked) {
+        window.CFX.publish.downloadBlob(result.blob, S.lastRendered.name);
+      }
       $('#renderChip').textContent = (result.mode === 'webcodecs' ? t('stEngineFast') : t('stEngineCompat')) + ' · ' + fmtSize(result.blob.size);
       toast(t('stRenderDone') + ' · ' + fmtSize(result.blob.size));
       setTimeout(function () { $('#progressWrap').hidden = true; }, 1500);
@@ -8114,6 +8289,38 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
           theme: 'arabicGold',
           mood: 'ambient'
         }
+      },
+      explainer10: {
+        bn: {
+          title: 'কৃত্রিম বুদ্ধিমত্তা ও মানুষের ভবিষ্যৎ — গভীর বিশ্লেষণ (১০ মিনিট মেগা পর্ব)',
+          script: 'মানুষ কি সত্যিই এআই-এর কাছে তার নিয়ন্ত্রণ হারাচ্ছে? আজকের এই বিস্তারিত অনুসন্ধানে আমরা উন্মোচন করব কৃত্রিম বুদ্ধিমত্তার গোপন বাস্তবতা।\n\n১. বিপ্লবের সূত্রপাত\nমাত্র কয়েক বছর আগেও মেশিন লার্নিং ছিল কেবল গবেষণাগারের বিষয়। আজ তা বিশ্ব অর্থনীতির প্রতিটি ধমনীতে প্রবেশ করেছে।\n\n২. প্রযুক্তির অন্তর্নিহিত ইঞ্জিন\n- ট্রিলিয়ন প্যারামিটারের লার্জ ল্যাঙ্গুয়েজ মডেল\n- নিউরাল নেটওয়ার্কের গাণিতিক প্যাটার্ন রিকগনিশন\n- হাইপার-স্কেল জিপিইউ ক্লাস্টারের সুপার কম্পিউটিং শক্তি\n\n৩. পরিসংখ্যান ও গ্লোবাল ইমপ্যাক্ট\n৮৫% গ্লোবাল এন্টারপ্রাইজ আগামী তিন বছরে স্বয়ংক্রিয় এআই এজেন্ট ডিপ্লয় করবে।\n\n৪. মনস্তত্ত্ব ও দর্শন\n“প্রযুক্তি মানুষের বিকল্প নয়, বরং মানুষের চিন্তাশক্তিকে মহাশূন্যের গতিতে প্রসারিত করার এক শক্তিশালী মাধ্যম।”\n\n৫. গোপন চ্যালেঞ্জ ও ঝুঁকি\nহ্যালুসিনেশন, সাইবার সিকিউরিটি থ্রেট এবং তথ্যের সত্যতা যাচাই — এই তিনটি সংকট সমাধানের ওপর নির্ভর করছে সভ্যতার ভবিষ্যৎ।\n\n৬. ভবিষ্যতের দিকদর্শন\nযারা মানিয়ে নিতে পারবে, প্রযুক্তি তাদের দাস হবে; আর যারা দ্বিধা করবে, সময় তাদের পেছনে ফেলে যাবে।\n\nভিডিওটি তথ্যবহুল মনে হলে লাইক দিন, কমেন্টে আপনার মতামত জানান এবং চ্যানেলটি সাবস্ক্রাইব করে সঙ্গে থাকুন।',
+          theme: 'cyberMatrix',
+          mood: 'epic',
+          duration: 600
+        },
+        en: {
+          title: 'Artificial Intelligence & The Destiny of Humanity — Deep Explainer',
+          script: 'Is humanity on the brink of surrendering intellectual dominance to machines? In this deep documentary explainer, we investigate the real impact of AI.\n\n1. The Awakening of Silicon\nJust a few years ago, machine intelligence was confined to elite laboratories. Today it powers the engines of global commerce.\n\n2. Architecture of the Modern Mind\n- Multi-trillion parameter foundation models\n- Deep neural networks mapping complex human logic\n- Massive GPU supercomputing clusters running 24/7\n\n3. Unprecedented Paradigm Shift\n85% of worldwide technological infrastructure will run autonomous cognitive agents within the next three years.\n\n4. Philosophy & Consciousness\n“Technology will never replace human soul; it only magnifies the intentions of the hands that wield it.”\n\n5. Critical Vulnerabilities\nSynthetic hallucinations, algorithmic bias, and cognitive dependency represent the most urgent existential challenges of this century.\n\n6. The Horizon Ahead\nThose who adapt will command the future. Those who hesitate will be left navigating the echoes of obsolete paradigms.\n\nIf you found this analysis compelling, bookmark this video, subscribe to our channel, and join the discourse in the comments below.',
+          theme: 'cyberMatrix',
+          mood: 'epic',
+          duration: 600
+        }
+      },
+      docu20: {
+        bn: {
+          title: 'মহাবিশ্বের রহস্য ও মানবজাতির মহাযাত্রা — ২০ মিনিটের সম্পূর্ণ ডকুমেন্টারি',
+          script: 'অসীম মহাকাশের অতল গহ্বরে আমরা কোথায়? ১৩.৮ বিলিয়ন বছরের মহাজাগতিক যাত্রা এক নজরে।\n\n১. মহাবিস্ফোরণ ও আলোর জন্ম\nশূন্যতা থেকে মহাবিশ্বের সূচনা। আলোর প্রথম ঝলকানি সৃষ্টি করেছিল কোটি কোটি নক্ষত্র আর ছায়াপথ।\n\n২. গ্যালাক্সি ও সৌরজগতের ক্রমবিকাশ\n- প্রায় দুই ট্রিলিয়ন ছায়াপথের এক মহাসমুদ্র\n- প্রতিটি ছায়াপথে শত কোটি নক্ষত্রের ঘূর্ণন\n- একটি নিখুঁত মহাজাগতিক সুষম ভারসাম্য\n\n৩. মহাজাগতিক পরিমাপ\n৯৩ বিলিয়ন আলোকবর্ষ — দৃশ্যমান মহাবিশ্বের বর্তমান আনুমানিক ব্যাস।\n\n৪. বিজ্ঞানের অন্তহীন বিস্ময়\n“আমরা মহাবিশ্বের বাইরের কেউ নই; আমরা সেই মহাবিশ্বেরই সচেতন অংশ, যা নিজেকে বুঝতে শিখছে।” — কার্ল সেগান\n\n৫. ব্ল্যাক হোল ও সময়ের সংকোচন\nযেখানে স্থান ও কাল বিলীন হয়ে যায়, মহাকর্ষের সেই পরম অতল গহ্বরে পদার্থবিদ্যার সাধারণ নিয়ম ভেঙে পড়ে।\n\n৬. ভিনগ্রহে প্রাণের অনুসন্ধান\nজেমস ওয়েব টেলিস্কোপ দূরবর্তী এক্সোপ্ল্যানেটের বায়ুমণ্ডলে পানির অণু ও জৈব উপাদানের স্বাক্ষর খুঁজে চলেছে।\n\n৭. সভ্যতার অমরত্ব ও তারার দেশে যাত্রা\nগ্রহান্তর মানবজাতির কেবল একটি বৈজ্ঞানিক লক্ষ্য নয় — এটি আমাদের প্রজাতিকে অনন্তকাল টিকিয়ে রাখার একমাত্র পথ।\n\n৮. উপসংহার ও অনন্তের আহ্বান\nধুলিকণার এই পৃথিবীতে দাঁড়িয়েও মানুষ স্বপ্ন দেখে অনন্ত নক্ষত্রলোকে পৌঁছানোর। সাবস্ক্রাইব করুন এবং এই মহাজাগতিক অভিযাত্রায় আমাদের সঙ্গী হোন।',
+          theme: 'royalEmerald',
+          mood: 'epic',
+          duration: 1200
+        },
+        en: {
+          title: 'Mysteries of the Cosmos & The Human Odyssey — 20-Minute Mega Documentary',
+          script: 'In the infinite abyss of space and time, where does humanity truly belong? A 13.8 billion year cosmic journey unveiled.\n\n1. The Primordial Spark\nFrom timeless singularity emerged the fabric of spacetime, illuminating the dark expanse with stellar nurseries.\n\n2. Architecture of the Great Web\n- Over two trillion galaxies interwoven across cosmic voids\n- Hundreds of billions of stellar systems orbiting in gravitational harmony\n- Cosmic background radiation preserving the echoes of creation\n\n3. Astounding Scale\n93 billion light-years — the unfathomable diameter of the observable universe.\n\n4. The Cosmic Awakening\n“We are a way for the cosmos to know itself; starstuff contemplating starstuff.” — Carl Sagan\n\n5. Event Horizons & Spacetime Curvature\nWhere gravity overpowers all known forces, singularity defies classical mechanics and rewrites theoretical physics.\n\n6. The Search for Cosmic Companions\nDeep space observatories dissect exoplanetary atmospheres, searching for chemical biosignatures across the stellar halo.\n\n7. Interstellar Civilization\nBecoming multi-planetary is not mere ambition — it is the ultimate survival insurance of human consciousness.\n\n8. Epilogue: Across The Endless Frontier\nFrom a pale blue dot in a quiet corner of the galaxy, our voyage into eternity has only just begun. Subscribe and journey with us into the infinite.',
+          theme: 'royalEmerald',
+          mood: 'epic',
+          duration: 1200
+        }
       }
     };
 
@@ -8128,6 +8335,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
           $$('.swatch').forEach(function (s) { s.classList.toggle('on', s.dataset.theme === tpl.theme); });
         }
         if (tpl.mood && $('#fMood')) $('#fMood').value = tpl.mood;
+        if (tpl.duration && $('#fDuration')) $('#fDuration').value = tpl.duration;
         if (tpl.shorts) {
           $('#fAspect').value = '9:16';
           $('#fCaptionStyle').value = 'karaoke';
@@ -8137,6 +8345,68 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
         setTimeout(play, 800);
       });
     });
+
+    // Project Format & Duration Presets (60s, 5m, 10m, 20m)
+    $$('#presetGrid .preset-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        $$('#presetGrid .preset-btn').forEach(function (b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        var p = this.dataset.preset;
+        if (p === 'shorts') {
+          $('#fAspect').value = '9:16';
+          $('#fDuration').value = 60;
+          $('#fShorts').checked = true;
+          $('#fCaptionStyle').value = 'karaoke';
+          $('#fPerf').value = 'high';
+        } else if (p === '5min') {
+          $('#fAspect').value = '16:9';
+          $('#fDuration').value = 300;
+          $('#fShorts').checked = false;
+          $('#fCaptionStyle').value = 'bar';
+          $('#fPerf').value = 'balanced';
+        } else if (p === '10min') {
+          $('#fAspect').value = '16:9';
+          $('#fDuration').value = 600;
+          $('#fShorts').checked = false;
+          $('#fCaptionStyle').value = 'bar';
+          $('#fPerf').value = 'balanced';
+        } else if (p === '20min') {
+          $('#fAspect').value = '16:9';
+          $('#fDuration').value = 1200;
+          $('#fShorts').checked = false;
+          $('#fCaptionStyle').value = 'bar';
+          $('#fPerf').value = 'fast';
+        }
+        toast((window.CF_LANG === 'en' ? 'Preset applied: ' : 'প্রিসেট চালু: ') + this.innerText.split('\n')[0]);
+        if (S.spec) buildCurrentPlan();
+      });
+    });
+
+    if ($('#btnNewProject')) {
+      $('#btnNewProject').addEventListener('click', function () {
+        $('#fTitle').value = window.CF_LANG === 'en' ? 'My Video Project' : 'আমার ভিডিও প্রজেক্ট';
+        $('#fScript').value = '';
+        $('#fWatermark').value = '';
+        $('#fDuration').value = 600;
+        $('#fAspect').value = '16:9';
+        pause();
+        S.spec = null; S.renderer = null; S.lastRendered = null;
+        $('#sceneStrip').innerHTML = ''; $('#planStats').innerHTML = '';
+        toast(window.CF_LANG === 'en' ? 'New project ready — pick a 1-click script or start typing.' : 'নতুন প্রজেক্ট তৈরি হয়েছে — যেকোনো ১-ক্লিক স্ক্রিপ্ট বাছুন বা লিখুন।');
+      });
+    }
+
+    if ($('#btnDirectDl')) {
+      $('#btnDirectDl').addEventListener('click', function () {
+        if (S.lastRendered && S.lastRendered.blob) {
+          window.CFX.publish.downloadBlob(S.lastRendered.blob, S.lastRendered.name);
+          toast(window.CF_LANG === 'en' ? 'Downloading video...' : 'ভিডিও ডাউনলোড শুরু হয়েছে...');
+        } else {
+          toast(window.CF_LANG === 'en' ? 'Rendering video first, download will start automatically...' : 'ভিডিও রেন্ডার হচ্ছে, শেষ হলে অটো ডাউনলোড হবে...');
+          renderWith('fast', false);
+        }
+      });
+    }
 
     // audio mixer live listeners
     if ($('#fMusicVol')) {

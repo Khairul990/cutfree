@@ -614,6 +614,14 @@
         mode: result.mode,
         variant: result.mode === 'mediarecorder' ? 'compat' : ''
       });
+      S.lastRendered = {
+        blob: result.blob,
+        ext: result.ext,
+        name: slug(S.spec.meta.title || 'video') + '.' + result.ext
+      };
+      if ($('#fAutoDl') && $('#fAutoDl').checked) {
+        window.CFX.publish.downloadBlob(result.blob, S.lastRendered.name);
+      }
       $('#renderChip').textContent = (result.mode === 'webcodecs' ? t('stEngineFast') : t('stEngineCompat')) + ' · ' + fmtSize(result.blob.size);
       toast(t('stRenderDone') + ' · ' + fmtSize(result.blob.size));
       setTimeout(function () { $('#progressWrap').hidden = true; }, 1500);
@@ -1308,6 +1316,38 @@
           theme: 'arabicGold',
           mood: 'ambient'
         }
+      },
+      explainer10: {
+        bn: {
+          title: 'কৃত্রিম বুদ্ধিমত্তা ও মানুষের ভবিষ্যৎ — গভীর বিশ্লেষণ (১০ মিনিট মেগা পর্ব)',
+          script: 'মানুষ কি সত্যিই এআই-এর কাছে তার নিয়ন্ত্রণ হারাচ্ছে? আজকের এই বিস্তারিত অনুসন্ধানে আমরা উন্মোচন করব কৃত্রিম বুদ্ধিমত্তার গোপন বাস্তবতা।\n\n১. বিপ্লবের সূত্রপাত\nমাত্র কয়েক বছর আগেও মেশিন লার্নিং ছিল কেবল গবেষণাগারের বিষয়। আজ তা বিশ্ব অর্থনীতির প্রতিটি ধমনীতে প্রবেশ করেছে।\n\n২. প্রযুক্তির অন্তর্নিহিত ইঞ্জিন\n- ট্রিলিয়ন প্যারামিটারের লার্জ ল্যাঙ্গুয়েজ মডেল\n- নিউরাল নেটওয়ার্কের গাণিতিক প্যাটার্ন রিকগনিশন\n- হাইপার-স্কেল জিপিইউ ক্লাস্টারের সুপার কম্পিউটিং শক্তি\n\n৩. পরিসংখ্যান ও গ্লোবাল ইমপ্যাক্ট\n৮৫% গ্লোবাল এন্টারপ্রাইজ আগামী তিন বছরে স্বয়ংক্রিয় এআই এজেন্ট ডিপ্লয় করবে।\n\n৪. মনস্তত্ত্ব ও দর্শন\n“প্রযুক্তি মানুষের বিকল্প নয়, বরং মানুষের চিন্তাশক্তিকে মহাশূন্যের গতিতে প্রসারিত করার এক শক্তিশালী মাধ্যম।”\n\n৫. গোপন চ্যালেঞ্জ ও ঝুঁকি\nহ্যালুসিনেশন, সাইবার সিকিউরিটি থ্রেট এবং তথ্যের সত্যতা যাচাই — এই তিনটি সংকট সমাধানের ওপর নির্ভর করছে সভ্যতার ভবিষ্যৎ।\n\n৬. ভবিষ্যতের দিকদর্শন\nযারা মানিয়ে নিতে পারবে, প্রযুক্তি তাদের দাস হবে; আর যারা দ্বিধা করবে, সময় তাদের পেছনে ফেলে যাবে।\n\nভিডিওটি তথ্যবহুল মনে হলে লাইক দিন, কমেন্টে আপনার মতামত জানান এবং চ্যানেলটি সাবস্ক্রাইব করে সঙ্গে থাকুন।',
+          theme: 'cyberMatrix',
+          mood: 'epic',
+          duration: 600
+        },
+        en: {
+          title: 'Artificial Intelligence & The Destiny of Humanity — Deep Explainer',
+          script: 'Is humanity on the brink of surrendering intellectual dominance to machines? In this deep documentary explainer, we investigate the real impact of AI.\n\n1. The Awakening of Silicon\nJust a few years ago, machine intelligence was confined to elite laboratories. Today it powers the engines of global commerce.\n\n2. Architecture of the Modern Mind\n- Multi-trillion parameter foundation models\n- Deep neural networks mapping complex human logic\n- Massive GPU supercomputing clusters running 24/7\n\n3. Unprecedented Paradigm Shift\n85% of worldwide technological infrastructure will run autonomous cognitive agents within the next three years.\n\n4. Philosophy & Consciousness\n“Technology will never replace human soul; it only magnifies the intentions of the hands that wield it.”\n\n5. Critical Vulnerabilities\nSynthetic hallucinations, algorithmic bias, and cognitive dependency represent the most urgent existential challenges of this century.\n\n6. The Horizon Ahead\nThose who adapt will command the future. Those who hesitate will be left navigating the echoes of obsolete paradigms.\n\nIf you found this analysis compelling, bookmark this video, subscribe to our channel, and join the discourse in the comments below.',
+          theme: 'cyberMatrix',
+          mood: 'epic',
+          duration: 600
+        }
+      },
+      docu20: {
+        bn: {
+          title: 'মহাবিশ্বের রহস্য ও মানবজাতির মহাযাত্রা — ২০ মিনিটের সম্পূর্ণ ডকুমেন্টারি',
+          script: 'অসীম মহাকাশের অতল গহ্বরে আমরা কোথায়? ১৩.৮ বিলিয়ন বছরের মহাজাগতিক যাত্রা এক নজরে।\n\n১. মহাবিস্ফোরণ ও আলোর জন্ম\nশূন্যতা থেকে মহাবিশ্বের সূচনা। আলোর প্রথম ঝলকানি সৃষ্টি করেছিল কোটি কোটি নক্ষত্র আর ছায়াপথ।\n\n২. গ্যালাক্সি ও সৌরজগতের ক্রমবিকাশ\n- প্রায় দুই ট্রিলিয়ন ছায়াপথের এক মহাসমুদ্র\n- প্রতিটি ছায়াপথে শত কোটি নক্ষত্রের ঘূর্ণন\n- একটি নিখুঁত মহাজাগতিক সুষম ভারসাম্য\n\n৩. মহাজাগতিক পরিমাপ\n৯৩ বিলিয়ন আলোকবর্ষ — দৃশ্যমান মহাবিশ্বের বর্তমান আনুমানিক ব্যাস।\n\n৪. বিজ্ঞানের অন্তহীন বিস্ময়\n“আমরা মহাবিশ্বের বাইরের কেউ নই; আমরা সেই মহাবিশ্বেরই সচেতন অংশ, যা নিজেকে বুঝতে শিখছে।” — কার্ল সেগান\n\n৫. ব্ল্যাক হোল ও সময়ের সংকোচন\nযেখানে স্থান ও কাল বিলীন হয়ে যায়, মহাকর্ষের সেই পরম অতল গহ্বরে পদার্থবিদ্যার সাধারণ নিয়ম ভেঙে পড়ে।\n\n৬. ভিনগ্রহে প্রাণের অনুসন্ধান\nজেমস ওয়েব টেলিস্কোপ দূরবর্তী এক্সোপ্ল্যানেটের বায়ুমণ্ডলে পানির অণু ও জৈব উপাদানের স্বাক্ষর খুঁজে চলেছে।\n\n৭. সভ্যতার অমরত্ব ও তারার দেশে যাত্রা\nগ্রহান্তর মানবজাতির কেবল একটি বৈজ্ঞানিক লক্ষ্য নয় — এটি আমাদের প্রজাতিকে অনন্তকাল টিকিয়ে রাখার একমাত্র পথ।\n\n৮. উপসংহার ও অনন্তের আহ্বান\nধুলিকণার এই পৃথিবীতে দাঁড়িয়েও মানুষ স্বপ্ন দেখে অনন্ত নক্ষত্রলোকে পৌঁছানোর। সাবস্ক্রাইব করুন এবং এই মহাজাগতিক অভিযাত্রায় আমাদের সঙ্গী হোন।',
+          theme: 'royalEmerald',
+          mood: 'epic',
+          duration: 1200
+        },
+        en: {
+          title: 'Mysteries of the Cosmos & The Human Odyssey — 20-Minute Mega Documentary',
+          script: 'In the infinite abyss of space and time, where does humanity truly belong? A 13.8 billion year cosmic journey unveiled.\n\n1. The Primordial Spark\nFrom timeless singularity emerged the fabric of spacetime, illuminating the dark expanse with stellar nurseries.\n\n2. Architecture of the Great Web\n- Over two trillion galaxies interwoven across cosmic voids\n- Hundreds of billions of stellar systems orbiting in gravitational harmony\n- Cosmic background radiation preserving the echoes of creation\n\n3. Astounding Scale\n93 billion light-years — the unfathomable diameter of the observable universe.\n\n4. The Cosmic Awakening\n“We are a way for the cosmos to know itself; starstuff contemplating starstuff.” — Carl Sagan\n\n5. Event Horizons & Spacetime Curvature\nWhere gravity overpowers all known forces, singularity defies classical mechanics and rewrites theoretical physics.\n\n6. The Search for Cosmic Companions\nDeep space observatories dissect exoplanetary atmospheres, searching for chemical biosignatures across the stellar halo.\n\n7. Interstellar Civilization\nBecoming multi-planetary is not mere ambition — it is the ultimate survival insurance of human consciousness.\n\n8. Epilogue: Across The Endless Frontier\nFrom a pale blue dot in a quiet corner of the galaxy, our voyage into eternity has only just begun. Subscribe and journey with us into the infinite.',
+          theme: 'royalEmerald',
+          mood: 'epic',
+          duration: 1200
+        }
       }
     };
 
@@ -1322,6 +1362,7 @@
           $$('.swatch').forEach(function (s) { s.classList.toggle('on', s.dataset.theme === tpl.theme); });
         }
         if (tpl.mood && $('#fMood')) $('#fMood').value = tpl.mood;
+        if (tpl.duration && $('#fDuration')) $('#fDuration').value = tpl.duration;
         if (tpl.shorts) {
           $('#fAspect').value = '9:16';
           $('#fCaptionStyle').value = 'karaoke';
@@ -1331,6 +1372,68 @@
         setTimeout(play, 800);
       });
     });
+
+    // Project Format & Duration Presets (60s, 5m, 10m, 20m)
+    $$('#presetGrid .preset-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        $$('#presetGrid .preset-btn').forEach(function (b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        var p = this.dataset.preset;
+        if (p === 'shorts') {
+          $('#fAspect').value = '9:16';
+          $('#fDuration').value = 60;
+          $('#fShorts').checked = true;
+          $('#fCaptionStyle').value = 'karaoke';
+          $('#fPerf').value = 'high';
+        } else if (p === '5min') {
+          $('#fAspect').value = '16:9';
+          $('#fDuration').value = 300;
+          $('#fShorts').checked = false;
+          $('#fCaptionStyle').value = 'bar';
+          $('#fPerf').value = 'balanced';
+        } else if (p === '10min') {
+          $('#fAspect').value = '16:9';
+          $('#fDuration').value = 600;
+          $('#fShorts').checked = false;
+          $('#fCaptionStyle').value = 'bar';
+          $('#fPerf').value = 'balanced';
+        } else if (p === '20min') {
+          $('#fAspect').value = '16:9';
+          $('#fDuration').value = 1200;
+          $('#fShorts').checked = false;
+          $('#fCaptionStyle').value = 'bar';
+          $('#fPerf').value = 'fast';
+        }
+        toast((window.CF_LANG === 'en' ? 'Preset applied: ' : 'প্রিসেট চালু: ') + this.innerText.split('\n')[0]);
+        if (S.spec) buildCurrentPlan();
+      });
+    });
+
+    if ($('#btnNewProject')) {
+      $('#btnNewProject').addEventListener('click', function () {
+        $('#fTitle').value = window.CF_LANG === 'en' ? 'My Video Project' : 'আমার ভিডিও প্রজেক্ট';
+        $('#fScript').value = '';
+        $('#fWatermark').value = '';
+        $('#fDuration').value = 600;
+        $('#fAspect').value = '16:9';
+        pause();
+        S.spec = null; S.renderer = null; S.lastRendered = null;
+        $('#sceneStrip').innerHTML = ''; $('#planStats').innerHTML = '';
+        toast(window.CF_LANG === 'en' ? 'New project ready — pick a 1-click script or start typing.' : 'নতুন প্রজেক্ট তৈরি হয়েছে — যেকোনো ১-ক্লিক স্ক্রিপ্ট বাছুন বা লিখুন।');
+      });
+    }
+
+    if ($('#btnDirectDl')) {
+      $('#btnDirectDl').addEventListener('click', function () {
+        if (S.lastRendered && S.lastRendered.blob) {
+          window.CFX.publish.downloadBlob(S.lastRendered.blob, S.lastRendered.name);
+          toast(window.CF_LANG === 'en' ? 'Downloading video...' : 'ভিডিও ডাউনলোড শুরু হয়েছে...');
+        } else {
+          toast(window.CF_LANG === 'en' ? 'Rendering video first, download will start automatically...' : 'ভিডিও রেন্ডার হচ্ছে, শেষ হলে অটো ডাউনলোড হবে...');
+          renderWith('fast', false);
+        }
+      });
+    }
 
     // audio mixer live listeners
     if ($('#fMusicVol')) {

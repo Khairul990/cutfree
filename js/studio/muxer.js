@@ -180,7 +180,7 @@
       return el(ID.SimpleBlock, concat([head, new Uint8Array([flag]), packet.data]));
     }
 
-    function buildClusters() {
+    function buildClustersList() {
       packets.sort(function (a, b) { return a.tsUs - b.tsUs; });
       var clusters = [], i = 0;
       var MAX_MS = 2000;                              // <= 2 s per cluster
@@ -196,10 +196,10 @@
         }
         clusters.push(el(ID.Cluster, concat(body)));
       }
-      return concat(clusters);
+      return clusters;
     }
 
-    // finalize(durationSeconds) -> Blob
+    // finalize(durationSeconds) -> Blob (memory-safe streaming for 10-20 min videos)
     function finalize(durationSeconds) {
       var header = el(ID.EBML, concat([
         uel(ID.EBMLVersion, 1),
@@ -224,8 +224,12 @@
         audioPrivate ? trackEntryAudio() : bytes(0)
       ]));
 
-      var segment = el(ID.Segment, concat([info, tracks, buildClusters()]));
-      return new Blob([header, segment], { type: 'video/webm' });
+      var clusters = buildClustersList();
+      var clustersLen = 0;
+      for (var ci = 0; ci < clusters.length; ci++) clustersLen += clusters[ci].length;
+      var segPayloadLen = info.length + tracks.length + clustersLen;
+      var segHead = concat([idBytes(ID.Segment), vint(segPayloadLen), info, tracks]);
+      return new Blob([header, segHead].concat(clusters), { type: 'video/webm' });
     }
 
     return {
