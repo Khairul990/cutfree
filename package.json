@@ -1,8 +1,8 @@
 {
-  "name": "cutfree",
-  "version": "1.0.0",
+  "name": "cutfree-studio",
+  "version": "2.0.0",
   "private": true,
-  "description": "CutFree — 100% free, browser-based video cutter, trimmer and joiner. No uploads, no server, no watermark.",
+  "description": "CutFree Studio — free browser video factory: auto-generated animated videos (WebCodecs + own WebM muxer + procedural music), plus the cutter/editor. No uploads, no server, no watermark.",
   "keywords": [
     "video-cutter",
     "video-trimmer",
@@ -11,14 +11,26 @@
     "client-side",
     "media-recorder",
     "no-watermark",
-    "free"
+    "free",
+    "webcodecs",
+    "motion-graphics",
+    "procedural-music",
+    "youtube-automation",
+    "webm-muxer",
+    "faceless-channel",
+    "zero-cost"
   ],
   "license": "MIT",
   "scripts": {
     "start": "python3 -m http.server 8080",
     "build": "python3 tools/build-single-file.py",
     "test": "node tests/e2e.js",
-    "test:single": "PAGE=cutfree.html node tests/e2e.js"
+    "test:studio": "node tests/studio.e2e.js",
+    "test:all": "node tests/e2e.js && node tests/studio.e2e.js",
+    "shots": "node tools/screenshots.js",
+    "yt:login": "node tools/yt-upload.mjs login",
+    "yt:upload": "node tools/yt-upload.mjs upload --dir ./publish",
+    "yt:status": "node tools/yt-upload.mjs status"
   },
   "devDependencies": {
     "playwright": "^1.47.0"
