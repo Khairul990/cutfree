@@ -1,0 +1,26 @@
+{
+  "name": "cutfree",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CutFree — 100% free, browser-based video cutter, trimmer and joiner. No uploads, no server, no watermark.",
+  "keywords": [
+    "video-cutter",
+    "video-trimmer",
+    "video-editor",
+    "browser",
+    "client-side",
+    "media-recorder",
+    "no-watermark",
+    "free"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "build": "python3 tools/build-single-file.py",
+    "test": "node tests/e2e.js",
+    "test:single": "PAGE=cutfree.html node tests/e2e.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.47.0"
+  }
+}

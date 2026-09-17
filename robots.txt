@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+# CutFree — free browser-based video cutter & editor

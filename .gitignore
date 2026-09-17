@@ -1,0 +1,21 @@
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# dependencies (this project has none — kept for future tooling)
+node_modules/
+package-lock.json
+
+# build / cache output
+dist/
+build/
+.cache/
+__pycache__/
+
+# logs & local env
+*.log
+.env
+.env.local
