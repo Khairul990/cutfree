@@ -339,7 +339,33 @@ function wordCount(s: string) {
 function splitBeats(script: string) {
   const raw = String(script || "").replace(/\r/g, "").trim();
   if (!raw) return [];
-  const blocks = raw.split(/\n\s*\n+/);
+  // Line-by-line mode: if no blank line (\n\n) but many single lines, each non-empty line = one scene
+  // This fulfills hero promise "প্রতি লাইন = এক সিন" — blank line still creates new scene,
+  // and consecutive bullet lines (≥2) are grouped as before.
+  let blocks: string[];
+  if (/\n\s*\n/.test(raw)) {
+    blocks = raw.split(/\n\s*\n+/);
+  } else if (raw.includes("\n")) {
+    const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
+    // Group consecutive bullet lines so "- a\n- b\n- c" stays as one bullets scene
+    blocks = [];
+    for (let i = 0; i < lines.length; ) {
+      if (/^([-*•▪◦]|\d+[.)])\s+/.test(lines[i])) {
+        const grp: string[] = [];
+        while (i < lines.length && /^([-*•▪◦]|\d+[.)])\s+/.test(lines[i])) {
+          grp.push(lines[i]);
+          i++;
+        }
+        // keep bullets together as one block
+        blocks.push(grp.join("\n"));
+      } else {
+        blocks.push(lines[i]);
+        i++;
+      }
+    }
+  } else {
+    blocks = [raw];
+  }
   const beats: { kind: string; heading?: string; text?: string; items?: string[] }[] = [];
   blocks.forEach((block) => {
     const lines = block
@@ -685,7 +711,23 @@ function splitWords(text: string, para: number): WordItem[] {
   });
 }
 function assignVoiceTiming(script: string, vad: VADResult): { words: { w: string; s: number; e: number; para: number }[]; paragraphs: { index: number; text: string; words: { w: string; s: number; e: number }[]; start: number; end: number }[]; cues: { start: number; end: number; text: string }[] } | null {
-  const blocks = String(script || "").split(/\n\s*\n+/).map(b => b.replace(/\s+/g, " ").trim()).filter(Boolean);
+  const rawScript = String(script || "").replace(/\r/g, "").trim();
+  let blocks: string[];
+  if (/\n\s*\n/.test(rawScript)) {
+    blocks = rawScript.split(/\n\s*\n+/).map(b => b.replace(/\s+/g, " ").trim()).filter(Boolean);
+  } else if (rawScript.includes("\n")) {
+    const lines = rawScript.split("\n").map(l => l.trim()).filter(Boolean);
+    blocks = [];
+    for (let i = 0; i < lines.length; ) {
+      if (/^([-*•▪◦]|\d+[.)])\s+/.test(lines[i])) {
+        const grp: string[] = [];
+        while (i < lines.length && /^([-*•▪◦]|\d+[.)])\s+/.test(lines[i])) { grp.push(lines[i]); i++; }
+        blocks.push(grp.join(" "));
+      } else { blocks.push(lines[i].replace(/\s+/g, " ").trim()); i++; }
+    }
+  } else {
+    blocks = [rawScript.replace(/\s+/g, " ").trim()].filter(Boolean);
+  }
   if (!blocks.length || !vad.usable) return null;
   const flat: WordItem[] = [];
   blocks.forEach((b, bi) => flat.push(...splitWords(b, bi)));

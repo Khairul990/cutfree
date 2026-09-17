@@ -54,10 +54,17 @@ try {
   console.log('⚛️  Building React app with Vite...');
   execSync('npx vite build', { stdio: 'inherit', cwd: ROOT });
   console.log('✅ React app built with Vite');
-  // Ensure app.html is available as index for React entry
+  // Ensure app.html is available as index for React entry (root should be React Studio)
   const viteApp = path.join(distDir, 'app.html');
+  const viteIndex = path.join(distDir, 'index.html');
   if (fs.existsSync(viteApp)) {
-    // Also copy as index for direct dist serving
+    // Make React Studio the root index so https://.../cutfree/ shows new factory
+    // Keep original landing as landing.html
+    try {
+      if (fs.existsSync(viteIndex)) fs.copyFileSync(viteIndex, path.join(distDir, 'landing.html'));
+      fs.copyFileSync(viteApp, viteIndex);
+      console.log('✅ app.html copied to index.html — React Studio is now root');
+    } catch (e) { console.warn('copy app->index failed', e); }
     console.log('✅ app.html ready in dist/');
   }
 } catch (err) {
