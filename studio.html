@@ -218,6 +218,7 @@
           <label class="field">
             <span data-i18n="fCaptionStyle">সাবটাইটেল স্টাইল</span>
             <select id="fCaptionStyle">
+              <option value="hormozi" selected data-i18n="capHormozi">🔥 ভাইরাল পপ (হরমুজি স্টাইল)</option>
               <option value="karaoke" data-i18n="capKaraoke">কারাওকে (শব্দ হাইলাইট)</option>
               <option value="bar" selected data-i18n="capBar">সিম্পল বার</option>
               <option value="none" data-i18n="capNone">কোনোটাই না</option>
@@ -227,6 +228,17 @@
             <input type="checkbox" id="fShorts" />
             <span data-i18n="fShorts">Shorts মোড (9:16 + safe zone + #Shorts)</span>
           </label>
+        </div>
+
+        <div class="field" style="margin-top: 14px;">
+          <span data-i18n="fBgImage">🖼️ ব্যাকগ্রাউন্ড ইমেজ (কাস্টম ছবি)</span>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <label class="btn ghost small file-btn" style="flex:1;">
+              <input type="file" id="fBgImage" accept="image/*" hidden />
+              <span id="fBgImageLabel" data-i18n="pickImage">🖼️ ছবি বাছুন</span>
+            </label>
+            <button class="btn ghost small danger" id="btnClearBgImage" type="button" style="display:none;" data-i18n="clearBgImage">ছবি সরান</button>
+          </div>
         </div>
 
         <h3 class="card-title" data-i18n="lookTitle" style="margin-top: 24px;">৩ · লুক, থিম ও অডিও মিক্সার</h3>

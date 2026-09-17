@@ -994,6 +994,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
           <label class="field">
             <span data-i18n="fCaptionStyle">সাবটাইটেল স্টাইল</span>
             <select id="fCaptionStyle">
+              <option value="hormozi" selected data-i18n="capHormozi">🔥 ভাইরাল পপ (হরমুজি স্টাইল)</option>
               <option value="karaoke" data-i18n="capKaraoke">কারাওকে (শব্দ হাইলাইট)</option>
               <option value="bar" selected data-i18n="capBar">সিম্পল বার</option>
               <option value="none" data-i18n="capNone">কোনোটাই না</option>
@@ -1003,6 +1004,17 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
             <input type="checkbox" id="fShorts" />
             <span data-i18n="fShorts">Shorts মোড (9:16 + safe zone + #Shorts)</span>
           </label>
+        </div>
+
+        <div class="field" style="margin-top: 14px;">
+          <span data-i18n="fBgImage">🖼️ ব্যাকগ্রাউন্ড ইমেজ (কাস্টম ছবি)</span>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <label class="btn ghost small file-btn" style="flex:1;">
+              <input type="file" id="fBgImage" accept="image/*" hidden />
+              <span id="fBgImageLabel" data-i18n="pickImage">🖼️ ছবি বাছুন</span>
+            </label>
+            <button class="btn ghost small danger" id="btnClearBgImage" type="button" style="display:none;" data-i18n="clearBgImage">ছবি সরান</button>
+          </div>
         </div>
 
         <h3 class="card-title" data-i18n="lookTitle" style="margin-top: 24px;">৩ · লুক, থিম ও অডিও মিক্সার</h3>
@@ -1613,7 +1625,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       voiceMeasured: 'টাইমিং মাপা হয়েছে', voiceEstimated: 'টাইমিং অনুমান করা হয়েছে',
       stVoiceSpeaking: 'শুনুন…', stMeasuring: 'ন্যারেশন মাপা হচ্ছে',
       subsTitle: 'সাবটাইটেল', ctaSrtImport: '📄 SRT / VTT ইমপোর্ট', ctaSrtExport: '⬇️ SRT এক্সপোর্ট',
-      fCaptionStyle: 'সাবটাইটেল স্টাইল', capKaraoke: 'কারাওকে (শব্দ হাইলাইট)', capBar: 'সিম্পল বার', capNone: 'কোনোটাই না',
+      fCaptionStyle: 'সাবটাইটেল স্টাইল', capHormozi: '🔥 ভাইরাল পপ (হরমুজি স্টাইল)', capKaraoke: 'কারাওকে (শব্দ হাইলাইট)', capBar: 'সিম্পল বার', capNone: 'কোনোটাই না', fBgImage: '🖼️ ব্যাকগ্রাউন্ড ইমেজ (কাস্টম ছবি)', clearBgImage: 'ছবি সরান',
       stNoCaptions: 'কোনো ক্যাপশন নেই — টাইমিং মাপুন বা SRT ইমপোর্ট করুন।',
       stSrtDone: '{n}টি ক্যাপশন SRT হিসেবে ডাউনলোড হয়েছে।',
       stSrtFail: 'SRT পড়া গেল না — ফরম্যাট দেখে নিন।',
@@ -1732,7 +1744,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       voiceMeasured: 'Timing measured', voiceEstimated: 'Timing estimated',
       stVoiceSpeaking: 'Listening…', stMeasuring: 'Measuring narration',
       subsTitle: 'Subtitles', ctaSrtImport: '📄 Import SRT / VTT', ctaSrtExport: '⬇️ Export SRT',
-      fCaptionStyle: 'Caption style', capKaraoke: 'Karaoke (word highlight)', capBar: 'Simple bar', capNone: 'None',
+      fCaptionStyle: 'Caption style', capHormozi: '🔥 Viral Pop (Hormozi)', capKaraoke: 'Karaoke (word highlight)', capBar: 'Simple bar', capNone: 'None', fBgImage: '🖼️ Custom background image', clearBgImage: 'Remove image',
       stNoCaptions: 'No captions yet — measure the timing or import an SRT.',
       stSrtDone: 'Downloaded {n} captions as SRT.',
       stSrtFail: 'Could not read that SRT — check the format.',
@@ -2443,7 +2455,17 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       }
     })();
 
-    function drawBackground(t, cam) {
+    var bgImageCache = {};
+    function getBgImage(src) {
+      if (!src) return null;
+      if (bgImageCache[src]) return bgImageCache[src];
+      var img = new Image();
+      img.src = src;
+      bgImageCache[src] = img;
+      return img;
+    }
+
+    function drawBackground(t, cam, scene) {
       var bw = bg.width, bh = bg.height;
       var pal = palette(t);
       var e = energyAt(t);
@@ -2540,7 +2562,20 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       ctx.globalCompositeOperation = 'source-over';
       ctx.translate(W / 2 + ox, H / 2 + oy);
       ctx.scale(zoom, zoom);
-      ctx.drawImage(bg, -W / 2, -H / 2, W, H);
+
+      var customBg = (scene && scene.bgImage) ? getBgImage(scene.bgImage) : ((spec.meta && spec.meta.bgImage) ? getBgImage(spec.meta.bgImage) : null);
+      if (customBg && customBg.complete && customBg.naturalWidth > 0) {
+        // Draw user uploaded / scene background image with cover fit
+        var iw = customBg.naturalWidth, ih = customBg.naturalHeight;
+        var s = Math.max(W / iw, H / ih);
+        var dw = iw * s, dh = ih * s;
+        ctx.drawImage(customBg, -dw / 2, -dh / 2, dw, dh);
+        // Dim overlay to keep text popping out
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+        ctx.fillRect(-W / 2, -H / 2, W, H);
+      } else {
+        ctx.drawImage(bg, -W / 2, -H / 2, W, H);
+      }
       ctx.restore();
     }
 
@@ -3225,10 +3260,95 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
 
       var cue = activeCue(t);
       if (!cue) return;
-      var text = String(cue.text || '').replace(/\n/g, ' ');
+      var text = String(cue.text || '').replace(/
+/g, ' ');
       if (!text) return;
 
       var portrait = H > W;
+      var isHormozi = (captionCfg.style === 'hormozi');
+      var isKaraoke = (captionCfg.style === 'karaoke' || isHormozi);
+
+      var current = null;
+      var curWordObj = null;
+      if (isKaraoke && cue.words && cue.words.length) {
+        for (var wi = 0; wi < cue.words.length; wi++) {
+          if (t >= cue.words[wi].s && t < cue.words[wi].e) {
+            current = String(cue.words[wi].w).replace(/[^\wঀ-৿]/g, '');
+            curWordObj = cue.words[wi];
+            break;
+          }
+        }
+      }
+
+      if (isHormozi) {
+        // Hormozi / Viral Pop style: Big punchy centered typography, dynamic bounce pop on active word
+        var hSize = U * (portrait ? 0.075 : 0.055) * (captionCfg.scale || 1);
+        var hMaxW = W * (portrait ? 0.88 : 0.78);
+        var hFit = fitText(ctx, text, { maxWidth: hMaxW, maxLines: 2, maxSize: hSize, minSize: U * 0.038, weight: 900, lineHeight: 1.25 });
+        var hBlockH = hFit.lines.length * hFit.lineHeight;
+        var hY = WIN_BOTTOM - hBlockH / 2 - U * 0.04;
+        var hFade = clamp(Math.min((t - cue.start) / 0.12, (cue.end - t) / 0.12), 0, 1);
+
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '900 ' + hFit.size + 'px ' + (CFX.FONTS && CFX.FONTS.display ? CFX.FONTS.display : 'sans-serif');
+
+        var totalLines = hFit.lines.length;
+        var startY = hY - ((totalLines - 1) * hFit.lineHeight) / 2;
+
+        hFit.lines.forEach(function (line, li) {
+          var ly = startY + li * hFit.lineHeight;
+          var words = line.split(' ');
+          var spaceW = ctx.measureText(' ').width;
+          var widths = words.map(function (wrd) { return ctx.measureText(wrd).width; });
+          var lineW = widths.reduce(function (a, b) { return a + b; }, 0) + spaceW * Math.max(0, words.length - 1);
+          var x = W / 2 - lineW / 2;
+
+          words.forEach(function (word, wj) {
+            var clean = word.replace(/[^\wঀ-৿]/g, '');
+            var isCurrent = clean && current && clean.indexOf(current) === 0;
+            var curW = widths[wj];
+
+            ctx.save();
+            var wordCx = x + curW / 2;
+            var wordCy = ly;
+
+            if (isCurrent && curWordObj) {
+              // bouncy pop scale
+              var wordDur = Math.max(0.01, curWordObj.e - curWordObj.s);
+              var wordProg = clamp((t - curWordObj.s) / wordDur, 0, 1);
+              var bounce = 1.0 + Math.sin(wordProg * Math.PI) * 0.24;
+              ctx.translate(wordCx, wordCy);
+              ctx.scale(bounce, bounce);
+              ctx.translate(-wordCx, -wordCy);
+            }
+
+            // Heavy drop shadow + outline for viral pop legibility
+            ctx.lineJoin = 'round';
+            ctx.miterLimit = 2;
+            ctx.lineWidth = Math.max(3, hFit.size * 0.16);
+            ctx.strokeStyle = '#000000';
+            ctx.globalAlpha = hFade * 0.95;
+            ctx.strokeText(word, wordCx, wordCy);
+
+            // Glowing fill
+            ctx.fillStyle = isCurrent ? '#FFE600' : '#FFFFFF';
+            if (isCurrent) {
+              ctx.shadowColor = '#FFE600';
+              ctx.shadowBlur = U * 0.02;
+            }
+            ctx.globalAlpha = hFade;
+            ctx.fillText(word, wordCx, wordCy);
+            ctx.restore();
+
+            x += curW + spaceW;
+          });
+        });
+        ctx.restore();
+        return;
+      }
+
       var size = U * (portrait ? 0.05 : 0.04) * (captionCfg.scale || 1);
       var maxW = W * (portrait ? 0.86 : 0.74);
       var fit = fitText(ctx, text, { maxWidth: maxW, maxLines: 3, maxSize: size, minSize: U * 0.024, weight: 700, lineHeight: 1.3 });
@@ -3267,16 +3387,6 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       ctx.stroke();
       ctx.restore();
 
-      var current = null;
-      if (captionCfg.style === 'karaoke' && cue.words && cue.words.length) {
-        for (var wi = 0; wi < cue.words.length; wi++) {
-          if (t >= cue.words[wi].s && t < cue.words[wi].e) {
-            current = String(cue.words[wi].w).replace(/[^\w\u0980-\u09FF]/g, '');
-            break;
-          }
-        }
-      }
-
       ctx.save();
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -3291,7 +3401,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
           var x = W / 2 - lineW / 2;
           ctx.textAlign = 'left';
           words.forEach(function (word, wj) {
-            var clean = word.replace(/[^\w\u0980-\u09FF]/g, '');
+            var clean = word.replace(/[^\wঀ-৿]/g, '');
             var isCurrent = clean && current && clean.indexOf(current) === 0;
             ctx.globalAlpha = fade * (isCurrent ? 1 : 0.9);
             ctx.fillStyle = isCurrent ? theme.accent2 : 'rgba(255,255,255,0.95)';
@@ -3336,7 +3446,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, W, H);
 
-      drawBackground(t, cam);
+      drawBackground(t, cam, cur.scene);
       drawParticles(t, 1);
 
       var exitLen = 0.55;
@@ -7026,6 +7136,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
     musicBlobUrl: null,
     voiceBuffer: null,
     logoImage: null,
+    bgImage: null,
     playing: false,
     currentTime: 0,
     wallStart: 0,
@@ -7183,6 +7294,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
     if (spec.meta.captions) spec.meta.captions.style = $('#fCaptionStyle').value;
 
     if (S.logoImage) spec.meta.logoImage = S.logoImage;
+    if (S.bgImage) spec.meta.bgImage = S.bgImage.src;
     return spec;
   }
 
@@ -8578,6 +8690,40 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       };
       img.src = URL.createObjectURL(file);
     });
+
+    var fBgImageInput = $('#fBgImage');
+    if (fBgImageInput) {
+      fBgImageInput.addEventListener('change', function () {
+        var file = this.files && this.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          var img = new Image();
+          img.onload = function () {
+            S.bgImage = img;
+            var lbl = $('#fBgImageLabel');
+            if (lbl) lbl.textContent = '✅ ' + (file.name || 'ছবি যুক্ত হয়েছে');
+            var btnClear = $('#btnClearBgImage');
+            if (btnClear) btnClear.style.display = 'inline-block';
+            if (S.spec) buildCurrentPlan();
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    var btnClearBgImage = $('#btnClearBgImage');
+    if (btnClearBgImage) {
+      btnClearBgImage.addEventListener('click', function () {
+        S.bgImage = null;
+        if (fBgImageInput) fBgImageInput.value = '';
+        var lbl = $('#fBgImageLabel');
+        if (lbl) lbl.textContent = t('pickImage') || '🖼️ ছবি বাছুন';
+        btnClearBgImage.style.display = 'none';
+        if (S.spec) buildCurrentPlan();
+      });
+    }
 
     // keyboard
     document.addEventListener('keydown', function (e) {

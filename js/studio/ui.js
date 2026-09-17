@@ -53,6 +53,7 @@
     musicBlobUrl: null,
     voiceBuffer: null,
     logoImage: null,
+    bgImage: null,
     playing: false,
     currentTime: 0,
     wallStart: 0,
@@ -210,6 +211,7 @@
     if (spec.meta.captions) spec.meta.captions.style = $('#fCaptionStyle').value;
 
     if (S.logoImage) spec.meta.logoImage = S.logoImage;
+    if (S.bgImage) spec.meta.bgImage = S.bgImage.src;
     return spec;
   }
 
@@ -1605,6 +1607,40 @@
       };
       img.src = URL.createObjectURL(file);
     });
+
+    var fBgImageInput = $('#fBgImage');
+    if (fBgImageInput) {
+      fBgImageInput.addEventListener('change', function () {
+        var file = this.files && this.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          var img = new Image();
+          img.onload = function () {
+            S.bgImage = img;
+            var lbl = $('#fBgImageLabel');
+            if (lbl) lbl.textContent = '✅ ' + (file.name || 'ছবি যুক্ত হয়েছে');
+            var btnClear = $('#btnClearBgImage');
+            if (btnClear) btnClear.style.display = 'inline-block';
+            if (S.spec) buildCurrentPlan();
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    var btnClearBgImage = $('#btnClearBgImage');
+    if (btnClearBgImage) {
+      btnClearBgImage.addEventListener('click', function () {
+        S.bgImage = null;
+        if (fBgImageInput) fBgImageInput.value = '';
+        var lbl = $('#fBgImageLabel');
+        if (lbl) lbl.textContent = t('pickImage') || '🖼️ ছবি বাছুন';
+        btnClearBgImage.style.display = 'none';
+        if (S.spec) buildCurrentPlan();
+      });
+    }
 
     // keyboard
     document.addEventListener('keydown', function (e) {

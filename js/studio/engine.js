@@ -463,7 +463,17 @@
       }
     })();
 
-    function drawBackground(t, cam) {
+    var bgImageCache = {};
+    function getBgImage(src) {
+      if (!src) return null;
+      if (bgImageCache[src]) return bgImageCache[src];
+      var img = new Image();
+      img.src = src;
+      bgImageCache[src] = img;
+      return img;
+    }
+
+    function drawBackground(t, cam, scene) {
       var bw = bg.width, bh = bg.height;
       var pal = palette(t);
       var e = energyAt(t);
@@ -560,7 +570,20 @@
       ctx.globalCompositeOperation = 'source-over';
       ctx.translate(W / 2 + ox, H / 2 + oy);
       ctx.scale(zoom, zoom);
-      ctx.drawImage(bg, -W / 2, -H / 2, W, H);
+
+      var customBg = (scene && scene.bgImage) ? getBgImage(scene.bgImage) : ((spec.meta && spec.meta.bgImage) ? getBgImage(spec.meta.bgImage) : null);
+      if (customBg && customBg.complete && customBg.naturalWidth > 0) {
+        // Draw user uploaded / scene background image with cover fit
+        var iw = customBg.naturalWidth, ih = customBg.naturalHeight;
+        var s = Math.max(W / iw, H / ih);
+        var dw = iw * s, dh = ih * s;
+        ctx.drawImage(customBg, -dw / 2, -dh / 2, dw, dh);
+        // Dim overlay to keep text popping out
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+        ctx.fillRect(-W / 2, -H / 2, W, H);
+      } else {
+        ctx.drawImage(bg, -W / 2, -H / 2, W, H);
+      }
       ctx.restore();
     }
 
@@ -1245,10 +1268,95 @@
 
       var cue = activeCue(t);
       if (!cue) return;
-      var text = String(cue.text || '').replace(/\n/g, ' ');
+      var text = String(cue.text || '').replace(/
+/g, ' ');
       if (!text) return;
 
       var portrait = H > W;
+      var isHormozi = (captionCfg.style === 'hormozi');
+      var isKaraoke = (captionCfg.style === 'karaoke' || isHormozi);
+
+      var current = null;
+      var curWordObj = null;
+      if (isKaraoke && cue.words && cue.words.length) {
+        for (var wi = 0; wi < cue.words.length; wi++) {
+          if (t >= cue.words[wi].s && t < cue.words[wi].e) {
+            current = String(cue.words[wi].w).replace(/[^\wঀ-৿]/g, '');
+            curWordObj = cue.words[wi];
+            break;
+          }
+        }
+      }
+
+      if (isHormozi) {
+        // Hormozi / Viral Pop style: Big punchy centered typography, dynamic bounce pop on active word
+        var hSize = U * (portrait ? 0.075 : 0.055) * (captionCfg.scale || 1);
+        var hMaxW = W * (portrait ? 0.88 : 0.78);
+        var hFit = fitText(ctx, text, { maxWidth: hMaxW, maxLines: 2, maxSize: hSize, minSize: U * 0.038, weight: 900, lineHeight: 1.25 });
+        var hBlockH = hFit.lines.length * hFit.lineHeight;
+        var hY = WIN_BOTTOM - hBlockH / 2 - U * 0.04;
+        var hFade = clamp(Math.min((t - cue.start) / 0.12, (cue.end - t) / 0.12), 0, 1);
+
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '900 ' + hFit.size + 'px ' + (CFX.FONTS && CFX.FONTS.display ? CFX.FONTS.display : 'sans-serif');
+
+        var totalLines = hFit.lines.length;
+        var startY = hY - ((totalLines - 1) * hFit.lineHeight) / 2;
+
+        hFit.lines.forEach(function (line, li) {
+          var ly = startY + li * hFit.lineHeight;
+          var words = line.split(' ');
+          var spaceW = ctx.measureText(' ').width;
+          var widths = words.map(function (wrd) { return ctx.measureText(wrd).width; });
+          var lineW = widths.reduce(function (a, b) { return a + b; }, 0) + spaceW * Math.max(0, words.length - 1);
+          var x = W / 2 - lineW / 2;
+
+          words.forEach(function (word, wj) {
+            var clean = word.replace(/[^\wঀ-৿]/g, '');
+            var isCurrent = clean && current && clean.indexOf(current) === 0;
+            var curW = widths[wj];
+
+            ctx.save();
+            var wordCx = x + curW / 2;
+            var wordCy = ly;
+
+            if (isCurrent && curWordObj) {
+              // bouncy pop scale
+              var wordDur = Math.max(0.01, curWordObj.e - curWordObj.s);
+              var wordProg = clamp((t - curWordObj.s) / wordDur, 0, 1);
+              var bounce = 1.0 + Math.sin(wordProg * Math.PI) * 0.24;
+              ctx.translate(wordCx, wordCy);
+              ctx.scale(bounce, bounce);
+              ctx.translate(-wordCx, -wordCy);
+            }
+
+            // Heavy drop shadow + outline for viral pop legibility
+            ctx.lineJoin = 'round';
+            ctx.miterLimit = 2;
+            ctx.lineWidth = Math.max(3, hFit.size * 0.16);
+            ctx.strokeStyle = '#000000';
+            ctx.globalAlpha = hFade * 0.95;
+            ctx.strokeText(word, wordCx, wordCy);
+
+            // Glowing fill
+            ctx.fillStyle = isCurrent ? '#FFE600' : '#FFFFFF';
+            if (isCurrent) {
+              ctx.shadowColor = '#FFE600';
+              ctx.shadowBlur = U * 0.02;
+            }
+            ctx.globalAlpha = hFade;
+            ctx.fillText(word, wordCx, wordCy);
+            ctx.restore();
+
+            x += curW + spaceW;
+          });
+        });
+        ctx.restore();
+        return;
+      }
+
       var size = U * (portrait ? 0.05 : 0.04) * (captionCfg.scale || 1);
       var maxW = W * (portrait ? 0.86 : 0.74);
       var fit = fitText(ctx, text, { maxWidth: maxW, maxLines: 3, maxSize: size, minSize: U * 0.024, weight: 700, lineHeight: 1.3 });
@@ -1287,16 +1395,6 @@
       ctx.stroke();
       ctx.restore();
 
-      var current = null;
-      if (captionCfg.style === 'karaoke' && cue.words && cue.words.length) {
-        for (var wi = 0; wi < cue.words.length; wi++) {
-          if (t >= cue.words[wi].s && t < cue.words[wi].e) {
-            current = String(cue.words[wi].w).replace(/[^\w\u0980-\u09FF]/g, '');
-            break;
-          }
-        }
-      }
-
       ctx.save();
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -1311,7 +1409,7 @@
           var x = W / 2 - lineW / 2;
           ctx.textAlign = 'left';
           words.forEach(function (word, wj) {
-            var clean = word.replace(/[^\w\u0980-\u09FF]/g, '');
+            var clean = word.replace(/[^\wঀ-৿]/g, '');
             var isCurrent = clean && current && clean.indexOf(current) === 0;
             ctx.globalAlpha = fade * (isCurrent ? 1 : 0.9);
             ctx.fillStyle = isCurrent ? theme.accent2 : 'rgba(255,255,255,0.95)';
@@ -1356,7 +1454,7 @@
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, W, H);
 
-      drawBackground(t, cam);
+      drawBackground(t, cam, cur.scene);
       drawParticles(t, 1);
 
       var exitLen = 0.55;
