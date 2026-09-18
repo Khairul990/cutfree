@@ -2,9 +2,10 @@
   "outputDirectory": "dist",
   "cleanUrls": false,
   "rewrites": [
-    { "source": "/studio-pro", "destination": "/studio-pro.html" },
-    { "source": "/studio", "destination": "/studio.html" },
-    { "source": "/editor", "destination": "/editor.html" },
+    { "source": "/cutfree-studio", "destination": "/cutfree-studio.html" },
+    { "source": "/studio", "destination": "/cutfree-studio.html" },
+    { "source": "/studio-pro", "destination": "/cutfree-studio.html" },
+    { "source": "/editor", "destination": "/cutfree-studio.html" },
     { "source": "/app", "destination": "/app.html" }
   ]
 }

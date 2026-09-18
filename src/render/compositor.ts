@@ -189,7 +189,103 @@ export class VideoCompositor {
 
       // Starfield / Ambient Particles
       this.renderAtmosphericStars(ctx, width, height, timeSec);
+
+      // Scenic vector silhouettes (Mosque, Village, Forest)
+      this.renderScenicSilhouette(ctx, bgAssetId, width, height, timeSec);
     }
+  }
+
+  private renderScenicSilhouette(ctx: CanvasRenderingContext2D, bgAssetId: string, width: number, height: number, timeSec: number) {
+    const id = bgAssetId.toLowerCase();
+    ctx.save();
+
+    if (id.includes("mosque")) {
+      // Golden Moon
+      ctx.save();
+      ctx.fillStyle = "#fef08a";
+      ctx.shadowColor = "rgba(253, 224, 71, 0.6)";
+      ctx.shadowBlur = 24;
+      ctx.beginPath();
+      ctx.arc(width * 0.78, height * 0.22, 38, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#0c1724";
+      ctx.beginPath();
+      ctx.arc(width * 0.78 + 12, height * 0.22 - 6, 34, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Distant Mosque Domes and Minarets Silhouette
+      ctx.fillStyle = "#09121f";
+      const ground = height * 0.82;
+      ctx.fillRect(0, ground, width, height - ground);
+
+      // Main dome
+      ctx.beginPath();
+      ctx.arc(width * 0.5, ground, width * 0.12, Math.PI, 0);
+      ctx.fill();
+      // Left dome
+      ctx.beginPath();
+      ctx.arc(width * 0.32, ground, width * 0.08, Math.PI, 0);
+      ctx.fill();
+      // Right dome
+      ctx.beginPath();
+      ctx.arc(width * 0.68, ground, width * 0.08, Math.PI, 0);
+      ctx.fill();
+
+      // Left Minaret
+      ctx.fillRect(width * 0.22, ground - height * 0.35, width * 0.025, height * 0.35);
+      ctx.beginPath();
+      ctx.moveTo(width * 0.21, ground - height * 0.35);
+      ctx.lineTo(width * 0.2325, ground - height * 0.42);
+      ctx.lineTo(width * 0.255, ground - height * 0.35);
+      ctx.fill();
+
+      // Right Minaret
+      ctx.fillRect(width * 0.755, ground - height * 0.35, width * 0.025, height * 0.35);
+      ctx.beginPath();
+      ctx.moveTo(width * 0.745, ground - height * 0.35);
+      ctx.lineTo(width * 0.7675, ground - height * 0.42);
+      ctx.lineTo(width * 0.79, ground - height * 0.35);
+      ctx.fill();
+
+      // Warm interior arch glow
+      ctx.fillStyle = "rgba(251, 191, 36, 0.35)";
+      ctx.beginPath();
+      ctx.arc(width * 0.5, ground, width * 0.04, Math.PI, 0);
+      ctx.fill();
+    } else if (id.includes("village")) {
+      // Rolling Village Hills
+      ctx.fillStyle = "#062817";
+      ctx.beginPath();
+      ctx.moveTo(0, height * 0.75);
+      ctx.quadraticCurveTo(width * 0.3, height * 0.68, width * 0.6, height * 0.74);
+      ctx.quadraticCurveTo(width * 0.85, height * 0.79, width, height * 0.72);
+      ctx.lineTo(width, height);
+      ctx.lineTo(0, height);
+      ctx.fill();
+
+      ctx.fillStyle = "#03170d";
+      ctx.beginPath();
+      ctx.moveTo(0, height * 0.82);
+      ctx.quadraticCurveTo(width * 0.4, height * 0.88, width, height * 0.8);
+      ctx.lineTo(width, height);
+      ctx.lineTo(0, height);
+      ctx.fill();
+    } else if (id.includes("forest")) {
+      // Forest Pine Silhouettes
+      ctx.fillStyle = "#03140e";
+      for (let i = 0; i < width; i += 40) {
+        const treeH = 90 + Math.sin(i * 0.1) * 40;
+        ctx.beginPath();
+        ctx.moveTo(i, height * 0.85);
+        ctx.lineTo(i + 20, height * 0.85 - treeH);
+        ctx.lineTo(i + 40, height * 0.85);
+        ctx.fill();
+      }
+      ctx.fillRect(0, height * 0.85, width, height * 0.15);
+    }
+
+    ctx.restore();
   }
 
   private renderAtmosphericStars(ctx: CanvasRenderingContext2D, width: number, height: number, timeSec: number) {

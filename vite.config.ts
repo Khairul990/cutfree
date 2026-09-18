@@ -27,8 +27,6 @@ export default defineConfig(() => {
       rollupOptions: {
         input: {
           main: 'app.html',
-          editor: 'index.html',
-          studio: 'studio.html',
         },
       },
     },

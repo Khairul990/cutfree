@@ -1,46 +1,54 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Scene & Object Inspector Component for CutFree Studio.
+ * Inspector Component for CutFree Studio.
+ * Matches exact layout, segmented tabs (Scene, Text, Character, Animation),
+ * and dynamic controls from design specification.
  */
 
-import React from "react";
+import React, { useState } from "react";
 import {
-  Settings,
-  Layers,
-  Camera,
+  X,
+  Clock,
+  ChevronDown,
+  ChevronUp,
   Image as ImageIcon,
-  User,
   Type,
+  User,
+  Film,
+  Sparkles,
   Trash2,
-  Plus,
 } from "lucide-react";
 import {
   BlueprintScene,
   CameraPreset,
   CharacterAction,
   CharacterEmotion,
+  CaptionItem,
 } from "../types/blueprint";
 
 export interface InspectorProps {
   scene: BlueprintScene | null;
+  captions?: CaptionItem[];
+  currentTime: number;
   onUpdateScene: (updated: BlueprintScene) => void;
   onDeleteScene: (sceneId: string) => void;
+  onClose?: () => void;
 }
 
-const CAMERA_PRESETS: CameraPreset[] = [
-  "static",
-  "slow_zoom_in",
-  "slow_zoom_out",
-  "pan_left",
-  "pan_right",
-  "pan_up",
-  "pan_down",
-  "zoom_focus",
-  "camera_push",
-  "camera_pull",
-  "shake_light",
-  "shake_medium",
+const CAMERA_PRESETS: { id: CameraPreset; label: string }[] = [
+  { id: "static", label: "Static (No Motion)" },
+  { id: "slow_zoom_in", label: "Slow Zoom In" },
+  { id: "slow_zoom_out", label: "Slow Zoom Out" },
+  { id: "pan_left", label: "Pan Left" },
+  { id: "pan_right", label: "Pan Right" },
+  { id: "pan_up", label: "Pan Up" },
+  { id: "pan_down", label: "Pan Down" },
+  { id: "zoom_focus", label: "Zoom Focus" },
+  { id: "camera_push", label: "Camera Push" },
+  { id: "camera_pull", label: "Camera Pull" },
+  { id: "shake_light", label: "Shake Light" },
+  { id: "shake_medium", label: "Shake Medium" },
 ];
 
 const CHARACTER_ACTIONS: CharacterAction[] = [
@@ -65,16 +73,35 @@ const CHARACTER_EMOTIONS: CharacterEmotion[] = [
 
 export const Inspector: React.FC<InspectorProps> = ({
   scene,
+  captions = [],
+  currentTime,
   onUpdateScene,
   onDeleteScene,
+  onClose,
 }) => {
+  const [activeTab, setActiveTab] = useState<"scene" | "text" | "character" | "animation">("scene");
+  const [notesOpen, setNotesOpen] = useState<boolean>(true);
+  const [opacityVal, setOpacityVal] = useState<number>(100);
+
+  // Format seconds to MM:SS.SS
+  const fmt = (sec: number) => {
+    const s = Math.max(0, sec);
+    const m = Math.floor(s / 60);
+    const remainder = s % 60;
+    const secWhole = Math.floor(remainder);
+    const frac = Math.floor((remainder - secWhole) * 100);
+    return `${String(m).padStart(2, "0")}:${String(secWhole).padStart(2, "0")}.${String(frac).padStart(2, "0")}`;
+  };
+
   if (!scene) {
     return (
-      <div className="w-80 bg-[#0d1222] border-l border-[#1e2740] p-5 text-[#64748b] text-[13px] flex flex-col items-center justify-center text-center">
-        <Layers className="w-8 h-8 mb-2 opacity-40 text-[#5b8dff]" />
-        <p className="font-semibold text-white">No Scene Selected</p>
-        <p className="text-[11px] mt-1 text-[#8d9cc2]">Click any scene block in the timeline to inspect and edit its properties.</p>
-      </div>
+      <aside className="w-[300px] bg-[#0C1724] border-l border-[#213248] p-5 text-[#8DA0B4] text-[12px] flex flex-col items-center justify-center text-center select-none">
+        <Film className="w-8 h-8 mb-2 opacity-40 text-[#259CFF]" />
+        <p className="font-bold text-white text-[13px]">No Scene Selected</p>
+        <p className="text-[11px] mt-1 text-[#8DA0B4]">
+          Click any scene block in the timeline or preview to edit its properties.
+        </p>
+      </aside>
     );
   }
 
@@ -82,202 +109,398 @@ export const Inspector: React.FC<InspectorProps> = ({
     onUpdateScene({ ...scene, [field]: val });
   };
 
+  // Find active caption if any
+  const currentCaption = captions.find(
+    (c) => currentTime >= c.start && currentTime <= c.end
+  );
+
   return (
-    <aside className="w-80 bg-[#0d1222] border-l border-[#1e2740] flex flex-col h-full overflow-y-auto text-[12px] scrollbar-thin scrollbar-thumb-[#232d47]">
+    <aside className="w-[300px] bg-[#0C1724] border-l border-[#213248] flex flex-col h-full shrink-0 z-10 select-none text-[12px] overflow-hidden">
       {/* Inspector Header */}
-      <div className="p-4 border-b border-[#1e2740] flex items-center justify-between bg-[#090e1c] shrink-0">
-        <div className="flex items-center gap-2">
-          <Settings className="w-4 h-4 text-[#5b8dff]" />
-          <span className="font-extrabold text-white text-[13px]">Scene Inspector</span>
+      <div className="p-3.5 border-b border-[#213248] flex items-center justify-between">
+        <h2 className="font-extrabold text-white text-[14px] tracking-tight">Inspector</h2>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => onDeleteScene(scene.id)}
+            className="p-1 rounded-lg text-[#ef4444] hover:bg-[#ef4444]/15 transition"
+            title="Delete Scene"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1 rounded-lg text-[#8DA0B4] hover:text-white hover:bg-[#0F1C2A] transition"
+              title="Close Inspector"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
-        <button
-          onClick={() => onDeleteScene(scene.id)}
-          className="p-1.5 rounded-lg text-[#ef4444] hover:bg-[#ef4444]/15 transition"
-          title="Delete Scene"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
       </div>
 
-      <div className="p-4 space-y-5">
-        {/* Timing Section */}
-        <div className="space-y-2">
-          <label className="font-bold text-[#8d9cc2] uppercase text-[10px] tracking-wider block">Timing (Seconds)</label>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <span className="text-[10px] text-[#64748b]">Start:</span>
-              <input
-                type="number"
-                step="0.1"
-                value={scene.start}
-                onChange={(e) => updateField("start", parseFloat(e.target.value) || 0)}
-                className="w-full bg-[#151b2e] border border-[#232d47] rounded-lg px-2.5 py-1.5 text-white font-mono"
-              />
-            </div>
-            <div>
-              <span className="text-[10px] text-[#64748b]">End:</span>
-              <input
-                type="number"
-                step="0.1"
-                value={scene.end}
-                onChange={(e) => updateField("end", parseFloat(e.target.value) || 0)}
-                className="w-full bg-[#151b2e] border border-[#232d47] rounded-lg px-2.5 py-1.5 text-white font-mono"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Scene Text / Title */}
-        <div className="space-y-2">
-          <label className="font-bold text-[#8d9cc2] uppercase text-[10px] tracking-wider flex items-center gap-1.5">
-            <Type className="w-3.5 h-3.5 text-[#38bdf8]" /> Scene Title
-          </label>
-          <input
-            type="text"
-            value={scene.title || ""}
-            onChange={(e) => updateField("title", e.target.value)}
-            placeholder="e.g. বন্ধ দরজার ওপাশে কী ছিল?"
-            className="w-full bg-[#151b2e] border border-[#232d47] rounded-lg px-2.5 py-1.5 text-white outline-none focus:border-[#5b8dff]"
-          />
-        </div>
-
-        {/* Scene Body / Dialogue */}
-        <div className="space-y-2">
-          <label className="font-bold text-[#8d9cc2] uppercase text-[10px] tracking-wider block">Subtitle / Narration</label>
-          <textarea
-            rows={3}
-            value={scene.body || scene.text || ""}
-            onChange={(e) => updateField("body", e.target.value)}
-            placeholder="Scene narration text..."
-            className="w-full bg-[#151b2e] border border-[#232d47] rounded-lg p-2.5 text-white outline-none focus:border-[#5b8dff] resize-none"
-          />
-        </div>
-
-        {/* Background Asset */}
-        <div className="space-y-2">
-          <label className="font-bold text-[#8d9cc2] uppercase text-[10px] tracking-wider flex items-center gap-1.5">
-            <ImageIcon className="w-3.5 h-3.5 text-[#2dd4bf]" /> Background Asset ID
-          </label>
-          <input
-            type="text"
-            value={scene.background?.assetId || ""}
-            onChange={(e) =>
-              updateField("background", {
-                ...(scene.background || {}),
-                assetId: e.target.value,
-              })
-            }
-            placeholder="e.g. night_sky, rainy_street"
-            className="w-full bg-[#151b2e] border border-[#232d47] rounded-lg px-2.5 py-1.5 text-white outline-none focus:border-[#5b8dff]"
-          />
-        </div>
-
-        {/* Camera Preset */}
-        <div className="space-y-2">
-          <label className="font-bold text-[#8d9cc2] uppercase text-[10px] tracking-wider flex items-center gap-1.5">
-            <Camera className="w-3.5 h-3.5 text-[#a78bfa]" /> Camera Motion
-          </label>
-          <select
-            value={scene.camera?.preset || "static"}
-            onChange={(e) =>
-              updateField("camera", {
-                ...(scene.camera || {}),
-                preset: e.target.value as CameraPreset,
-              })
-            }
-            className="w-full bg-[#151b2e] border border-[#232d47] rounded-lg px-2.5 py-1.5 text-white outline-none focus:border-[#5b8dff]"
+      {/* Segmented Tab Bar: Scene | Text | Character | Animation */}
+      <div className="p-2 border-b border-[#213248] bg-[#09111c] flex items-center gap-1">
+        {(["scene", "text", "character", "animation"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold capitalize transition ${
+              activeTab === tab
+                ? "bg-[#259CFF] text-white shadow-sm"
+                : "text-[#8DA0B4] hover:text-white hover:bg-[#0F1C2A]"
+            }`}
           >
-            {CAMERA_PRESETS.map((preset) => (
-              <option key={preset} value={preset}>
-                {preset.replace(/_/g, " ")}
-              </option>
-            ))}
-          </select>
-        </div>
+            {tab}
+          </button>
+        ))}
+      </div>
 
-        {/* Characters in Scene */}
-        <div className="space-y-3 pt-2 border-t border-[#1e2740]">
-          <div className="flex items-center justify-between">
-            <label className="font-bold text-[#8d9cc2] uppercase text-[10px] tracking-wider flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-[#f472b6]" /> Characters ({scene.characters?.length || 0})
-            </label>
-            <button
-              onClick={() => {
-                const chars = scene.characters ? [...scene.characters] : [];
-                chars.push({ id: `character_${chars.length + 1}`, action: "idle", emotion: "neutral", scale: 1.0 });
-                updateField("characters", chars);
-              }}
-              className="text-[11px] font-bold text-[#5b8dff] hover:underline flex items-center gap-1"
-            >
-              <Plus className="w-3 h-3" /> Add
-            </button>
-          </div>
+      {/* Tab Content */}
+      <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5 scrollbar-thin">
+        {/* ================= SCENE TAB ================= */}
+        {activeTab === "scene" && (
+          <>
+            {/* Scene Title */}
+            <div>
+              <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Scene Title</label>
+              <input
+                type="text"
+                value={scene.title || ""}
+                onChange={(e) => updateField("title", e.target.value)}
+                placeholder="Scene Title..."
+                className="w-full bg-[#07101A] border border-[#213248] focus:border-[#259CFF] rounded-lg px-2.5 py-1.5 text-white outline-none text-[12px] transition"
+              />
+            </div>
 
-          {scene.characters?.map((char, cIdx) => (
-            <div key={cIdx} className="p-2.5 rounded-lg bg-[#151b2e] border border-[#232d47] space-y-2">
-              <div className="flex items-center justify-between">
-                <input
-                  type="text"
-                  value={char.id}
-                  onChange={(e) => {
-                    const chars = [...(scene.characters || [])];
-                    chars[cIdx] = { ...chars[cIdx], id: e.target.value };
-                    updateField("characters", chars);
-                  }}
-                  className="font-bold text-white bg-transparent border-b border-transparent focus:border-[#5b8dff] outline-none text-[11.5px]"
-                />
-                <button
-                  onClick={() => {
-                    const chars = (scene.characters || []).filter((_, i) => i !== cIdx);
-                    updateField("characters", chars);
-                  }}
-                  className="text-[#ef4444] hover:text-red-300 text-[10px]"
-                >
-                  Remove
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-[11px]">
-                <div>
-                  <span className="text-[10px] text-[#64748b]">Action:</span>
-                  <select
-                    value={char.action || "idle"}
-                    onChange={(e) => {
-                      const chars = [...(scene.characters || [])];
-                      chars[cIdx] = { ...chars[cIdx], action: e.target.value as CharacterAction };
-                      updateField("characters", chars);
-                    }}
-                    className="w-full bg-[#0b0f1a] border border-[#232d47] rounded px-1.5 py-1 text-white text-[11px]"
-                  >
-                    {CHARACTER_ACTIONS.map((a) => (
-                      <option key={a} value={a}>
-                        {a}
-                      </option>
-                    ))}
-                  </select>
+            {/* Start Time & End Time */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Start Time</label>
+                <div className="flex items-center gap-1.5 bg-[#07101A] border border-[#213248] rounded-lg px-2 py-1.5 text-white font-mono text-[11px]">
+                  <Clock className="w-3.5 h-3.5 text-[#8DA0B4]" />
+                  <span>{fmt(scene.start)}</span>
                 </div>
-                <div>
-                  <span className="text-[10px] text-[#64748b]">Emotion:</span>
-                  <select
-                    value={char.emotion || "neutral"}
-                    onChange={(e) => {
-                      const chars = [...(scene.characters || [])];
-                      chars[cIdx] = { ...chars[cIdx], emotion: e.target.value as CharacterEmotion };
-                      updateField("characters", chars);
-                    }}
-                    className="w-full bg-[#0b0f1a] border border-[#232d47] rounded px-1.5 py-1 text-white text-[11px]"
-                  >
-                    {CHARACTER_EMOTIONS.map((em) => (
-                      <option key={em} value={em}>
-                        {em}
-                      </option>
-                    ))}
-                  </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">End Time</label>
+                <div className="flex items-center gap-1.5 bg-[#07101A] border border-[#213248] rounded-lg px-2 py-1.5 text-white font-mono text-[11px]">
+                  <Clock className="w-3.5 h-3.5 text-[#8DA0B4]" />
+                  <span>{fmt(scene.end)}</span>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+
+            {/* Background */}
+            <div>
+              <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Background</label>
+              <div className="flex items-center justify-between p-2 rounded-lg bg-[#07101A] border border-[#213248]">
+                <div className="flex items-center gap-2 truncate">
+                  <div className="w-7 h-7 rounded-md bg-[#1e293b] flex items-center justify-center text-white shrink-0">
+                    <ImageIcon className="w-4 h-4 text-[#259CFF]" />
+                  </div>
+                  <span className="font-medium text-white truncate text-[11px]">
+                    {scene.background?.assetId ? `${scene.background.assetId}.jpg` : "None"}
+                  </span>
+                </div>
+                {scene.background?.assetId && (
+                  <button
+                    onClick={() =>
+                      updateField("background", { ...scene.background, assetId: "" })
+                    }
+                    className="p-1 rounded text-[#8DA0B4] hover:text-white"
+                    title="Remove Background"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Fit & Opacity */}
+            <div className="grid grid-cols-2 gap-2 items-center">
+              <div>
+                <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Fit</label>
+                <select
+                  value={scene.background?.fit || "cover"}
+                  onChange={(e) =>
+                    updateField("background", {
+                      ...scene.background,
+                      fit: e.target.value as any,
+                    })
+                  }
+                  className="w-full bg-[#07101A] border border-[#213248] rounded-lg px-2 py-1.5 text-white outline-none text-[11px]"
+                >
+                  <option value="cover">Cover</option>
+                  <option value="contain">Contain</option>
+                  <option value="fill">Fill</option>
+                </select>
+              </div>
+              <div>
+                <div className="flex items-center justify-between text-[11px] font-semibold text-[#8DA0B4] mb-1">
+                  <span>Opacity</span>
+                  <span className="text-white">{opacityVal}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={opacityVal}
+                  onChange={(e) => setOpacityVal(Number(e.target.value))}
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            {/* Camera Animation */}
+            <div>
+              <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Camera Animation</label>
+              <select
+                value={scene.camera?.preset || "slow_zoom_in"}
+                onChange={(e) =>
+                  updateField("camera", {
+                    ...scene.camera,
+                    preset: e.target.value as CameraPreset,
+                  })
+                }
+                className="w-full bg-[#07101A] border border-[#213248] focus:border-[#259CFF] rounded-lg px-2.5 py-1.5 text-white outline-none text-[11px]"
+              >
+                {CAMERA_PRESETS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Transition & Duration */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Transition</label>
+                <select
+                  value={scene.transition || "fade"}
+                  onChange={(e) => updateField("transition", e.target.value)}
+                  className="w-full bg-[#07101A] border border-[#213248] rounded-lg px-2 py-1.5 text-white outline-none text-[11px]"
+                >
+                  <option value="fade">Fade</option>
+                  <option value="cut">Cut</option>
+                  <option value="slide">Slide</option>
+                  <option value="dissolve">Dissolve</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Duration</label>
+                <select
+                  value={String(scene.transitionDuration || 1.0)}
+                  onChange={(e) => updateField("transitionDuration", parseFloat(e.target.value))}
+                  className="w-full bg-[#07101A] border border-[#213248] rounded-lg px-2 py-1.5 text-white outline-none text-[11px]"
+                >
+                  <option value="0.5">0.5s</option>
+                  <option value="1.0">1.0s</option>
+                  <option value="1.5">1.5s</option>
+                  <option value="2.0">2.0s</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Scene Notes Accordion */}
+            <div className="border border-[#213248] rounded-xl bg-[#07101A] overflow-hidden">
+              <button
+                onClick={() => setNotesOpen(!notesOpen)}
+                className="w-full p-2.5 flex items-center justify-between font-bold text-white text-[11px] hover:bg-[#0F1C2A] transition"
+              >
+                <span>Scene Notes</span>
+                {notesOpen ? <ChevronUp className="w-3.5 h-3.5 text-[#8DA0B4]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#8DA0B4]" />}
+              </button>
+              {notesOpen && (
+                <div className="p-2.5 pt-0">
+                  <textarea
+                    rows={3}
+                    value={scene.body || ""}
+                    onChange={(e) => updateField("body", e.target.value)}
+                    placeholder="Show Nooruddin and Nuri, introduce the story with a warm and peaceful background."
+                    className="w-full bg-[#0C1724] border border-[#213248] rounded-lg p-2 text-white outline-none text-[11px] placeholder-[#8DA0B4] resize-none"
+                  />
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* ================= TEXT TAB ================= */}
+        {activeTab === "text" && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Active Caption / Text</label>
+              <textarea
+                rows={3}
+                value={currentCaption?.text || scene.body || ""}
+                onChange={(e) => updateField("body", e.target.value)}
+                placeholder="Caption text..."
+                className="w-full bg-[#07101A] border border-[#213248] rounded-lg p-2 text-white outline-none text-[12px] resize-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Font Family</label>
+                <select className="w-full bg-[#07101A] border border-[#213248] rounded-lg px-2 py-1.5 text-white outline-none text-[11px]">
+                  <option>Noto Sans Bengali</option>
+                  <option>Hind Siliguri</option>
+                  <option>Inter</option>
+                  <option>Roboto</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Font Weight</label>
+                <select className="w-full bg-[#07101A] border border-[#213248] rounded-lg px-2 py-1.5 text-white outline-none text-[11px]">
+                  <option>Bold (700)</option>
+                  <option>Extra Bold (800)</option>
+                  <option>Black (900)</option>
+                  <option>Medium (500)</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Animation Style</label>
+              <select className="w-full bg-[#07101A] border border-[#213248] rounded-lg px-2.5 py-1.5 text-white outline-none text-[11px]">
+                <option value="fade">Word Reveal & Fade</option>
+                <option value="slide">Slide In Up</option>
+                <option value="typewriter">Typewriter</option>
+                <option value="scale">Bounce Scale</option>
+              </select>
+            </div>
+          </div>
+        )}
+
+        {/* ================= CHARACTER TAB ================= */}
+        {activeTab === "character" && (
+          <div className="space-y-3">
+            {scene.characters && scene.characters.length > 0 ? (
+              scene.characters.map((char, i) => (
+                <div key={char.id + i} className="p-3 bg-[#07101A] border border-[#213248] rounded-xl space-y-2">
+                  <div className="flex items-center justify-between font-bold text-white text-[12px]">
+                    <span className="capitalize">{char.id}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#259CFF]/20 text-[#259CFF]">
+                      Character #{i + 1}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-[#8DA0B4] mb-1">Action</label>
+                      <select
+                        value={char.action || "idle"}
+                        onChange={(e) => {
+                          const copy = [...scene.characters!];
+                          copy[i] = { ...copy[i], action: e.target.value as any };
+                          updateField("characters", copy);
+                        }}
+                        className="w-full bg-[#0C1724] border border-[#213248] rounded-lg px-2 py-1 text-white outline-none text-[11px]"
+                      >
+                        {CHARACTER_ACTIONS.map((act) => (
+                          <option key={act} value={act}>
+                            {act}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-semibold text-[#8DA0B4] mb-1">Emotion</label>
+                      <select
+                        value={char.emotion || "neutral"}
+                        onChange={(e) => {
+                          const copy = [...scene.characters!];
+                          copy[i] = { ...copy[i], emotion: e.target.value as any };
+                          updateField("characters", copy);
+                        }}
+                        className="w-full bg-[#0C1724] border border-[#213248] rounded-lg px-2 py-1 text-white outline-none text-[11px]"
+                      >
+                        {CHARACTER_EMOTIONS.map((emo) => (
+                          <option key={emo} value={emo}>
+                            {emo}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold text-[#8DA0B4] mb-1">Entrance</label>
+                    <select
+                      value={char.entrance || "fade_in"}
+                      onChange={(e) => {
+                        const copy = [...scene.characters!];
+                        copy[i] = { ...copy[i], entrance: e.target.value as any };
+                        updateField("characters", copy);
+                      }}
+                      className="w-full bg-[#0C1724] border border-[#213248] rounded-lg px-2 py-1 text-white outline-none text-[11px]"
+                    >
+                      <option value="fade_in">Fade In</option>
+                      <option value="enter_left">Enter From Left</option>
+                      <option value="enter_right">Enter From Right</option>
+                      <option value="scale_in">Scale In</option>
+                    </select>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-6 text-[#8DA0B4]">
+                <User className="w-8 h-8 mx-auto mb-2 opacity-40 text-[#259CFF]" />
+                <p>No characters in this scene.</p>
+                <p className="text-[10px] mt-1">Click a character from the Asset Library to add.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ================= ANIMATION TAB ================= */}
+        {activeTab === "animation" && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Camera Preset</label>
+              <select
+                value={scene.camera?.preset || "slow_zoom_in"}
+                onChange={(e) =>
+                  updateField("camera", {
+                    ...scene.camera,
+                    preset: e.target.value as CameraPreset,
+                  })
+                }
+                className="w-full bg-[#07101A] border border-[#213248] rounded-lg px-2.5 py-1.5 text-white outline-none text-[11px]"
+              >
+                {CAMERA_PRESETS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between text-[11px] font-semibold text-[#8DA0B4] mb-1">
+                <span>Motion Intensity</span>
+                <span className="text-white">{(scene.camera?.intensity ?? 1.0).toFixed(1)}x</span>
+              </div>
+              <input
+                type="range"
+                min="0.5"
+                max="2.0"
+                step="0.1"
+                value={scene.camera?.intensity ?? 1.0}
+                onChange={(e) =>
+                  updateField("camera", {
+                    ...scene.camera,
+                    intensity: parseFloat(e.target.value),
+                  })
+                }
+                className="w-full"
+              />
+            </div>
+          </div>
+        )}
       </div>
     </aside>
   );

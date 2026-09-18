@@ -84,12 +84,194 @@ export function renderCharacter(
     const charW = resolved.image.width * 0.5 * baseScale;
     const charH = resolved.image.height * 0.5 * baseScale;
     ctx.drawImage(resolved.image, -charW / 2, -charH, charW, charH);
+  } else if (char.id === "nuri" || resolved.name.toLowerCase().includes("nuri")) {
+    renderNuriStar(ctx, baseScale, char.emotion, action, resolved.name);
+  } else if (char.id === "nooruddin" || resolved.name.toLowerCase().includes("nooruddin")) {
+    renderNooruddin(ctx, baseScale, char.emotion, action, armGesture, resolved.name);
   } else {
     // Render high-quality artistic silhouette / vector character
     renderProceduralCharacter(ctx, baseScale, char.emotion, action, armGesture, resolved.name);
   }
 
   ctx.restore();
+}
+
+function renderNuriStar(
+  ctx: CanvasRenderingContext2D,
+  scale: number,
+  emotion: string = "happy",
+  action: string,
+  name: string
+) {
+  const s = scale * 1.5;
+
+  // Star glow
+  ctx.save();
+  ctx.shadowColor = "rgba(251, 191, 36, 0.85)";
+  ctx.shadowBlur = 30 * s;
+
+  // 5-point Star
+  ctx.beginPath();
+  const spikes = 5;
+  const outerRadius = 52 * s;
+  const innerRadius = 26 * s;
+  let rot = (Math.PI / 2) * 3;
+  let x = 0;
+  let y = -70 * s;
+  const step = Math.PI / spikes;
+
+  ctx.moveTo(x, y - outerRadius);
+  for (let i = 0; i < spikes; i++) {
+    x = Math.cos(rot) * outerRadius;
+    y = -70 * s + Math.sin(rot) * outerRadius;
+    ctx.lineTo(x, y);
+    rot += step;
+
+    x = Math.cos(rot) * innerRadius;
+    y = -70 * s + Math.sin(rot) * innerRadius;
+    ctx.lineTo(x, y);
+    rot += step;
+  }
+  ctx.lineTo(0, -70 * s - outerRadius);
+  ctx.closePath();
+
+  // Gradient fill for star
+  const grad = ctx.createRadialGradient(0, -70 * s, 5 * s, 0, -70 * s, 55 * s);
+  grad.addColorStop(0, "#fffbeb");
+  grad.addColorStop(0.4, "#fde047");
+  grad.addColorStop(1, "#f59e0b");
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.strokeStyle = "#fbbf24";
+  ctx.lineWidth = 2 * s;
+  ctx.stroke();
+  ctx.restore();
+
+  // Star cute eyes
+  ctx.fillStyle = "#1e1b4b";
+  ctx.beginPath();
+  ctx.arc(-11 * s, -74 * s, 4 * s, 0, Math.PI * 2);
+  ctx.arc(11 * s, -74 * s, 4 * s, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eye highlights
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(-12 * s, -76 * s, 1.5 * s, 0, Math.PI * 2);
+  ctx.arc(10 * s, -76 * s, 1.5 * s, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Blushing cheeks
+  ctx.fillStyle = "rgba(244, 63, 94, 0.4)";
+  ctx.beginPath();
+  ctx.arc(-17 * s, -68 * s, 5 * s, 0, Math.PI * 2);
+  ctx.arc(17 * s, -68 * s, 5 * s, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cute smiling mouth
+  ctx.beginPath();
+  ctx.arc(0, -68 * s, 7 * s, 0.1 * Math.PI, 0.9 * Math.PI);
+  ctx.strokeStyle = "#78350f";
+  ctx.lineWidth = 2.2 * s;
+  ctx.stroke();
+
+  // Name tag
+  ctx.font = `bold ${Math.round(11 * s)}px system-ui, sans-serif`;
+  ctx.fillStyle = "#fbbf24";
+  ctx.textAlign = "center";
+  ctx.fillText(name, 0, 15 * s);
+}
+
+function renderNooruddin(
+  ctx: CanvasRenderingContext2D,
+  scale: number,
+  emotion: string = "neutral",
+  action: string,
+  armAngleDeg: number,
+  name: string
+) {
+  const s = scale * 1.5;
+
+  // Shadow
+  ctx.beginPath();
+  ctx.ellipse(0, 10 * s, 40 * s, 9 * s, 0, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+  ctx.fill();
+
+  // Green Jubbah / Robe
+  ctx.beginPath();
+  ctx.moveTo(-25 * s, 5 * s);
+  ctx.lineTo(-18 * s, -90 * s);
+  ctx.quadraticCurveTo(0, -105 * s, 18 * s, -90 * s);
+  ctx.lineTo(25 * s, 5 * s);
+  ctx.closePath();
+  ctx.fillStyle = "#065f46"; // Islamic rich emerald green
+  ctx.fill();
+  ctx.strokeStyle = "#34d399";
+  ctx.lineWidth = 2 * s;
+  ctx.stroke();
+
+  // Gold Trim Collar
+  ctx.beginPath();
+  ctx.arc(0, -88 * s, 8 * s, 0, Math.PI);
+  ctx.strokeStyle = "#fbbf24";
+  ctx.lineWidth = 2.5 * s;
+  ctx.stroke();
+
+  // Head / Face
+  ctx.beginPath();
+  ctx.arc(0, -125 * s, 24 * s, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffedd5";
+  ctx.fill();
+
+  // White Kufi / Prayer Cap
+  ctx.beginPath();
+  ctx.arc(0, -132 * s, 24.5 * s, Math.PI * 0.9, Math.PI * 2.1);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  ctx.strokeStyle = "#e2e8f0";
+  ctx.lineWidth = 2 * s;
+  ctx.stroke();
+
+  // Cute Eyes
+  ctx.fillStyle = "#0f172a";
+  ctx.beginPath();
+  ctx.arc(-8 * s, -123 * s, 3.5 * s, 0, Math.PI * 2);
+  ctx.arc(8 * s, -123 * s, 3.5 * s, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eye highlights
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(-9 * s, -125 * s, 1.2 * s, 0, Math.PI * 2);
+  ctx.arc(7 * s, -125 * s, 1.2 * s, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cheerful Smile
+  ctx.beginPath();
+  ctx.arc(0, -117 * s, 6 * s, 0.1 * Math.PI, 0.9 * Math.PI);
+  ctx.strokeStyle = "#c2410c";
+  ctx.lineWidth = 1.8 * s;
+  ctx.stroke();
+
+  // Arm with gesture
+  ctx.save();
+  ctx.translate(16 * s, -80 * s);
+  ctx.rotate((armAngleDeg * Math.PI) / 180);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(22 * s, 18 * s);
+  ctx.strokeStyle = "#047857";
+  ctx.lineWidth = 4 * s;
+  ctx.lineCap = "round";
+  ctx.stroke();
+  ctx.restore();
+
+  // Name Tag
+  ctx.font = `bold ${Math.round(11 * s)}px system-ui, sans-serif`;
+  ctx.fillStyle = "#ffffff";
+  ctx.textAlign = "center";
+  ctx.fillText(name, 0, 26 * s);
 }
 
 function renderProceduralCharacter(

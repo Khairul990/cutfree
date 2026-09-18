@@ -94,6 +94,20 @@ function renderProceduralObject(ctx: CanvasRenderingContext2D, assetId: string, 
     ctx.strokeStyle = "#475569";
     ctx.lineWidth = 2;
     ctx.stroke();
+  } else if (id.includes("tree")) {
+    // Flourishing Tree
+    ctx.fillStyle = "#78350f";
+    ctx.fillRect(-8, 5, 16, 35);
+    ctx.fillStyle = "#15803d";
+    ctx.beginPath();
+    ctx.arc(0, -5, 30, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#16a34a";
+    ctx.beginPath();
+    ctx.arc(-10, -15, 20, 0, Math.PI * 2);
+    ctx.arc(10, -15, 20, 0, Math.PI * 2);
+    ctx.arc(0, -25, 22, 0, Math.PI * 2);
+    ctx.fill();
   } else {
     // Generic prop badge
     ctx.fillStyle = "rgba(15, 23, 42, 0.85)";

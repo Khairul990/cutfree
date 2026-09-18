@@ -1,4 +1,7 @@
-<!DOCTYPE html>
+const fs = require('fs');
+const path = require('path');
+
+const htmlContent = `<!DOCTYPE html>
 <html lang="bn">
 <head>
 <meta charset="UTF-8">
@@ -332,6 +335,12 @@
     border-color: var(--accent-1);
     color:#fff;
   }
+  .chip-more{
+    color: var(--text-muted);
+    cursor:pointer;
+    padding: 0 4px;
+    display:flex; align-items:center;
+  }
 
   .assets-scroll{
     flex:1;
@@ -383,6 +392,10 @@
     border-color: var(--accent-1);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .asset-card.selected{
+    border-color: var(--gold);
+    box-shadow: 0 0 0 1px var(--gold);
   }
 
   .asset-thumb{
@@ -659,13 +672,42 @@
     gap:10px;
   }
 
+  .time-input{
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .time-input svg{ width:13px; height:13px; color: var(--text-muted); }
+
+  .thumb-select{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background: var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    cursor:pointer;
+  }
+  .thumb-select:hover{ border-color: var(--border-light); }
+  .mini-thumb{
+    width:28px; height:28px;
+    border-radius:4px;
+    background: linear-gradient(135deg, #1C2640, #2E1B4E);
+  }
+  .mini-label{
+    font-size:12px;
+    color: var(--text-primary);
+    flex:1;
+  }
+  .mini-x{ color: var(--text-muted); cursor:pointer; }
+  .mini-x:hover{ color: var(--text-primary); }
+
   .select-field{
     display:flex; align-items:center; justify-content:space-between;
     background: var(--bg-elevated);
     border:1px solid var(--border);
     border-radius: var(--radius-sm);
-    padding: 6px 8px;
-    font-size:11.5px;
+    padding: 8px 12px;
+    font-size:12px;
     color: var(--text-primary);
     cursor:pointer;
   }
@@ -674,7 +716,7 @@
     border:none;
     outline:none;
     color: var(--text-primary);
-    font-size:11.5px;
+    font-size:12px;
     width:100%;
     cursor:pointer;
   }
@@ -686,6 +728,26 @@
   .slider-row{
     display:flex; align-items:center; gap:10px;
   }
+  .slider-track{
+    flex:1;
+    height:5px;
+    background: var(--border);
+    border-radius:3px;
+    position:relative;
+    cursor:pointer;
+  }
+  .slider-fill{
+    position:absolute; left:0; top:0; bottom:0; width:100%;
+    background: var(--accent-1);
+    border-radius:3px;
+  }
+  .slider-handle{
+    position:absolute; top:50%; right:0;
+    width:12px; height:12px;
+    background:#fff;
+    border-radius:50%;
+    transform: translate(50%, -50%);
+  }
   .slider-value{
     font-size:11px;
     color: var(--text-muted);
@@ -693,6 +755,12 @@
     width:36px;
     text-align:right;
   }
+
+  .collapsible{
+    display:flex; align-items:center; justify-content:space-between;
+    cursor:pointer;
+  }
+  .collapsible svg{ width:12px; height:12px; color: var(--text-muted); }
 
   .color-picker-row{
     display:flex;
@@ -775,11 +843,33 @@
     display:flex; align-items:center; gap:8px;
     font-size:11px; color: var(--text-muted);
   }
+  .tl-zoom-track{
+    width:80px; height:4px; background: var(--border); border-radius:2px;
+    position:relative; cursor:pointer;
+  }
+  .tl-zoom-fill{
+    position:absolute; left:0; top:0; bottom:0; width:35%;
+    background: var(--accent-1); border-radius:2px;
+  }
+  .tl-zoom-handle{
+    position:absolute; top:50%; left:35%;
+    width:10px; height:10px; background:#fff; border-radius:50%;
+    transform: translate(-50%, -50%);
+  }
 
   .tl-tools-right{
     display:flex;
     align-items:center;
     gap:10px;
+  }
+
+  .tl-vol-track{
+    width:50px; height:4px; background: var(--border); border-radius:2px;
+    position:relative; cursor:pointer;
+  }
+  .tl-vol-fill{
+    position:absolute; left:0; top:0; bottom:0; width:80%;
+    background: var(--accent-1); border-radius:2px;
   }
 
   .tl-time-display{
@@ -1697,17 +1787,25 @@
           <div class="track-inner" id="trackInner">
             <div class="playhead" id="playhead" style="left:80px;"></div>
 
-            <div class="ruler" id="tlRuler"></div>
+            <div class="ruler" id="tlRuler">
+              <!-- Ruler ticks populated dynamically -->
+            </div>
 
-            <div class="track-row" id="rowScenes"></div>
+            <div class="track-row" id="rowScenes">
+              <!-- Scene clips dynamically rendered -->
+            </div>
 
             <div class="strip-row">
               <div class="film-strip" id="filmStrip"></div>
             </div>
 
-            <div class="track-row" id="rowCharacters"></div>
+            <div class="track-row" id="rowCharacters">
+              <!-- Character clips dynamically rendered -->
+            </div>
 
-            <div class="track-row" id="rowCaptions"></div>
+            <div class="track-row" id="rowCaptions">
+              <!-- Text clips dynamically rendered -->
+            </div>
 
             <div class="wave-row">
               <div class="waveform" id="waveform"></div>
@@ -1978,6 +2076,7 @@
     history: []
   };
 
+  // Helper formatting mm:ss.ff
   function formatTime(sec) {
     if (isNaN(sec) || sec < 0) sec = 0;
     const m = Math.floor(sec / 60);
@@ -1987,13 +2086,22 @@
     return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0') + '.' + String(f).padStart(2, '0');
   }
 
+  function parseTime(str) {
+    if (!str) return 0;
+    const parts = str.split(':');
+    if (parts.length === 2) {
+      return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
+    }
+    return parseFloat(str) || 0;
+  }
+
   function toast(msg) {
     const el = document.getElementById('toastNotification');
     const msgEl = document.getElementById('toastMessage');
     if (el && msgEl) {
       msgEl.textContent = msg;
       el.classList.add('show');
-      setTimeout(function() { el.classList.remove('show'); }, 2600);
+      setTimeout(() => el.classList.remove('show'), 2600);
     }
   }
 
@@ -2013,7 +2121,9 @@
   let masterGain = null;
   let audioBuffer = null;
   let audioSourceNode = null;
-  let audioDestinationNode = null;
+  let audioBufferStartTime = 0;
+  let audioBufferOffset = 0;
+  let audioDestinationNode = null; // for video recorder capture
 
   function initAudio() {
     if (audioCtx) return;
@@ -2035,9 +2145,10 @@
     }
   }
 
+  // Spiritual ambient harmonic pad generator
   let padOsc1 = null, padOsc2 = null, padFilter = null;
   function startSynthAmbient() {
-    if (!audioCtx || audioBuffer) return;
+    if (!audioCtx || audioBuffer) return; // if user loaded file, don't play synth
     try {
       stopSynthAmbient();
       padOsc1 = audioCtx.createOscillator();
@@ -2081,6 +2192,8 @@
       audioSourceNode.connect(masterGain);
       const safeOffset = Math.max(0, Math.min(audioBuffer.duration, offsetSec));
       audioSourceNode.start(0, safeOffset);
+      audioBufferStartTime = audioCtx.currentTime;
+      audioBufferOffset = safeOffset;
     } catch(e) {
       console.warn('Real audio playback err:', e);
     }
@@ -2119,14 +2232,14 @@
   function renderFrame(timeSec) {
     const w = canvas.width;
     const h = canvas.height;
-    const res = getActiveScene(timeSec);
-    const scene = res.scene;
+    const { scene, index } = getActiveScene(timeSec);
     if (!scene) return;
 
     const sceneDur = Math.max(0.1, scene.end - scene.start);
     const sceneElapsed = Math.max(0, timeSec - scene.start);
     const progress = Math.min(1.0, sceneElapsed / sceneDur);
 
+    // Compute camera transform
     let camScale = 1.0;
     let camTransX = 0;
     let camTransY = 0;
@@ -2145,29 +2258,29 @@
     ctx.save();
     ctx.clearRect(0, 0, w, h);
 
-    // Camera transform
+    // Camera space
     ctx.save();
     ctx.translate(w / 2, h / 2);
     ctx.scale(camScale, camScale);
     ctx.translate(-w / 2 + camTransX, -h / 2 + camTransY);
 
-    // Background
+    // A. Render Background
     drawBackground(ctx, scene, w, h, timeSec, progress);
 
-    // Lanterns
+    // B. Render Scene Objects / Lanterns
     if (state.showLanterns) {
       drawLanterns(ctx, w, h, timeSec);
     }
 
-    // Characters
+    // C. Render Characters
     drawCharacters(ctx, scene, w, h, timeSec, progress);
 
-    ctx.restore(); // end camera
+    ctx.restore(); // end camera space
 
-    // Captions
+    // D. Render Kinetic Captions
     drawCaptions(ctx, scene, w, h, progress);
 
-    // Vignette
+    // E. Render Vignette
     if (state.vignetteIntensity > 0) {
       drawVignette(ctx, w, h, state.vignetteIntensity);
     }
@@ -2179,6 +2292,7 @@
     const bgType = scene.bg || 'mosque';
 
     if (bgType === 'mosque') {
+      // Atmospheric Islamic Night Sky
       const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
       skyGrad.addColorStop(0, '#0c1630');
       skyGrad.addColorStop(0.4, '#151733');
@@ -2187,9 +2301,10 @@
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, w, h);
 
+      // Starfield
       drawStars(ctx, w, h, t, state.starDensity);
 
-      // Crescent Moon
+      // Golden Glowing Crescent Moon
       ctx.save();
       const moonX = w * 0.82;
       const moonY = h * 0.22;
@@ -2205,15 +2320,17 @@
       ctx.fill();
       ctx.restore();
 
-      // Mosque Silhouette
+      // Mosque Silhouette (Dome & Minarets)
       const ground = h * 0.82;
       ctx.fillStyle = '#0a101d';
       ctx.fillRect(0, ground, w, h - ground);
 
+      // Large central dome
       ctx.beginPath();
       ctx.arc(w * 0.5, ground, w * 0.13, Math.PI, 0);
       ctx.fill();
 
+      // Left dome & Right dome
       ctx.beginPath();
       ctx.arc(w * 0.32, ground, w * 0.08, Math.PI, 0);
       ctx.fill();
@@ -2237,12 +2354,13 @@
       ctx.lineTo(w * 0.803, ground - h * 0.38);
       ctx.fill();
 
-      // Warm lit prayer archway
+      // Warm amber lit prayer archways
       ctx.fillStyle = 'rgba(251, 191, 36, 0.45)';
       ctx.beginPath();
       ctx.arc(w * 0.5, ground, w * 0.045, Math.PI, 0);
       ctx.fill();
     } else if (bgType === 'village') {
+      // Warm dusk sunset gradient
       const dusk = ctx.createLinearGradient(0, 0, 0, h);
       dusk.addColorStop(0, '#1d1a3b');
       dusk.addColorStop(0.35, '#3b2144');
@@ -2253,6 +2371,7 @@
 
       drawStars(ctx, w, h, t, Math.round(state.starDensity * 0.6));
 
+      // Distant rolling hills
       ctx.fillStyle = '#141e17';
       ctx.beginPath();
       ctx.moveTo(0, h * 0.72);
@@ -2262,6 +2381,7 @@
       ctx.lineTo(0, h);
       ctx.fill();
 
+      // Near village hill
       ctx.fillStyle = '#0c140e';
       ctx.beginPath();
       ctx.moveTo(0, h * 0.8);
@@ -2270,7 +2390,7 @@
       ctx.lineTo(0, h);
       ctx.fill();
 
-      // House
+      // Cozy village house with glowing window
       const hx = w * 0.75;
       const hy = h * 0.72;
       ctx.fillStyle = '#1f1a24';
@@ -2283,6 +2403,7 @@
       ctx.fillStyle = '#fbbf24';
       ctx.fillRect(hx + 14, hy + 8, 14, 12);
     } else if (bgType === 'forest') {
+      // Deep Pine Starlit Forest
       const fGrad = ctx.createLinearGradient(0, 0, 0, h);
       fGrad.addColorStop(0, '#061118');
       fGrad.addColorStop(0.5, '#0a1e1b');
@@ -2292,6 +2413,7 @@
 
       drawStars(ctx, w, h, t, state.starDensity);
 
+      // Pine tree silhouettes
       ctx.fillStyle = '#04100b';
       for (let i = 0; i < w; i += 36) {
         const treeH = 90 + Math.sin(i * 0.12) * 45;
@@ -2303,6 +2425,7 @@
       }
       ctx.fillRect(0, h * 0.85, w, h * 0.15);
     } else {
+      // Cosmic Night Sky
       const cGrad = ctx.createRadialGradient(w * 0.5, h * 0.4, 60, w * 0.5, h * 0.5, w * 0.8);
       cGrad.addColorStop(0, '#1a224a');
       cGrad.addColorStop(0.6, '#0b0f24');
@@ -2332,18 +2455,18 @@
 
   function drawLanterns(ctx, w, h, t) {
     const lanterns = [
-      { x: w * 0.1, y: h * 0.18, sway: 0.08, phase: 0 },
-      { x: w * 0.24, y: h * 0.14, sway: 0.06, phase: 1.2 },
-      { x: w * 0.88, y: h * 0.16, sway: 0.07, phase: 2.4 }
+      { x: w * 0.1, y: h * 0.18, l: 60, sway: 0.08, phase: 0 },
+      { x: w * 0.24, y: h * 0.14, l: 80, sway: 0.06, phase: 1.2 },
+      { x: w * 0.88, y: h * 0.16, l: 70, sway: 0.07, phase: 2.4 }
     ];
 
-    for (let k = 0; k < lanterns.length; k++) {
-      const lt = lanterns[k];
+    for (const lt of lanterns) {
       const angle = Math.sin(t * 2 + lt.phase) * lt.sway;
       ctx.save();
       ctx.translate(lt.x, 0);
       ctx.rotate(angle);
 
+      // Golden chain
       ctx.strokeStyle = '#d97706';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
@@ -2351,10 +2474,12 @@
       ctx.lineTo(0, lt.y);
       ctx.stroke();
 
+      // Lantern body
       ctx.translate(0, lt.y);
       ctx.shadowColor = 'rgba(251, 191, 36, 0.85)';
       ctx.shadowBlur = 24;
 
+      // Glow aura
       const radialGlow = ctx.createRadialGradient(0, 10, 2, 0, 10, 32);
       radialGlow.addColorStop(0, 'rgba(254, 240, 138, 0.8)');
       radialGlow.addColorStop(0.5, 'rgba(245, 158, 11, 0.4)');
@@ -2364,6 +2489,7 @@
       ctx.arc(0, 10, 32, 0, Math.PI * 2);
       ctx.fill();
 
+      // Brass lantern cage
       ctx.fillStyle = '#b45309';
       ctx.beginPath();
       ctx.moveTo(-9, 0);
@@ -2375,6 +2501,7 @@
       ctx.closePath();
       ctx.fill();
 
+      // Inner golden light
       ctx.fillStyle = '#fef08a';
       ctx.fillRect(-5, 5, 10, 12);
 
@@ -2392,6 +2519,7 @@
     const cx = w * posX;
     const cy = h * posY;
 
+    // Dynamics
     let bobY = 0;
     let armAngle = 0;
     const isSpeaking = state.isPlaying;
@@ -2429,33 +2557,32 @@
     ctx.save();
     ctx.translate(x, y);
 
-    // Shadow
+    // Floor shadow
     ctx.beginPath();
     ctx.ellipse(0, 6 * s, 42 * s, 9 * s, 0, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
     ctx.fill();
 
-    // Robe
+    // Emerald Islamic Robe (Jubbah)
     ctx.beginPath();
     ctx.moveTo(-24 * s, 4 * s);
     ctx.lineTo(-18 * s, -85 * s);
     ctx.quadraticCurveTo(0, -98 * s, 18 * s, -85 * s);
     ctx.lineTo(24 * s, 4 * s);
     ctx.closePath();
-    ctx.fillStyle = '#065f46';
+    ctx.fillStyle = '#065f46'; // emerald green
     ctx.fill();
     ctx.strokeStyle = '#34d399';
     ctx.lineWidth = 1.8 * s;
     ctx.stroke();
 
-    // Collar Trim
+    // Golden Embroidered Trim & Buttons
     ctx.beginPath();
     ctx.arc(0, -84 * s, 7 * s, 0, Math.PI);
     ctx.strokeStyle = '#fbbf24';
     ctx.lineWidth = 2.2 * s;
     ctx.stroke();
 
-    // Buttons
     ctx.fillStyle = '#fbbf24';
     ctx.beginPath();
     ctx.arc(0, -66 * s, 2.2 * s, 0, Math.PI * 2);
@@ -2463,13 +2590,13 @@
     ctx.arc(0, -34 * s, 2.2 * s, 0, Math.PI * 2);
     ctx.fill();
 
-    // Head
+    // Head / Face
     ctx.beginPath();
     ctx.arc(0, -118 * s, 22 * s, 0, Math.PI * 2);
     ctx.fillStyle = '#ffedd5';
     ctx.fill();
 
-    // Kufi Cap
+    // Crisp White Prayer Cap (Kufi)
     ctx.beginPath();
     ctx.arc(0, -125 * s, 22.5 * s, Math.PI * 0.9, Math.PI * 2.1);
     ctx.fillStyle = '#ffffff';
@@ -2478,7 +2605,7 @@
     ctx.lineWidth = 1.8 * s;
     ctx.stroke();
 
-    // Eyes
+    // Cute animated blinking eyes
     const blink = Math.sin(t * 1.5) > 0.96;
     ctx.fillStyle = '#0f172a';
     if (blink) {
@@ -2496,6 +2623,7 @@
       ctx.arc(8 * s, -116 * s, 3.2 * s, 0, Math.PI * 2);
       ctx.fill();
 
+      // Eye highlights
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
       ctx.arc(-9 * s, -118 * s, 1.2 * s, 0, Math.PI * 2);
@@ -2503,7 +2631,7 @@
       ctx.fill();
     }
 
-    // Mouth
+    // Cheerful mouth (moves when audio playing)
     const mouthOpen = isSpeaking ? (Math.sin(t * 12) * 3 + 3) * s : 0;
     ctx.beginPath();
     if (mouthOpen > 1.5) {
@@ -2517,7 +2645,7 @@
       ctx.stroke();
     }
 
-    // Arm
+    // Gesturing Arm
     ctx.save();
     ctx.translate(16 * s, -75 * s);
     ctx.rotate((armAngle * Math.PI) / 180);
@@ -2530,8 +2658,8 @@
     ctx.stroke();
     ctx.restore();
 
-    // Name label
-    ctx.font = 'bold ' + Math.round(11 * s) + 'px "Inter", sans-serif';
+    // Name badge
+    ctx.font = `bold ${Math.round(11 * s)}px "Inter", sans-serif`;
     ctx.fillStyle = '#34d399';
     ctx.textAlign = 'center';
     ctx.fillText('Nooruddin', 0, 24 * s);
@@ -2545,9 +2673,11 @@
     ctx.save();
     ctx.translate(x, y + floatY);
 
+    // Glowing halo
     ctx.shadowColor = 'rgba(251, 191, 36, 0.9)';
     ctx.shadowBlur = 32 * s;
 
+    // 5-point Star
     ctx.beginPath();
     const spikes = 5;
     const outer = 44 * s;
@@ -2579,6 +2709,7 @@
     ctx.lineWidth = 2 * s;
     ctx.stroke();
 
+    // Sparkle eye details
     ctx.shadowBlur = 0;
     ctx.fillStyle = '#1e1b4b';
     ctx.beginPath();
@@ -2586,19 +2717,22 @@
     ctx.arc(8 * s, -4 * s, 3.2 * s, 0, Math.PI * 2);
     ctx.fill();
 
+    // Cute blush
     ctx.fillStyle = 'rgba(244, 63, 94, 0.45)';
     ctx.beginPath();
     ctx.arc(-13 * s, 2 * s, 4 * s, 0, Math.PI * 2);
     ctx.arc(13 * s, 2 * s, 4 * s, 0, Math.PI * 2);
     ctx.fill();
 
+    // Smiling mouth
     ctx.beginPath();
     ctx.arc(0, 0, 6 * s, 0.1 * Math.PI, 0.9 * Math.PI);
     ctx.strokeStyle = '#78350f';
     ctx.lineWidth = 2 * s;
     ctx.stroke();
 
-    ctx.font = 'bold ' + Math.round(11 * s) + 'px "Inter", sans-serif';
+    // Name tag
+    ctx.font = `bold ${Math.round(11 * s)}px "Inter", sans-serif`;
     ctx.fillStyle = '#fbbf24';
     ctx.textAlign = 'center';
     ctx.fillText('Nuri', 0, 36 * s);
@@ -2611,11 +2745,13 @@
     ctx.save();
     ctx.translate(x, y);
 
+    // Shadow
     ctx.beginPath();
     ctx.ellipse(0, 6 * s, 40 * s, 9 * s, 0, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
     ctx.fill();
 
+    // Elegant Lilac/Purple Robe
     ctx.beginPath();
     ctx.moveTo(-22 * s, 4 * s);
     ctx.lineTo(-16 * s, -85 * s);
@@ -2628,29 +2764,34 @@
     ctx.lineWidth = 1.8 * s;
     ctx.stroke();
 
+    // Graceful Lilac Hijab
     ctx.beginPath();
     ctx.arc(0, -116 * s, 24 * s, 0, Math.PI * 2);
     ctx.fillStyle = '#a855f7';
     ctx.fill();
 
+    // Face oval
     ctx.beginPath();
     ctx.ellipse(0, -114 * s, 13 * s, 16 * s, 0, 0, Math.PI * 2);
     ctx.fillStyle = '#ffedd5';
     ctx.fill();
 
+    // Peaceful Eyes
     ctx.fillStyle = '#0f172a';
     ctx.beginPath();
     ctx.arc(-5 * s, -114 * s, 2.5 * s, 0, Math.PI * 2);
     ctx.arc(5 * s, -114 * s, 2.5 * s, 0, Math.PI * 2);
     ctx.fill();
 
+    // Gentle Smile
     ctx.beginPath();
     ctx.arc(0, -107 * s, 4 * s, 0.1 * Math.PI, 0.9 * Math.PI);
     ctx.strokeStyle = '#be185d';
     ctx.lineWidth = 1.6 * s;
     ctx.stroke();
 
-    ctx.font = 'bold ' + Math.round(11 * s) + 'px "Inter", sans-serif';
+    // Name tag
+    ctx.font = `bold ${Math.round(11 * s)}px "Inter", sans-serif`;
     ctx.fillStyle = '#c084fc';
     ctx.textAlign = 'center';
     ctx.fillText('Ayesha', 0, 24 * s);
@@ -2664,7 +2805,7 @@
 
     ctx.save();
     const fontSize = scene.fontSize || 32;
-    ctx.font = '700 ' + fontSize + 'px "Noto Sans Bengali", "Inter", sans-serif';
+    ctx.font = `700 ${fontSize}px "Noto Sans Bengali", "Inter", sans-serif`;
 
     const cx = w * 0.5;
     const cy = h * 0.18;
@@ -2672,10 +2813,12 @@
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
+    // Drop shadow
     ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
     ctx.shadowBlur = 14;
     ctx.shadowOffsetY = 3;
 
+    // Check if there is a highlight keyword
     const hl = scene.highlight || '';
     if (hl && text.includes(hl)) {
       const parts = text.split(hl);
@@ -2689,16 +2832,20 @@
 
       let startX = cx - totalW / 2;
 
+      // Draw prefix
       ctx.fillStyle = scene.textColor || '#F4EFE6';
       ctx.textAlign = 'left';
       ctx.fillText(pre, startX, cy);
 
+      // Draw highlighted word
       ctx.fillStyle = scene.highlightColor || '#F5C15E';
       ctx.fillText(hl, startX + wPre, cy);
 
+      // Underline under highlight
       ctx.fillStyle = scene.highlightColor || '#F5C15E';
       ctx.fillRect(startX + wPre, cy + fontSize * 0.65, wHl, 3);
 
+      // Draw postfix
       ctx.fillStyle = scene.textColor || '#F4EFE6';
       ctx.fillText(post, startX + wPre + wHl, cy);
     } else {
@@ -2713,7 +2860,7 @@
     ctx.save();
     const grad = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.max(w, h) * 0.7);
     grad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-    grad.addColorStop(1, 'rgba(0, 0, 0, ' + intensity + ')');
+    grad.addColorStop(1, \`rgba(0, 0, 0, \${intensity})\`);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
     ctx.restore();
@@ -2756,7 +2903,7 @@
   function updateTimeDisplays() {
     const curStr = formatTime(state.currentTime);
     const durStr = formatTime(state.duration);
-    if (playbarTime) playbarTime.textContent = curStr + ' / ' + durStr;
+    if (playbarTime) playbarTime.textContent = \`\${curStr} / \${durStr}\`;
     if (tlTotalTime) tlTotalTime.textContent = durStr;
 
     const pct = Math.min(100, Math.max(0, (state.currentTime / state.duration) * 100));
@@ -2773,12 +2920,12 @@
 
   let lastActiveIdx = -1;
   function syncInspectorIfSceneChanged() {
-    const res = getActiveScene(state.currentTime);
-    if (res.index !== lastActiveIdx && res.index !== undefined) {
-      lastActiveIdx = res.index;
-      state.activeSceneIndex = res.index;
-      populateInspector(res.scene);
-      highlightActiveTimelineClip(res.index);
+    const { scene, index } = getActiveScene(state.currentTime);
+    if (index !== lastActiveIdx && index !== undefined) {
+      lastActiveIdx = index;
+      state.activeSceneIndex = index;
+      populateInspector(scene);
+      highlightActiveTimelineClip(index);
     }
   }
 
@@ -2790,22 +2937,23 @@
     });
   }
 
+  // Render Timeline Elements
   function renderTimeline() {
     if (!rowScenes || !rowCharacters || !rowCaptions || !tlRuler || !trackInner) return;
 
     const baseW = 1400 * state.timelineZoom;
     trackInner.style.width = baseW + 'px';
 
-    // 1. Ruler
+    // 1. Ruler Ticks
     let rulerHtml = '';
     const intervalSec = state.duration > 180 ? 30 : 10;
     for (let s = 0; s <= state.duration; s += intervalSec) {
       const left = 80 + (s / state.duration) * (baseW - 100);
-      rulerHtml += '<div class="ruler-tick" style="left:' + left + 'px;">' + formatTime(s).slice(0, 5) + '</div>';
+      rulerHtml += \`<div class="ruler-tick" style="left:\${left}px;">\${formatTime(s).slice(0, 5)}</div>\`;
     }
     tlRuler.innerHTML = rulerHtml;
 
-    // 2. Film strip
+    // 2. Film Strip frames
     if (filmStrip) {
       let stripHtml = '';
       const frameCount = Math.round(24 * state.timelineZoom);
@@ -2815,43 +2963,44 @@
       filmStrip.innerHTML = stripHtml;
     }
 
-    // 3. Scenes
+    // 3. Scenes Track
     let scHtml = '';
     state.scenes.forEach((sc, i) => {
       const left = 80 + (sc.start / state.duration) * (baseW - 100);
       const width = Math.max(30, ((sc.end - sc.start) / state.duration) * (baseW - 100));
       const selClass = (i === state.activeSceneIndex) ? 'selected' : '';
-      scHtml += '<div class="clip scene ' + selClass + '" data-index="' + i + '" style="left:' + left + 'px; width:' + width + 'px;" title="' + sc.title + '">' +
-        '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9"/></svg>' +
-        (i + 1) + '. ' + sc.title +
-      '</div>';
+      scHtml += \`<div class="clip scene \${selClass}" data-index="\${i}" style="left:\${left}px; width:\${width}px;" title="\${sc.title}">
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9"/></svg>
+        \${i + 1}. \${sc.title}
+      </div>\`;
     });
     rowScenes.innerHTML = scHtml;
 
-    // 4. Characters
+    // 4. Characters Track
     let charHtml = '';
     state.scenes.forEach((sc, i) => {
       const left = 80 + (sc.start / state.duration) * (baseW - 100);
       const width = Math.max(30, ((sc.end - sc.start) / state.duration) * (baseW - 100));
       const charName = sc.char === 'nooruddin_nuri' ? 'Nooruddin + Nuri' : (sc.char === 'nooruddin' ? 'Nooruddin' : (sc.char === 'nuri' ? 'Nuri' : 'Ayesha'));
-      charHtml += '<div class="clip char" data-index="' + i + '" style="left:' + left + 'px; width:' + width + 'px;">' +
-        '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="9" r="4"/></svg>' +
-        charName +
-      '</div>';
+      charHtml += \`<div class="clip char" data-index="\${i}" style="left:\${left}px; width:\${width}px;">
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="9" r="4"/></svg>
+        \${charName}
+      </div>\`;
     });
     rowCharacters.innerHTML = charHtml;
 
-    // 5. Captions
+    // 5. Captions Track
     let capHtml = '';
     state.scenes.forEach((sc, i) => {
       const left = 80 + (sc.start / state.duration) * (baseW - 100);
       const width = Math.max(30, ((sc.end - sc.start) / state.duration) * (baseW - 100));
-      capHtml += '<div class="clip text" data-index="' + i + '" style="left:' + left + 'px; width:' + width + 'px;" title="' + sc.caption + '">' +
-        sc.caption.slice(0, 24) + '...' +
-      '</div>';
+      capHtml += \`<div class="clip text" data-index="\${i}" style="left:\${left}px; width:\${width}px;" title="\${sc.caption}">
+        \${sc.caption.slice(0, 24)}...
+      </div>\`;
     });
     rowCaptions.innerHTML = capHtml;
 
+    // Rebind clip click handlers
     document.querySelectorAll('.clip.scene').forEach(clip => {
       clip.addEventListener('click', () => {
         const idx = parseInt(clip.getAttribute('data-index'), 10);
@@ -2921,6 +3070,7 @@
 
   function populateInspector(sc) {
     if (!sc) return;
+    // Scene Pane
     if (inpSceneTitle) inpSceneTitle.value = sc.title || '';
     if (inpStartTime) inpStartTime.value = formatTime(sc.start);
     if (inpEndTime) inpEndTime.value = formatTime(sc.end);
@@ -2935,6 +3085,7 @@
     if (selTransitionDur) selTransitionDur.value = String(sc.transitionDur || 1.0);
     if (inpSceneNotes) inpSceneNotes.value = sc.notes || '';
 
+    // Text Pane
     if (inpCaptionText) inpCaptionText.value = sc.caption || '';
     if (inpHighlightWord) inpHighlightWord.value = sc.highlight || '';
     if (rngFontSize) {
@@ -2949,6 +3100,7 @@
     if (lblHighlightColor) lblHighlightColor.textContent = sc.highlightColor || '#F5C15E';
     if (selTextAlign) selTextAlign.value = sc.textAlign || 'center';
 
+    // Character Pane
     if (selActiveChar) selActiveChar.value = sc.char || 'nooruddin_nuri';
     if (rngCharScale) {
       rngCharScale.value = Math.round((sc.charScale ?? 1.0) * 100);
@@ -2964,6 +3116,7 @@
     }
     if (selCharAction) selCharAction.value = sc.charAction || 'talk';
 
+    // Animation Pane
     if (rngStarDensity) {
       rngStarDensity.value = state.starDensity;
       if (valStarDensity) valStarDensity.textContent = state.starDensity;
@@ -2979,7 +3132,7 @@
     }
   }
 
-  // Live Inspector Bindings
+  // Live Binding Events for Inspector Controls
   if (inpSceneTitle) {
     inpSceneTitle.addEventListener('input', (e) => {
       const sc = state.scenes[state.activeSceneIndex];
@@ -3120,6 +3273,7 @@
     });
   }
 
+  // Animation pane events
   if (rngStarDensity) {
     rngStarDensity.addEventListener('input', (e) => {
       state.starDensity = parseInt(e.target.value, 10);
@@ -3151,7 +3305,7 @@
     });
   }
 
-  // Tab switching
+  // Inspector Tab Switching
   const inspectorTabs = document.querySelectorAll('#inspectorTabs .tab');
   const tabPanes = document.querySelectorAll('.tab-pane');
   inspectorTabs.forEach(tab => {
@@ -3174,7 +3328,7 @@
     initAudio();
     state.isPlaying = !state.isPlaying;
     if (state.isPlaying) {
-      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
       playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="white" width="16" height="16"><rect x="5" y="4" width="4" height="16"/><rect x="15" y="4" width="4" height="16"/></svg>';
       if (audioBuffer) {
         playRealAudio(state.currentTime);
@@ -3197,12 +3351,16 @@
       togglePlay();
     } else if (e.code === 'ArrowLeft') {
       e.preventDefault();
-      seekToTime(state.currentTime - 2);
+      seekRelative(-2);
     } else if (e.code === 'ArrowRight') {
       e.preventDefault();
-      seekToTime(state.currentTime + 2);
+      seekRelative(2);
     }
   });
+
+  function seekRelative(delta) {
+    seekToTime(state.currentTime + delta);
+  }
 
   function seekToTime(t) {
     state.currentTime = Math.max(0, Math.min(state.duration, t));
@@ -3356,9 +3514,7 @@
   if (tlBtnSplit) {
     tlBtnSplit.addEventListener('click', () => {
       pushHistory();
-      const res = getActiveScene(state.currentTime);
-      const scene = res.scene;
-      const index = res.index;
+      const { scene, index } = getActiveScene(state.currentTime);
       if (!scene) return;
 
       const splitPoint = state.currentTime;
@@ -3393,6 +3549,7 @@
       const idx = state.activeSceneIndex;
       const removed = state.scenes.splice(idx, 1)[0];
 
+      // If removed scene, expand neighbor or shift
       if (idx < state.scenes.length) {
         state.scenes[idx].start = removed.start;
       } else if (idx - 1 >= 0) {
@@ -3419,6 +3576,7 @@
       dup.start = sc.end;
       dup.end = sc.end + dur;
 
+      // shift subsequent scenes
       for (let i = state.activeSceneIndex + 1; i < state.scenes.length; i++) {
         state.scenes[i].start += dur;
         state.scenes[i].end += dur;
@@ -3500,6 +3658,7 @@
     });
   });
 
+  // Left Rail item interactions
   const railItems = document.querySelectorAll('#railNav .rail-item');
   railItems.forEach(item => {
     item.addEventListener('click', () => {
@@ -3508,7 +3667,8 @@
       const rail = item.getAttribute('data-rail');
 
       if (rail === 'characters' || rail === 'backgrounds' || rail === 'objects') {
-        const chip = chipRow.querySelector('[data-filter="' + rail + '"]');
+        // filter chip
+        const chip = chipRow.querySelector(\`[data-filter="\${rail}"]\`);
         if (chip) chip.click();
       } else if (rail === 'text') {
         const textTab = document.querySelector('#inspectorTabs [data-tab="text"]');
@@ -3525,7 +3685,7 @@
     });
   });
 
-  // 9. AUDIO IMPORT, JSON IMPORT, SAVE, UNDO/REDO
+  // 9. TOPBAR TOOLS: AUDIO IMPORT, JSON IMPORT, SAVE, UNDO/REDO
   const btnImportAudio = document.getElementById('btnImportAudio');
   const lblAudioName = document.getElementById('lblAudioName');
   const audioFileInput = document.createElement('input');
@@ -3541,7 +3701,7 @@
       if (!file) return;
 
       initAudio();
-      toast('Decoding audio: ' + file.name + '...');
+      toast('Decoding audio file: ' + file.name + '...');
       if (lblAudioName) lblAudioName.textContent = file.name.slice(0, 16);
 
       try {
@@ -3550,15 +3710,17 @@
         state.duration = audioBuffer.duration;
         state.currentTime = 0;
 
+        // Extract peak waveform data for waveform bars
         generateAudioWaveformPeaks(audioBuffer);
 
+        // Adjust last scene end to match audio duration
         if (state.scenes.length > 0) {
           state.scenes[state.scenes.length - 1].end = state.duration;
         }
 
         renderTimeline();
         updateTimeDisplays();
-        toast('Audio loaded! Duration: ' + state.duration.toFixed(2) + 's');
+        toast(\`Audio loaded! Duration: \${state.duration.toFixed(2)}s\`);
       } catch(err) {
         console.error('Error decoding audio:', err);
         toast('Failed to decode audio file');
@@ -3582,11 +3744,12 @@
       }
       const avg = sum / blockSize;
       const height = Math.max(3, Math.min(22, Math.round(avg * 140)));
-      html += '<div class="wave-bar" style="height:' + height + 'px;"></div>';
+      html += \`<div class="wave-bar" style="height:\${height}px;"></div>\`;
     }
     waveEl.innerHTML = html;
   }
 
+  // Populate synthetic waveform initially
   (function fillSyntheticWaveforms() {
     function makeWave(id, count, min, max) {
       const el = document.getElementById(id);
@@ -3594,7 +3757,7 @@
       let h = '';
       for (let i = 0; i < count; i++) {
         const val = Math.floor(Math.random() * (max - min + 1)) + min;
-        h += '<div class="wave-bar" style="height:' + val + 'px;"></div>';
+        h += \`<div class="wave-bar" style="height:\${val}px;"></div>\`;
       }
       el.innerHTML = h;
     }
@@ -3602,6 +3765,7 @@
     makeWave('musicwave', 260, 3, 14);
   })();
 
+  // JSON Blueprint Import
   const btnImportJSON = document.getElementById('btnImportJSON');
   const jsonFileInput = document.createElement('input');
   jsonFileInput.type = 'file';
@@ -3643,7 +3807,7 @@
             state.currentTime = 0;
             renderTimeline();
             selectScene(0, true);
-            toast('Imported ' + state.scenes.length + ' scenes from JSON!');
+            toast(\`Imported \${state.scenes.length} scenes from JSON!\`);
           }
         } catch(err) {
           toast('Invalid JSON blueprint format');
@@ -3653,6 +3817,7 @@
     });
   }
 
+  // Save Project
   const btnSaveProject = document.getElementById('btnSaveProject');
   const lblSaveStatus = document.getElementById('lblSaveStatus');
   if (btnSaveProject) {
@@ -3671,7 +3836,9 @@
     });
   }
 
+  // Undo / Redo
   const btnUndo = document.getElementById('btnUndo');
+  const btnRedo = document.getElementById('btnRedo');
   if (btnUndo) {
     btnUndo.addEventListener('click', () => {
       if (state.history.length > 0) {
@@ -3689,7 +3856,7 @@
     });
   }
 
-  // 10. REAL VIDEO EXPORT ENGINE
+  // 10. REAL VIDEO EXPORT ENGINE (MediaRecorder with WebM/MP4 download)
   const btnTopExport = document.getElementById('btnTopExport');
   const exportModal = document.getElementById('exportModal');
   const btnCloseExport = document.getElementById('btnCloseExport');
@@ -3728,13 +3895,17 @@
       btnStartExport.style.opacity = '0.5';
 
       try {
+        // Stream from Canvas (30 FPS)
         const canvasStream = canvas.captureStream(30);
 
+        // Combined audio stream from destination
+        let finalStream = canvasStream;
         if (audioDestinationNode && audioDestinationNode.stream.getAudioTracks().length > 0) {
           const audioTrack = audioDestinationNode.stream.getAudioTracks()[0];
           canvasStream.addTrack(audioTrack);
         }
 
+        // Determine supported MIME type
         const mimeTypes = [
           'video/webm;codecs=vp9,opus',
           'video/webm;codecs=vp8,opus',
@@ -3742,7 +3913,7 @@
           'video/mp4'
         ];
         let chosenMime = 'video/webm';
-        for (let m of mimeTypes) {
+        for (const m of mimeTypes) {
           if (MediaRecorder.isTypeSupported(m)) {
             chosenMime = m;
             break;
@@ -3752,7 +3923,7 @@
         recordedChunks = [];
         mediaRecorder = new MediaRecorder(canvasStream, {
           mimeType: chosenMime,
-          videoBitsPerSecond: 6000000
+          videoBitsPerSecond: 6000000 // 6 Mbps HD
         });
 
         mediaRecorder.ondataavailable = (e) => {
@@ -3768,7 +3939,7 @@
           a.style.display = 'none';
           a.href = url;
           const ext = chosenMime.includes('mp4') ? 'mp4' : 'webm';
-          a.download = 'CutFree_' + state.projectName.replace(/\s+/g, '_') + '_' + (state.aspectRatio === '9:16' ? 'Shorts' : '1080p') + '.' + ext;
+          a.download = \`CutFree_\${state.projectName.replace(/\\s+/g, '_')}_\${state.aspectRatio === '9:16' ? 'Shorts' : '1080p'}.\${ext}\`;
           document.body.appendChild(a);
           a.click();
           setTimeout(() => {
@@ -3787,9 +3958,10 @@
           setTimeout(() => exportModal.classList.remove('active'), 2000);
         };
 
-        mediaRecorder.start(250);
+        mediaRecorder.start(250); // collect data every 250ms
 
-        const exportTotalSec = Math.min(30, state.duration);
+        // Fast render progress simulation
+        const exportTotalSec = Math.min(30, state.duration); // render preview or full clip
         let exportCurrent = 0;
         const exportStep = 0.2;
         const renderInterval = setInterval(() => {
@@ -3804,7 +3976,7 @@
           const pct = Math.min(99, Math.round((exportCurrent / exportTotalSec) * 100));
           if (exportProgressBar) exportProgressBar.style.width = pct + '%';
           if (exportPercentText) exportPercentText.textContent = pct + '%';
-          if (exportStatusText) exportStatusText.textContent = 'Rendering frames... (' + exportCurrent.toFixed(1) + 's / ' + exportTotalSec.toFixed(1) + 's)';
+          if (exportStatusText) exportStatusText.textContent = \`Rendering frames... (\${exportCurrent.toFixed(1)}s / \${exportTotalSec.toFixed(1)}s)\`;
 
           if (exportCurrent >= exportTotalSec) {
             clearInterval(renderInterval);
@@ -3812,7 +3984,7 @@
               mediaRecorder.stop();
             }
           }
-        }, 33);
+        }, 33); // 30 FPS rendering pace
 
       } catch(err) {
         console.error('Export error:', err);
@@ -3860,3 +4032,10 @@
 </script>
 </body>
 </html>
+`;
+
+fs.writeFileSync(path.join(__dirname, '../studio.html'), htmlContent, 'utf8');
+fs.writeFileSync(path.join(__dirname, '../cutfree-studio.html'), htmlContent, 'utf8');
+fs.writeFileSync(path.join(__dirname, '../dist/studio.html'), htmlContent, 'utf8');
+fs.writeFileSync(path.join(__dirname, '../dist/cutfree-studio.html'), htmlContent, 'utf8');
+console.log('Successfully built and synchronized studio.html and cutfree-studio.html');

@@ -1,3390 +1,598 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * CutFree Studio — React + Gemini AI Edition
- * Modern Vite + Tailwind + WebCodecs frontend with full studio engine ported to React.
+ * CutFree Studio — Canonical Video Production Studio
+ * Single source of truth driving Preview, Multi-Track Timeline, and Exporter.
  */
 
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import {
-  Sparkles,
-  Play,
-  Pause,
-  Wand2,
-  Film,
-  Palette,
-  Music4,
-  Download,
-  Languages,
-  Clock3,
-  Layers3,
-  Mic2,
-  Type,
-  Zap,
-  MonitorPlay,
-  Settings2,
-  RotateCcw,
-  SquareStack,
-  AudioLines,
-  Video,
-  Check,
-  Loader2,
-  ArrowRight,
-  Globe,
-  Timer,
-  Monitor,
-  Smartphone,
-  Image as ImageIcon,
-  Upload,
-  FileAudio,
-  Waves,
-  Highlighter,
-  Captions,
-  Youtube,
-  ShieldCheck,
-  Cpu,
-  Undo2,
-  Redo2,
-  FileCode2,
-  FolderKanban,
-  LayoutTemplate,
-} from "lucide-react";
-
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { VideoBlueprint, BlueprintScene, BlueprintAsset } from "./types/blueprint";
 import { DEFAULT_BLUEPRINT } from "./core/default-blueprint";
 import { validateBlueprint, repairBlueprint } from "./core/validator";
 import { createHistory } from "./core/history";
-import { videoCompositor } from "./render/compositor";
-import { exportVideo } from "./render/exporter";
-import { TimelineTrackView } from "./ui/TimelineTrackView";
-import { Inspector } from "./ui/Inspector";
-import { BlueprintModal } from "./ui/BlueprintModal";
+import { TopToolbar } from "./ui/TopToolbar";
+import { LeftNav, LeftNavTab } from "./ui/LeftNav";
 import { AssetPanel } from "./ui/AssetPanel";
+import { PreviewPlayer } from "./ui/PreviewPlayer";
+import { Inspector } from "./ui/Inspector";
+import { TimelineTrackView } from "./ui/TimelineTrackView";
+import { BlueprintModal } from "./ui/BlueprintModal";
+import { ExportModal } from "./ui/ExportModal";
+import { ProjectModal } from "./ui/ProjectModal";
 import { assetResolver } from "./core/asset-resolver";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-type ThemeKey =
-  | "aurora"
-  | "neonNoir"
-  | "goldenHour"
-  | "emerald"
-  | "royalInk"
-  | "candy"
-  | "obsidian"
-  | "cyber"
-  | "cyberMatrix"
-  | "vaporwave"
-  | "obsidianLuxury"
-  | "royalEmerald"
-  | "arabicGold";
-type MoodKey = "uplifting" | "cinematic" | "chill" | "tech" | "ambient" | "epic";
-type Aspect = "16:9" | "9:16" | "1:1" | "4:5";
-type Quality = "480p" | "720p" | "1080p";
-type Perf = "high" | "balanced" | "fast";
-type SceneType =
-  | "intro"
-  | "text"
-  | "bullets"
-  | "stat"
-  | "quote"
-  | "broll"
-  | "outro"
-  | "storyTitle"
-  | "story"
-  | "storyBeat"
-  | "storyEnd";
-
-interface Scene {
-  type: SceneType;
-  dur: number;
-  title?: string;
-  subtitle?: string;
-  heading?: string;
-  body?: string;
-  text?: string;
-  items?: string[];
-  value?: number;
-  suffix?: string;
-  label?: string;
-  author?: string;
-  cta?: string;
-  isHook?: boolean;
-  kicker?: string;
-  transitionOut?: string;
-  words?: { w: string; s: number; e: number }[];
-  style?: string;
-  emphasis?: number[];
-}
-
-interface Spec {
-  meta: {
-    title: string;
-    theme: ThemeKey;
-    mood: MoodKey;
-    seed: number;
-    watermark: string;
-    showProgress: boolean;
-    language: "bn" | "en";
-    aspect: Aspect;
-    perf: Perf;
-    shorts: boolean;
-    safe: { top: number; bottom: number };
-    captions: { enabled: boolean; style: string; scale: number };
-  };
-  fps: number;
-  width: number;
-  height: number;
-  scenes: Scene[];
-  captions?: { start: number; end: number; text: string; words?: { w: string; s: number; e: number }[] }[];
-  duration: number;
-}
-
-interface ThemeDef {
-  name: { bn: string; en: string };
-  bg: string;
-  blobs: string[];
-  text: string;
-  sub: string;
-  accent: string;
-  accent2: string;
-  grain: number;
-  vignette: number;
-  aurora: boolean;
-}
-
-// ---------------------------------------------------------------------------
-// Theme / Mood definitions (mirrors js/studio/themes.js)
-// ---------------------------------------------------------------------------
-const THEMES: Record<ThemeKey, ThemeDef> = {
-  aurora: {
-    name: { bn: "অরোরা", en: "Aurora" },
-    bg: "#05070f",
-    blobs: ["#7c5cff", "#22d3ee", "#3bf0a0", "#ff6bd6"],
-    text: "#ffffff",
-    sub: "#c9d6ff",
-    accent: "#22d3ee",
-    accent2: "#7c5cff",
-    grain: 0.06,
-    vignette: 0.55,
-    aurora: true,
-  },
-  neonNoir: {
-    name: { bn: "নিয়ন নয়ার", en: "Neon Noir" },
-    bg: "#07040e",
-    blobs: ["#ff2d95", "#7a2dff", "#00e5ff", "#ff8a00"],
-    text: "#ffffff",
-    sub: "#ffc9e6",
-    accent: "#ff2d95",
-    accent2: "#00e5ff",
-    grain: 0.09,
-    vignette: 0.7,
-    aurora: false,
-  },
-  goldenHour: {
-    name: { bn: "গোল্ডেন আওয়ার", en: "Golden Hour" },
-    bg: "#120803",
-    blobs: ["#ffb347", "#ff5e3a", "#ffd76e", "#ff2e63"],
-    text: "#fffaf2",
-    sub: "#ffd9b0",
-    accent: "#ffb347",
-    accent2: "#ff5e3a",
-    grain: 0.07,
-    vignette: 0.5,
-    aurora: true,
-  },
-  emerald: {
-    name: { bn: "এমারল্ড ডিপ", en: "Emerald Deep" },
-    bg: "#03110d",
-    blobs: ["#2ee6a8", "#22d3ee", "#0ea5e9", "#a3ff9e"],
-    text: "#f2fffb",
-    sub: "#b8ffe6",
-    accent: "#2ee6a8",
-    accent2: "#22d3ee",
-    grain: 0.05,
-    vignette: 0.5,
-    aurora: true,
-  },
-  royalInk: {
-    name: { bn: "রয়্যাল ইঙ্ক", en: "Royal Ink" },
-    bg: "#060a1c",
-    blobs: ["#4f7cff", "#8b5cf6", "#22d3ee", "#e0e7ff"],
-    text: "#ffffff",
-    sub: "#c7d2fe",
-    accent: "#8b5cf6",
-    accent2: "#4f7cff",
-    grain: 0.05,
-    vignette: 0.55,
-    aurora: true,
-  },
-  candy: {
-    name: { bn: "ক্যান্ডি ফ্লস", en: "Candy Floss" },
-    bg: "#150512",
-    blobs: ["#ff6bd6", "#ffd166", "#7c5cff", "#4cd4ff"],
-    text: "#fff7fd",
-    sub: "#ffd6f2",
-    accent: "#ff6bd6",
-    accent2: "#ffd166",
-    grain: 0.08,
-    vignette: 0.45,
-    aurora: true,
-  },
-  obsidian: {
-    name: { bn: "অবসিডিয়ান গোল্ড", en: "Obsidian Gold" },
-    bg: "#08080a",
-    blobs: ["#d4af37", "#8a6a20", "#f5e6a8", "#6b7280"],
-    text: "#fdfcf7",
-    sub: "#e8d9a8",
-    accent: "#d4af37",
-    accent2: "#f5e6a8",
-    grain: 0.1,
-    vignette: 0.72,
-    aurora: false,
-  },
-  cyber: {
-    name: { bn: "সাইবার লাইম", en: "Cyber Lime" },
-    bg: "#040a08",
-    blobs: ["#c6ff00", "#00e5ff", "#00ffa3", "#7c5cff"],
-    text: "#f4ffe0",
-    sub: "#d3ff8a",
-    accent: "#c6ff00",
-    accent2: "#00e5ff",
-    grain: 0.07,
-    vignette: 0.6,
-    aurora: false,
-  },
-  cyberMatrix: {
-    name: { bn: "সাইবার ম্যাট্রিক্স", en: "Cyber Matrix" },
-    bg: "#020906",
-    blobs: ["#00ff66", "#00f0ff", "#10b981", "#064e3b"],
-    text: "#e6fff4",
-    sub: "#86efac",
-    accent: "#00ff66",
-    accent2: "#00f0ff",
-    grain: 0.08,
-    vignette: 0.65,
-    aurora: true,
-  },
-  vaporwave: {
-    name: { bn: "ভেপরওয়েভ", en: "Vaporwave" },
-    bg: "#10041a",
-    blobs: ["#ff3399", "#7928ca", "#ff0080", "#00dfd8"],
-    text: "#ffffff",
-    sub: "#fbcfe8",
-    accent: "#ff3399",
-    accent2: "#00dfd8",
-    grain: 0.07,
-    vignette: 0.5,
-    aurora: true,
-  },
-  obsidianLuxury: {
-    name: { bn: "লাক্সারি", en: "Luxury" },
-    bg: "#050505",
-    blobs: ["#f59e0b", "#d97706", "#fbbf24", "#78350f"],
-    text: "#fffbeb",
-    sub: "#fde68a",
-    accent: "#fbbf24",
-    accent2: "#f59e0b",
-    grain: 0.09,
-    vignette: 0.75,
-    aurora: true,
-  },
-  royalEmerald: {
-    name: { bn: "রয়্যাল এমারল্ড", en: "Royal Emerald" },
-    bg: "#02120d",
-    blobs: ["#059669", "#10b981", "#34d399", "#0284c7"],
-    text: "#ecfdf5",
-    sub: "#a7f3d0",
-    accent: "#10b981",
-    accent2: "#38bdf8",
-    grain: 0.06,
-    vignette: 0.55,
-    aurora: true,
-  },
-  arabicGold: {
-    name: { bn: "অ্যারাবিক গোল্ড", en: "Arabic Gold" },
-    bg: "#040b14",
-    blobs: ["#f59e0b", "#10b981", "#fbbf24", "#064e3b"],
-    text: "#fffdf5",
-    sub: "#fef3c7",
-    accent: "#fbbf24",
-    accent2: "#34d399",
-    grain: 0.08,
-    vignette: 0.65,
-    aurora: true,
-  },
-};
-
-const MOODS: Record<MoodKey, { bn: string; en: string; bpm: number }> = {
-  uplifting: { bn: "উৎসবমুখর", en: "Uplifting", bpm: 112 },
-  cinematic: { bn: "সিনেমাটিক", en: "Cinematic", bpm: 84 },
-  chill: { bn: "চিল", en: "Chill", bpm: 92 },
-  tech: { bn: "টেক", en: "Tech", bpm: 124 },
-  ambient: { bn: "অ্যাম্বিয়েন্ট", en: "Ambient", bpm: 70 },
-  epic: { bn: "এপিক", en: "Epic", bpm: 96 },
-};
-
-// ---------------------------------------------------------------------------
-// Director helpers (deterministic)
-// ---------------------------------------------------------------------------
-function hashString(str: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-function mulberry32(seed: number) {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-const WORDS_PER_SEC = 2.55;
-const MIN_SCENE = 2.0;
-const MAX_SCENE = 9.5;
-
-function wordCount(s: string) {
-  return (String(s).trim().match(/[^\s]+/g) || []).length;
-}
-function splitBeats(script: string) {
-  const raw = String(script || "").replace(/\r/g, "").trim();
-  if (!raw) return [];
-  // Line-by-line mode: if no blank line (\n\n) but many single lines, each non-empty line = one scene
-  // This fulfills hero promise "প্রতি লাইন = এক সিন" — blank line still creates new scene,
-  // and consecutive bullet lines (≥2) are grouped as before.
-  let blocks: string[];
-  if (/\n\s*\n/.test(raw)) {
-    blocks = raw.split(/\n\s*\n+/);
-  } else if (raw.includes("\n")) {
-    const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
-    // Group consecutive bullet lines so "- a\n- b\n- c" stays as one bullets scene
-    blocks = [];
-    for (let i = 0; i < lines.length; ) {
-      if (/^([-*•▪◦]|\d+[.)])\s+/.test(lines[i])) {
-        const grp: string[] = [];
-        while (i < lines.length && /^([-*•▪◦]|\d+[.)])\s+/.test(lines[i])) {
-          grp.push(lines[i]);
-          i++;
-        }
-        // keep bullets together as one block
-        blocks.push(grp.join("\n"));
-      } else {
-        blocks.push(lines[i]);
-        i++;
-      }
-    }
-  } else {
-    blocks = [raw];
-  }
-  const beats: { kind: string; heading?: string; text?: string; items?: string[] }[] = [];
-  blocks.forEach((block) => {
-    const lines = block
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean);
-    if (!lines.length) return;
-    const bullets = lines.filter((l) => /^([-*•▪◦]|\d+[.)])\s+/.test(l));
-    if (bullets.length >= 2) {
-      beats.push({
-        kind: "bullets",
-        heading: lines[0] && !/^([-*•]|\d+[.)])\s+/.test(lines[0]) ? lines[0] : "",
-        items: bullets.map((l) => l.replace(/^([-*•▪◦]|\d+[.)])\s+/, "")),
-      });
-      return;
-    }
-    if (lines.length === 1) {
-      beats.push({ kind: "line", text: lines[0] });
-      return;
-    }
-    beats.push({ kind: "block", heading: lines[0], text: lines.slice(1).join(" ") });
-  });
-  return beats;
-}
-function classify(beat: { kind: string; heading?: string; text?: string }) {
-  if (beat.kind === "bullets") return "bullets";
-  const text = (beat.heading ? beat.heading + ". " : "") + (beat.text || "");
-  if (/^["“'].*["”']/.test(text.trim()) || /\s—\s*\S+$/.test(text.trim())) return "quote";
-  if (/[\d]/.test(beat.heading || beat.text || "") && wordCount(beat.text || "") <= 14 && beat.kind !== "block") {
-    // has number and short -> stat
-    const hasNum = /(-?\d[\d,]*\s*(%|x|k|m|bn|cr|লাখ|কোটি)?)/i.test(beat.text || beat.heading || "");
-    if (hasNum) return "stat";
-  }
-  if (beat.kind === "block") return "explain";
-  return "line";
-}
-function sceneDuration(beat: { items?: string[]; text?: string; heading?: string }, type: string) {
-  if (type === "bullets") {
-    const items = (beat.items || []).length;
-    return Math.min(MAX_SCENE, Math.max(MIN_SCENE, 1.2 + items * 1.15));
-  }
-  if (type === "stat") return 2.6;
-  if (type === "quote") return Math.min(MAX_SCENE, Math.max(2.8, wordCount(beat.text || "") / WORDS_PER_SEC + 1.6));
-  const words = wordCount((beat.heading || "") + " " + (beat.text || ""));
-  return Math.min(MAX_SCENE, Math.max(MIN_SCENE, words / WORDS_PER_SEC + 1.5));
-}
-function parseNumber(text: string) {
-  const m = String(text).match(/(-?\d[\d,.]*)\s*(%|x|X|k|K|m|M|bn|cr|লাখ|কোটি)?/);
-  if (!m) return null;
-  let value = parseFloat(m[1].replace(/,/g, ""));
-  if (!isFinite(value)) return null;
-  const suffix = m[2] || "";
-  if (/^[kK]$/.test(suffix)) value *= 1e3;
-  if (/^[mM]$/.test(suffix)) value *= 1e6;
-  if (/^bn$/i.test(suffix)) value *= 1e9;
-  if (/^(cr|কোটি)$/i.test(suffix)) value *= 1e7;
-  const label = String(text).replace(m[1], "").replace(suffix, "").replace(/[:\-–—]/g, " ").trim();
-  return { value, suffix: /%/.test(suffix) ? "%" : /[xX]/.test(suffix) ? "x" : "", label: label || "fact" };
-}
-
-function buildSpec(input: {
-  title?: string;
-  script: string;
-  language?: "bn" | "en";
-  theme?: ThemeKey;
-  mood?: MoodKey;
-  aspect?: Aspect;
-  quality?: Quality;
-  perf?: Perf;
-  seed?: number;
-  durationTarget?: number;
-  shorts?: boolean;
-  watermark?: string;
-}): Spec {
-  let title = (input.title || "").trim();
-  let script = String(input.script || "").trim();
-  const seed = input.seed || hashString((title + "|" + script).slice(0, 400)) || 12345;
-  const rand = mulberry32(seed);
-  const lang = input.language === "en" ? "en" : "bn";
-
-  if (!title) {
-    const firstLine = script
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean)[0] || "";
-    const isProbablyTitle = firstLine && firstLine.length <= 70 && !/[.!?]$/.test(firstLine) && script.indexOf("\n") > -1;
-    if (isProbablyTitle) {
-      title = firstLine;
-      script = script.slice(script.indexOf("\n")).trim();
-    } else {
-      title = firstLine.slice(0, 68) || (lang === "bn" ? "নতুন ভিডিও" : "New video");
-    }
-  }
-
-  const beats = splitBeats(script);
-  const scenes: Scene[] = [];
-  const themeKeys = Object.keys(THEMES) as ThemeKey[];
-  const moodKeys = Object.keys(MOODS) as MoodKey[];
-  const theme = input.theme && THEMES[input.theme] ? input.theme : themeKeys[Math.floor(rand() * themeKeys.length)];
-  const mood = input.mood && MOODS[input.mood] ? input.mood : moodKeys[Math.floor(rand() * moodKeys.length)];
-
-  const hook =
-    beats.length && beats[0].kind === "line"
-      ? (beats.shift()!.text as string)
-      : lang === "bn"
-        ? "শুরু করা যাক।"
-        : "Let's dive in.";
-
-  scenes.push({
-    type: "intro",
-    dur: 3.4,
-    title,
-    subtitle: hook.slice(0, 90),
-    isHook: true,
-    transitionOut: "zoom",
-  });
-
-  const brollEvery = beats.length > 4 ? 3 : 2;
-  beats.forEach((beat, i) => {
-    const type = classify(beat);
-    if (type === "bullets") {
-      scenes.push({
-        type: "bullets",
-        heading: beat.heading || (lang === "bn" ? "মূল পয়েন্ট" : "Key points"),
-        items: (beat.items || []).slice(0, 5),
-        dur: sceneDuration(beat, type),
-        transitionOut: "slide",
-      });
-    } else if (type === "stat") {
-      const num = parseNumber(beat.text || beat.heading || "") || { value: 100, suffix: "%", label: "" };
-      scenes.push({
-        type: "stat",
-        value: num.value,
-        suffix: num.suffix,
-        label: num.label,
-        dur: sceneDuration(beat, type),
-        transitionOut: "fade",
-      });
-    } else if (type === "quote") {
-      const q = (beat.text || "").replace(/^["“']|["”']$/g, "");
-      const parts = q.split(/\s—\s|\s-\s/);
-      scenes.push({
-        type: "quote",
-        text: parts[0] || q,
-        author: parts[1] || "",
-        dur: sceneDuration(beat, type),
-        transitionOut: "fade",
-      });
-    } else if (type === "explain") {
-      scenes.push({
-        type: "text",
-        heading: beat.heading,
-        body: beat.text,
-        dur: sceneDuration(beat, type),
-        transitionOut: "glitch",
-      });
-    } else {
-      scenes.push({
-        type: "text",
-        heading: "",
-        body: beat.text || beat.heading || "",
-        dur: sceneDuration(beat, type),
-        transitionOut: "fade",
-      });
-    }
-    if ((i + 1) % brollEvery === 0 && i < beats.length - 1) {
-      scenes.push({ type: "broll", dur: 2.4, label: "", transitionOut: "fade" });
-    }
-  });
-
-  scenes.push({
-    type: "outro",
-    dur: 4.2,
-    title: lang === "bn" ? "ধন্যবাদ!" : "Thanks for watching!",
-    subtitle: lang === "bn" ? "ভালো লাগলে লাইক, শেয়ার আর সাবস্ক্রাইব করুন।" : "Like, share and subscribe for more.",
-    cta: lang === "bn" ? "সাবস্ক্রাইব" : "SUBSCRIBE",
-    transitionOut: "fade",
-  });
-
-  if (input.durationTarget) {
-    const raw = scenes.reduce((s, sc) => s + sc.dur, 0);
-    const factor = Math.max(0.4, Math.min(8.0, input.durationTarget / raw));
-    if (Math.abs(factor - 1) > 0.02) {
-      scenes.forEach((sc) => {
-        sc.dur = Math.max(1.6, Math.min(18.0, sc.dur * factor));
-        if (sc.type === "stat" || sc.type === "broll") sc.dur = Math.max(2.0, Math.min(7.5, sc.dur));
-      });
-    }
-  }
-
-  const aspect = input.aspect || (input.shorts ? "9:16" : "16:9");
-  const dims: Record<Aspect, [number, number]> = {
-    "16:9": [1920, 1080],
-    "9:16": [1080, 1920],
-    "1:1": [1080, 1080],
-    "4:5": [1080, 1350],
-  };
-  const [baseW, baseH] = dims[aspect] || [1920, 1080];
-  const quality = input.quality || "720p";
-  const scale: Record<Quality, number> = { "480p": 480 / 1080, "720p": 720 / 1080, "1080p": 1 };
-  const s = scale[quality] || 720 / 1080;
-  const width = Math.round((baseW * s) / 2) * 2;
-  const height = Math.round((baseH * s) / 2) * 2;
-  const duration = scenes.reduce((a, b) => a + b.dur, 0);
-
-  return {
-    meta: {
-      title,
-      theme: theme as ThemeKey,
-      mood: mood as MoodKey,
-      seed,
-      watermark: input.watermark || "",
-      showProgress: true,
-      language: lang,
-      aspect,
-      perf: input.perf || "high",
-      shorts: !!input.shorts,
-      safe: input.shorts ? { top: 0.11, bottom: 0.19 } : { top: 0.05, bottom: 0.08 },
-      captions: { enabled: true, style: "bar", scale: 1 },
-    },
-    fps: 30,
-    width,
-    height,
-    scenes,
-    duration,
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Voice Tracking — zero-cost VAD + weight-proportional word sync (port of js/studio/align.js)
-// 100% client-side, no API, no upload. Maps script words onto real speech.
-// ---------------------------------------------------------------------------
-function percentile(values: Float32Array | number[], p: number) {
-  if (!values.length) return 0;
-  const arr = Array.from(values as number[]).sort((a, b) => a - b);
-  const idx = clamp(Math.round((arr.length - 1) * p), 0, arr.length - 1);
-  return arr[idx];
-}
-async function decodeToMono(file: File): Promise<{ data: Float32Array; sampleRate: number; duration: number }> {
-  const ab = await file.arrayBuffer();
-  const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-  const buf = await ctx.decodeAudioData(ab.slice(0));
-  const ch = buf.numberOfChannels;
-  const len = buf.length;
-  const out = new Float32Array(len);
-  for (let c = 0; c < ch; c++) {
-    const d = buf.getChannelData(c);
-    for (let i = 0; i < len; i++) out[i] += d[i] / ch;
-  }
-  await ctx.close();
-  return { data: out, sampleRate: buf.sampleRate, duration: buf.duration };
-}
-interface VADResult {
-  duration: number;
-  sampleRate: number;
-  phrases: { start: number; end: number }[];
-  gaps: { start: number; end: number }[];
-  envelope: Float32Array;
-  hop: number;
-  noiseFloor: number;
-  threshold: number;
-  speechRatio: number;
-  speechTime: number;
-  usable: boolean;
-}
-function analyseVAD(mono: { data: Float32Array; sampleRate: number; duration: number }): VADResult {
-  const data = mono.data;
-  const sr = mono.sampleRate;
-  const duration = mono.duration;
-  const win = Math.max(1, Math.round(0.03 * sr));
-  const hop = Math.max(1, Math.round(0.01 * sr));
-  const frames = Math.max(0, Math.floor((data.length - win) / hop) + 1);
-  const rms = new Float32Array(frames);
-  const smooth = new Float32Array(frames);
-  for (let f = 0; f < frames; f++) {
-    const base = f * hop;
-    let sum = 0;
-    for (let i = base; i < base + win; i++) sum += data[i] * data[i];
-    rms[f] = Math.sqrt(sum / win);
-  }
-  for (let s = 0; s < frames; s++) {
-    const a = rms[Math.max(0, s - 1)], b = rms[s], c = rms[Math.min(frames - 1, s + 1)];
-    smooth[s] = (a + b + c) / 3;
-  }
-  const floor = percentile(smooth, 0.2);
-  const loud = percentile(smooth, 0.95);
-  const hi = Math.max(floor * 3.0, floor + 0.01, loud * 0.16);
-  const lo = Math.max(floor * 1.7, floor + 0.005, hi * 0.55);
-  const minSpeech = 0.16, minGap = 0.14, mergeGap = 0.22, pad = 0.035;
-  const minSpeechF = Math.max(1, Math.round(minSpeech / (hop / sr)));
-  const minGapF = Math.max(1, Math.round(minGap / (hop / sr)));
-  const phrases: { a: number; b: number }[] = [];
-  let speaking = false, startF = 0, quiet = 0;
-  for (let k = 0; k < frames; k++) {
-    const level = smooth[k];
-    if (!speaking) { if (level >= hi) { speaking = true; startF = k; quiet = 0; } }
-    else {
-      if (level < lo) { quiet++; if (quiet >= minGapF) { phrases.push({ a: startF, b: k - quiet + 1 }); speaking = false; } }
-      else quiet = 0;
-    }
-  }
-  if (speaking) phrases.push({ a: startF, b: frames });
-  const spans = phrases.filter(p => p.b - p.a >= minSpeechF).map(p => ({ start: Math.max(0, p.a * hop / sr - pad), end: Math.min(duration, (p.b * hop + win) / sr + pad) }));
-  const merged: { start: number; end: number }[] = [];
-  spans.forEach(sp => {
-    const prev = merged[merged.length - 1];
-    if (prev && sp.start - prev.end < mergeGap) prev.end = sp.end;
-    else merged.push({ start: sp.start, end: sp.end });
-  });
-  const speechTime = merged.reduce((t, p) => t + (p.end - p.start), 0);
-  const gaps: { start: number; end: number }[] = [];
-  for (let g = 1; g < merged.length; g++) gaps.push({ start: merged[g - 1].end, end: merged[g].start });
-  return { duration, sampleRate: sr, phrases: merged, gaps, envelope: smooth, hop: hop / sr, noiseFloor: floor, threshold: hi, speechRatio: duration > 0 ? speechTime / duration : 0, speechTime, usable: merged.length >= 2 && speechTime > 0.8 };
-}
-// Bengali matra-aware weight + pause
-const BN_MATRA = /[\u09BE-\u09CD\u09D7\u09E2\u09E3]/;
-const BN_LETTER = /[\u0985-\u0994\u0995-\u09B9\u09DC-\u09DF\u09F0\u09F1\u09E6-\u09EF]/;
-const LAT_VOWEL = /[aeiouyAEIOUY]/;
-function wordWeight(word: string) {
-  let sum = 0;
-  for (let i = 0; i < word.length; i++) {
-    const ch = word[i];
-    if (BN_MATRA.test(ch)) sum += 0.45;
-    else if (BN_LETTER.test(ch)) sum += 1;
-    else if (/[0-9]/.test(ch)) sum += 1.1;
-    else if (LAT_VOWEL.test(ch)) sum += 1;
-    else if (/[a-zA-Z]/.test(ch)) sum += 0.72;
-  }
-  return Math.max(1, sum);
-}
-function pauseAfter(word: string) {
-  const s = String(word || "");
-  if (/[.!?…]+["'”’)]?$/.test(s)) return 0.3;
-  if (/[।॥]$/.test(s)) return 0.34;
-  if (/[,;:—–-]$/.test(s)) return 0.17;
-  return 0.045;
-}
-interface WordItem { w: string; core: string; weight: number; pause: number; para: number }
-function splitWords(text: string, para: number): WordItem[] {
-  return String(text || "").split(/\s+/).map(t => t.trim()).filter(Boolean).map(t => {
-    const core = t.replace(/^[^A-Za-z0-9\u0980-\u09FF]+|[^A-Za-z0-9\u0980-\u09FF]+$/g, "") || t;
-    return { w: t, core, weight: wordWeight(core), pause: pauseAfter(t), para };
-  });
-}
-function assignVoiceTiming(script: string, vad: VADResult): { words: { w: string; s: number; e: number; para: number }[]; paragraphs: { index: number; text: string; words: { w: string; s: number; e: number }[]; start: number; end: number }[]; cues: { start: number; end: number; text: string }[] } | null {
-  const rawScript = String(script || "").replace(/\r/g, "").trim();
-  let blocks: string[];
-  if (/\n\s*\n/.test(rawScript)) {
-    blocks = rawScript.split(/\n\s*\n+/).map(b => b.replace(/\s+/g, " ").trim()).filter(Boolean);
-  } else if (rawScript.includes("\n")) {
-    const lines = rawScript.split("\n").map(l => l.trim()).filter(Boolean);
-    blocks = [];
-    for (let i = 0; i < lines.length; ) {
-      if (/^([-*•▪◦]|\d+[.)])\s+/.test(lines[i])) {
-        const grp: string[] = [];
-        while (i < lines.length && /^([-*•▪◦]|\d+[.)])\s+/.test(lines[i])) { grp.push(lines[i]); i++; }
-        blocks.push(grp.join(" "));
-      } else { blocks.push(lines[i].replace(/\s+/g, " ").trim()); i++; }
-    }
-  } else {
-    blocks = [rawScript.replace(/\s+/g, " ").trim()].filter(Boolean);
-  }
-  if (!blocks.length || !vad.usable) return null;
-  const flat: WordItem[] = [];
-  blocks.forEach((b, bi) => flat.push(...splitWords(b, bi)));
-  if (!flat.length) return null;
-  const slots = vad.phrases.map((p, i) => {
-    const next = vad.phrases[i + 1];
-    const end = next ? next.start : Math.min(vad.duration, p.end + 0.45);
-    return { start: p.start, spokenEnd: p.end, end: Math.max(p.end, end) };
-  });
-  // paragraph weight
-  const paras: { weight: number; words: WordItem[] }[] = [];
-  flat.forEach(it => {
-    const idx = it.para;
-    if (!paras[idx]) paras[idx] = { weight: 0, words: [] };
-    paras[idx].weight += it.weight + it.pause;
-    paras[idx].words.push(it);
-  });
-  const cleanParas = paras.filter(Boolean);
-  // simple greedy: each paragraph gets proportional slots
-  const totalW = cleanParas.reduce((t, p) => t + p.weight, 0) || 1;
-  const totalT = slots.reduce((t, s) => t + (s.end - s.start), 0) || 1;
-  let pCursor = 0;
-  const paraSlots: { from: number; to: number }[] = [];
-  let accW = 0;
-  cleanParas.forEach((p, pi) => {
-    accW += p.weight;
-    const frac = accW / totalW;
-    const targetSlot = Math.min(slots.length - 1, Math.round(frac * slots.length) - 1);
-    const from = pi === 0 ? 0 : paraSlots[pi - 1].to + 1;
-    const to = Math.max(from, targetSlot);
-    paraSlots.push({ from, to });
-  });
-  // fix last
-  if (paraSlots.length) paraSlots[paraSlots.length - 1].to = slots.length - 1;
-
-  const placed: { w: string; s: number; e: number; para: number }[] = [];
-  const tailAllow = 0.3, spw = 0.075;
-  cleanParas.forEach((para, pi) => {
-    const run = paraSlots[pi];
-    const runSlots = slots.slice(run.from, run.to + 1);
-    if (!runSlots.length) return;
-    const runTime = runSlots.reduce((t, s) => t + (s.end - s.start), 0) || 1;
-    const groupWeight = para.weight;
-    let wi = 0;
-    runSlots.forEach(slot => {
-      const slotTime = Math.max(0.12, slot.end - slot.start);
-      const slotWeight = groupWeight * (slotTime / runTime);
-      let used = 0; const assigned: WordItem[] = [];
-      while (wi < para.words.length && (used < slotWeight * 0.999 || !assigned.length)) {
-        assigned.push(para.words[wi]); used += para.words[wi].weight + para.words[wi].pause; wi++;
-      }
-      if (!assigned.length) return;
-      const readable = assigned.reduce((t, x) => t + x.weight, 0) * spw;
-      const windowEnd = Math.min(slot.end, Math.max(slot.spokenEnd, Math.min(slot.spokenEnd + tailAllow, slot.start + readable)));
-      const win = Math.max(0.15, windowEnd - slot.start);
-      const wSum = assigned.reduce((t, x) => t + x.weight + x.pause, 0) || 1;
-      let cursor = 0;
-      assigned.forEach(item => {
-        const share = (item.weight + item.pause) / wSum;
-        const dur = clamp(win * share, 0.09, 3.2);
-        const start = slot.start + cursor;
-        const soft = Math.min(item.pause, dur * 0.5);
-        const end = Math.min(slot.end, start + Math.max(0.05, dur - soft));
-        placed.push({ w: item.w, s: start, e: end, para: pi });
-        cursor += dur;
-      });
-    });
-    while (wi < para.words.length) {
-      const prev = placed[placed.length - 1];
-      const st = prev ? prev.e + 0.04 : 0;
-      const step = clamp(para.words[wi].weight * spw, 0.12, 1.1);
-      placed.push({ w: para.words[wi].w, s: st, e: st + step * 0.85, para: pi });
-      wi++;
-    }
-  });
-  // order & dedup
-  placed.sort((a, b) => a.s - b.s);
-  let last = 0;
-  placed.forEach(t => { if (t.s < last) t.s = last + 0.02; if (t.e <= t.s) t.e = t.s + 0.06; last = t.e; });
-  const paragraphs = blocks.map((text, i) => {
-    const ws = placed.filter(p => p.para === i);
-    if (!ws.length) return null;
-    return { index: i, text, words: ws.map(w => ({ w: w.w, s: w.s, e: w.e })), start: ws[0].s, end: ws[ws.length - 1].e };
-  }).filter(Boolean) as { index: number; text: string; words: { w: string; s: number; e: number }[]; start: number; end: number }[];
-  // cues: per paragraph, 2.8s max
-  const cues: { start: number; end: number; text: string }[] = [];
-  paragraphs.forEach(p => {
-    let cur: { w: string; s: number; e: number }[] = []; let curStart = p.words[0]?.s || 0;
-    p.words.forEach(w => {
-      cur.push(w);
-      const txt = cur.map(c => c.w).join(" ");
-      const dur = w.e - curStart;
-      if (txt.length > 40 || dur > 2.8) {
-        cues.push({ start: curStart, end: w.e, text: txt });
-        cur = []; curStart = w.e + 0.05;
-      }
-    });
-    if (cur.length) cues.push({ start: curStart, end: cur[cur.length - 1].e, text: cur.map(c => c.w).join(" ") });
-  });
-  return { words: placed, paragraphs, cues };
-}
-function buildVoiceSpec(script: string, vad: VADResult, baseSpec: Spec, opts: { title?: string; kicker?: string }): Spec | null {
-  const mapped = assignVoiceTiming(script, vad);
-  if (!mapped) return null;
-  // Build scenes with voice timing: intro (2.6s) + one scene per paragraph synced to voice
-  const lang = baseSpec.meta.language;
-  const scenes: Scene[] = [];
-  const title = opts.title || baseSpec.meta.title;
-  scenes.push({ type: "intro", dur: 2.6, title, subtitle: mapped.paragraphs[0]?.text.slice(0, 90) || "", isHook: true, transitionOut: "zoom" });
-  // intro shift: voice starts after intro
-  const shift = 2.6 - (mapped.paragraphs[0]?.start || 0);
-  // each paragraph -> text scene with voice-synced words
-  mapped.paragraphs.forEach((para, idx) => {
-    const dur = Math.max(1.8, Math.min(9.5, para.end - para.start + 0.6));
-    // split heading/body if first sentence short
-    const parts = para.text.split(/[.।!?]\s+/);
-    const heading = parts.length > 1 && parts[0].length < 60 ? parts[0] : "";
-    const body = heading ? para.text.slice(heading.length).trim() : para.text;
-    const words = para.words.map(w => ({ w: w.w, s: w.s + shift - (para.start + shift - 0.3), e: w.e + shift - (para.start + shift - 0.3) }));
-    // durations handled via real voice, but we keep dur as window
-    scenes.push({
-      type: "text", heading: heading || undefined, body: body || para.text, dur, transitionOut: idx % 2 ? "slide" : "fade",
-      words: words as unknown as { w: string; s: number; e: number }[],
-      // @ts-ignore custom
-      _voiceStart: para.start + shift, _voiceEnd: para.end + shift,
-    } as Scene & { _voiceStart: number });
-  });
-  scenes.push({ type: "outro", dur: 3.8, title: lang === "bn" ? "ধন্যবাদ!" : "Thanks for watching!", subtitle: lang === "bn" ? "লাইক • শেয়ার • সাবস্ক্রাইব" : "Like • Share • Subscribe", cta: lang === "bn" ? "সাবস্ক্রাইব" : "SUBSCRIBE", transitionOut: "fade" });
-  // adjust durs to exactly fit voice + intro/outro
-  const voiceSpan = (mapped.paragraphs[mapped.paragraphs.length - 1]?.end || 0) - (mapped.paragraphs[0]?.start || 0);
-  const total = scenes.reduce((a, b) => a + b.dur, 0);
-  void voiceSpan; void total;
-  // build new spec with voice captions
-  const width = baseSpec.width, height = baseSpec.height;
-  const captions = mapped.cues.map(c => ({ start: c.start + shift, end: c.end + shift, text: c.text }));
-  const spec: Spec = {
-    ...baseSpec,
-    width, height,
-    duration: scenes.reduce((a, b) => a + b.dur, 0),
-    scenes,
-    captions,
-    meta: { ...baseSpec.meta, title },
-  };
-  // store voice words for renderer sync
-  (spec as unknown as { _voiceWords: typeof mapped.words })._voiceWords = mapped.words.map(w => ({ ...w, s: w.s + shift, e: w.e + shift }));
-  (spec as unknown as { _vad: VADResult })._vad = vad;
-  return spec;
-}
-
-// Timeline provided by user (speech ↔ word timings) — zero VAD needed
-function buildSpecFromTimeline(script: string, words: { w: string; s: number; e: number; para: number }[], baseSpec: Spec): Spec | null {
-  if (!words.length) return null;
-  const blocks = script.split("\n").map(s=>s.trim()).filter(Boolean);
-  const lang = baseSpec.meta.language;
-  const title = baseSpec.meta.title;
-  const scenes: Scene[] = [];
-  scenes.push({ type: "intro", dur: 2.2, title, subtitle: (blocks[0]||"").slice(0,80), isHook: true, transitionOut: "zoom" });
-  const maxPara = Math.max(...words.map(w=>w.para), 0);
-  for (let pi=0; pi<=maxPara; pi++) {
-    const ws = words.filter(w=>w.para===pi);
-    if (!ws.length) continue;
-    const text = blocks[pi] || ws.map(x=>x.w).join(" ");
-    const dur = Math.max(1.8, Math.min(9.5, ws[ws.length-1].e - ws[0].s + 0.5));
-    const parts = text.split(/[.।!?]\s+/);
-    const heading = parts.length>1 && parts[0].length<60 ? parts[0] : "";
-    const body = heading ? text.slice(heading.length).trim() : text;
-    const shift = 2.2 - (words[0]?.s || 0);
-    const localWords = ws.map(w=>({ w: w.w, s: w.s+shift, e: w.e+shift }));
-    scenes.push({
-      type: "text", heading: heading||undefined, body: body||text, dur, transitionOut: pi%2?"slide":"fade",
-      words: localWords as unknown as { w: string; s: number; e: number }[],
-    } as Scene);
-  }
-  scenes.push({ type: "outro", dur: 3.5, title: lang==="bn"?"ধন্যবাদ!":"Thanks for watching!", subtitle: lang==="bn"?"লাইক • শেয়ার • সাবস্ক্রাইব":"Like • Share • Subscribe", cta: lang==="bn"?"সাবস্ক্রাইব":"SUBSCRIBE", transitionOut: "fade" });
-  const shift2 = 2.2 - (words[0]?.s || 0);
-  const srt: {start:number,end:number,text:string}[] = [];
-  let curWords: typeof words = [];
-  let curStart = words[0]?.s||0;
-  words.forEach(w=>{
-    curWords.push(w);
-    const txt = curWords.map(c=>c.w).join(" ");
-    const dur = w.e - curStart;
-    if (txt.length>42 || dur>2.6) {
-      srt.push({ start: curStart+shift2, end: w.e+shift2, text: txt });
-      curWords = []; curStart = (words[words.indexOf(w)+1]?.s)||w.e+0.05;
-    }
-  });
-  if (curWords.length) srt.push({ start: curStart+shift2, end: curWords[curWords.length-1].e+shift2, text: curWords.map(c=>c.w).join(" ") });
-  const spec: Spec = { ...baseSpec, width: baseSpec.width, height: baseSpec.height, duration: scenes.reduce((a,b)=>a+b.dur,0), scenes, captions: srt, meta: { ...baseSpec.meta, title } };
-  (spec as unknown as { _voiceWords: typeof words })._voiceWords = words.map(w=>({ ...w, s: w.s+shift2, e: w.e+shift2 }));
-  return spec;
-}
-
-function buildSpecFromSegmentTimeline(script: string, segments: { time: number; text: string }[], baseSpec: Spec): Spec | null {
-  if (!segments.length) return null;
-  const sorted = [...segments].sort((a,b)=>a.time-b.time);
-  const lang = baseSpec.meta.language;
-  const title = baseSpec.meta.title;
-  const blocks = script.split("\n").map(s=>s.trim()).filter(Boolean);
-  const scenes: Scene[] = [];
-  scenes.push({ type: "intro", dur: 2.2, title, subtitle: (blocks[0]||sorted[0]?.text||"").slice(0,80), isHook: true, transitionOut: "zoom" });
-  const shift = 2.2 - (sorted[0]?.time || 0);
-  for (let i=0; i<sorted.length; i++) {
-    const seg = sorted[i];
-    const next = sorted[i+1];
-    const dur = next ? Math.max(0.9, Math.min(9.5, next.time - seg.time)) : Math.max(1.8, Math.min(9.5, (wordCount(seg.text)/WORDS_PER_SEC)+0.9));
-    const text = seg.text || "";
-    const parts = text.split(/[.।!?]\s+/);
-    const heading = parts.length>1 && parts[0].length<60 ? parts[0] : "";
-    const body = heading ? text.slice(heading.length).trim() : text;
-    scenes.push({
-      type: "text",
-      heading: heading||undefined,
-      body: body||text,
-      dur,
-      transitionOut: i%2?"slide":"fade",
-    } as Scene);
-  }
-  scenes.push({ type: "outro", dur: 3.5, title: lang==="bn"?"ধন্যবাদ!":"Thanks for watching!", subtitle: lang==="bn"?"লাইক • শেয়ার • সাবস্ক্রাইব":"Like • Share • Subscribe", cta: lang==="bn"?"সাবস্ক্রাইব":"SUBSCRIBE", transitionOut: "fade" });
-  const srt = sorted.map((seg,i)=>{
-    const next = sorted[i+1];
-    const start = seg.time + shift;
-    const end = next ? next.time + shift - 0.05 : start + Math.max(1.2, Math.min(3.2, wordCount(seg.text)/WORDS_PER_SEC+0.7));
-    return { start, end: Math.max(start+0.45, end), text: seg.text };
-  });
-  const spec: Spec = { ...baseSpec, width: baseSpec.width, height: baseSpec.height, duration: scenes.reduce((a,b)=>a+b.dur,0), scenes, captions: srt, meta: { ...baseSpec.meta, title } };
-  (spec as unknown as { _segments: typeof sorted })._segments = sorted.map(s=>({ ...s, time: s.time+shift }));
-  (spec as unknown as { _voiceWords: {w:string,s:number,e:number,para:number}[] })._voiceWords = sorted.map((s,i)=>({ w: s.text, s: s.time+shift, e: (sorted[i+1]?.time||(s.time+2.2))+shift, para: i }));
-  return spec;
-}
-
-// ---------------------------------------------------------------------------
-// Canvas renderer (lightweight React port of engine.js)
-// ---------------------------------------------------------------------------
-function hexToRgb(hex: string) {
-  const h = hex.replace("#", "");
-  const full = h.length === 3 ? h[0] + h[0] + h[1] + h[1] + h[2] + h[2] : h;
-  const n = parseInt(full, 16);
-  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
-}
-function rgba(hex: string, a: number) {
-  const c = hexToRgb(hex);
-  return `rgba(${c.r},${c.g},${c.b},${a})`;
-}
-function clamp(v: number, a: number, b: number) {
-  return v < a ? a : v > b ? b : v;
-}
-function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) {
-  const paragraphs = String(text || "").split("\n");
-  const lines: string[] = [];
-  paragraphs.forEach((para) => {
-    const words = para.split(/\s+/).filter(Boolean);
-    if (!words.length) {
-      lines.push("");
-      return;
-    }
-    let line = "";
-    words.forEach((word) => {
-      const test = line ? line + " " + word : word;
-      if (ctx.measureText(test).width > maxWidth && line) {
-        lines.push(line);
-        line = word;
-      } else line = test;
-    });
-    if (line) lines.push(line);
-  });
-  return lines;
-}
-
-function renderFrame(
-  ctx: CanvasRenderingContext2D,
-  spec: Spec,
-  t: number,
-  spriteCache: Map<string, HTMLCanvasElement>,
-  bgImage?: HTMLImageElement | null,
-  voiceWords?: { w: string; s: number; e: number; para: number }[]
-) {
-  const theme = THEMES[spec.meta.theme] || THEMES.aurora;
-  const W = spec.width;
-  const H = spec.height;
-  const U = Math.min(W, H);
-  const total = spec.duration;
-  // find scene
-  let acc = 0;
-  let curIndex = 0;
-  let local = 0;
-  for (let i = 0; i < spec.scenes.length; i++) {
-    const d = spec.scenes[i].dur;
-    if (t < acc + d || i === spec.scenes.length - 1) {
-      curIndex = i;
-      local = t - acc;
-      break;
-    }
-    acc += d;
-  }
-  const cur = spec.scenes[curIndex];
-  const progress = clamp(local / cur.dur, 0, 1);
-
-  // ---- background (image or procedural)
-  if (bgImage && bgImage.complete && bgImage.naturalWidth > 0) {
-    // cover
-    const imgW = bgImage.naturalWidth, imgH = bgImage.naturalHeight;
-    const scale = Math.max(W / imgW, H / imgH);
-    const dw = imgW * scale, dh = imgH * scale;
-    const dx = (W - dw) / 2, dy = (H - dh) / 2;
-    ctx.save();
-    // slight blur via low-alpha procedural overlay will keep text readable, but we draw sharp image
-    ctx.drawImage(bgImage, dx, dy, dw, dh);
-    // adaptive overlay for text readability — theme-aware gradient + dark wash
-    const grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, "rgba(0,0,0,0.55)");
-    grad.addColorStop(0.35, "rgba(0,0,0,0.18)");
-    grad.addColorStop(0.7, "rgba(0,0,0,0.42)");
-    grad.addColorStop(1, "rgba(0,0,0,0.62)");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, W, H);
-    // subtle color wash from theme to tie image into palette
-    ctx.globalCompositeOperation = "overlay";
-    ctx.globalAlpha = 0.22;
-    ctx.fillStyle = theme.accent;
-    ctx.fillRect(0, 0, W, H);
-    ctx.globalCompositeOperation = "source-over";
-    ctx.globalAlpha = 1;
-    ctx.restore();
-  } else {
-    ctx.fillStyle = theme.bg;
-    ctx.fillRect(0, 0, W, H);
-  }
-  // voice-word sync hint: if voiceWords exists, we pulse particles to voice energy
-  const hasVoiceSync = !!(voiceWords && voiceWords.length);
-
-  // blobs (screen blend simulation via radial gradients)
-  const e = 0.45 + 0.2 * Math.sin(t * 0.9);
-  const blobCount = 5;
-  for (let i = 0; i < blobCount; i++) {
-    const col = theme.blobs[i % theme.blobs.length];
-    const key = `${col}-${W}x${H}-${i}`;
-    let sprite = spriteCache.get(key);
-    if (!sprite) {
-      const sc = document.createElement("canvas");
-      sc.width = sc.height = 320;
-      const g = sc.getContext("2d")!;
-      const grad = g.createRadialGradient(160, 160, 0, 160, 160, 160);
-      grad.addColorStop(0, rgba(col, 0.9));
-      grad.addColorStop(0.5, rgba(col, 0.35));
-      grad.addColorStop(1, rgba(col, 0));
-      g.fillStyle = grad;
-      g.fillRect(0, 0, 320, 320);
-      spriteCache.set(key, sc);
-      sprite = sc;
-    }
-    const nx = (0.2 + 0.6 * ((Math.sin(t * (0.08 + i * 0.02) + i * 1.3) + 1) / 2)) * W;
-    const ny = (0.25 + 0.5 * ((Math.cos(t * (0.07 + i * 0.015) + i * 2.1) + 1) / 2)) * H;
-    const rad = U * (0.18 + i * 0.04) * (1 + 0.2 * e);
-    // draw with screen-like feel: reduce alpha and let overlapping brighten
-    ctx.globalAlpha = 0.55;
-    ctx.globalCompositeOperation = "screen" as GlobalCompositeOperation;
-    ctx.drawImage(sprite, nx - rad, ny - rad, rad * 2, rad * 2);
-    ctx.globalCompositeOperation = "source-over";
-    ctx.globalAlpha = 1;
-  }
-
-  // aurora ribbons
-  if (theme.aurora) {
-    ctx.save();
-    ctx.globalCompositeOperation = "screen";
-    ctx.globalAlpha = 0.35 + 0.15 * e;
-    for (let rb = 0; rb < 2; rb++) {
-      const phase = t * (0.14 + rb * 0.06) + rb * 2.2;
-      const grad = ctx.createLinearGradient(0, H * (0.2 + rb * 0.2), W, H * (0.8 - rb * 0.15));
-      grad.addColorStop(0, rgba(theme.blobs[rb % theme.blobs.length], 0));
-      grad.addColorStop(0.5, rgba(theme.blobs[(rb + 1) % theme.blobs.length], 0.55));
-      grad.addColorStop(1, rgba(theme.blobs[(rb + 2) % theme.blobs.length], 0));
-      ctx.strokeStyle = grad;
-      ctx.lineWidth = H * (0.06 + rb * 0.02);
-      ctx.lineCap = "round";
-      ctx.beginPath();
-      ctx.moveTo(-W * 0.1, H * (0.3 + rb * 0.22) + Math.sin(phase) * H * 0.12);
-      ctx.bezierCurveTo(
-        W * 0.3,
-        H * (0.15 + rb * 0.25) + Math.cos(phase * 1.3) * H * 0.18,
-        W * 0.7,
-        H * (0.85 - rb * 0.2) + Math.sin(phase * 0.8) * H * 0.16,
-        W * 1.1,
-        H * (0.65 - rb * 0.2) + Math.cos(phase * 1.1) * H * 0.12
-      );
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-
-  // vignette
-  const vig = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.25, W / 2, H / 2, Math.max(W, H) * 0.7);
-  vig.addColorStop(0, "rgba(255,255,255,1)");
-  vig.addColorStop(1, `rgba(${Math.round(255 * (1 - theme.vignette))},${Math.round(255 * (1 - theme.vignette))},${Math.round(255 * (1 - theme.vignette))},1)`);
-  ctx.globalCompositeOperation = "multiply";
-  ctx.globalAlpha = 1;
-  ctx.fillStyle = vig;
-  ctx.fillRect(0, 0, W, H);
-  ctx.globalCompositeOperation = "source-over";
-  ctx.globalAlpha = 1;
-
-  // safe area
-  const safeTop = H * spec.meta.safe.top;
-  const safeBottom = H * (1 - spec.meta.safe.bottom);
-  const winH = safeBottom - safeTop;
-  const winCY = safeTop + winH / 2;
-
-  // ---- scene content helpers
-  const accentGrad = (x: number, y: number, w: number, h: number) => {
-    const g = ctx.createLinearGradient(x, y, x + w, y + h);
-    g.addColorStop(0, theme.text);
-    g.addColorStop(0.55, theme.accent);
-    g.addColorStop(1, theme.accent2);
-    return g;
-  };
-
-  const easeOutExpo = (x: number) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x));
-  const easeOutCubic = (x: number) => 1 - Math.pow(1 - x, 3);
-  const inRamp = clamp(progress / 0.22, 0, 1);
-  const reveal = easeOutExpo(inRamp);
-  const hookBoost = cur.isHook && local < 0.45 ? (1 - local / 0.45) * 0.08 : 0;
-
-  // generic text fitting
-  const fitText = (text: string, maxWidth: number, maxLines: number, maxSize: number, weight = 700) => {
-    let size = maxSize;
-    let lines: string[] = [];
-    for (let g = 0; g < 20; g++) {
-      ctx.font = `${weight} ${size}px "Hind Siliguri","Noto Sans Bengali",system-ui,sans-serif`;
-      lines = wrapLines(ctx, text, maxWidth);
-      const widest = Math.max(...lines.map((l) => ctx.measureText(l).width), 0);
-      const tooTall = lines.length > maxLines;
-      const tooWide = widest > maxWidth * 1.001;
-      if ((!tooTall && !tooWide) || size <= maxSize * 0.42) break;
-      size *= 0.93;
-    }
-    return { size, lines };
-  };
-
-  const margin = U * 0.085;
-  const maxW = W - margin * 2;
-
-  // scale + shake for hook
-  ctx.save();
-  const zoom = 1.02 + 0.03 * progress + hookBoost;
-  const shakeX = cur.isHook && local < 0.4 ? Math.sin(local * 62) * U * 0.008 * (1 - local / 0.4) : 0;
-  const shakeY = cur.isHook && local < 0.4 ? Math.cos(local * 52) * U * 0.006 * (1 - local / 0.4) : 0;
-  ctx.translate(W / 2 + shakeX, winCY + shakeY);
-  ctx.scale(zoom, zoom);
-  ctx.translate(-W / 2, -winCY);
-
-  // draw scene
-  switch (cur.type) {
-    case "intro": {
-      const fitted = fitText(cur.title || "", maxW, 3, U * 0.125, 800);
-      const subFitted = cur.subtitle ? fitText(cur.subtitle, maxW * 0.84, 2, U * 0.044, 500) : null;
-      const blockH = fitted.lines.length * fitted.size * 1.22;
-      const subH = subFitted ? subFitted.lines.length * subFitted.size * 1.4 : 0;
-      const gap = U * 0.055;
-      const top = winCY - (blockH + subH + gap) / 2;
-
-      // rule
-      ctx.save();
-      ctx.globalAlpha = reveal;
-      const ruleW = U * 0.32 * reveal;
-      const rg = ctx.createLinearGradient(W / 2 - ruleW / 2, 0, W / 2 + ruleW / 2, 0);
-      rg.addColorStop(0, theme.accent);
-      rg.addColorStop(1, theme.accent2);
-      ctx.fillStyle = rg;
-      ctx.fillRect(W / 2 - ruleW / 2, top - U * 0.045, ruleW, Math.max(2, U * 0.006));
-      ctx.restore();
-
-      // title
-      fitted.lines.forEach((line, i) => {
-        const y = top + blockH / 2 - ((fitted.lines.length - 1) * fitted.size * 1.22) / 2 + i * fitted.size * 1.22;
-        const p = clamp((reveal - i * 0.08) / 0.26, 0, 1);
-        ctx.save();
-        ctx.globalAlpha = p;
-        ctx.translate(0, (1 - easeOutCubic(p)) * fitted.size * 0.45);
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.font = `800 ${fitted.size}px "Hind Siliguri","Noto Sans Bengali",system-ui,sans-serif`;
-        ctx.fillStyle = accentGrad(W / 2 - maxW / 2, y - fitted.size / 2, maxW, fitted.size);
-        ctx.fillText(line, W / 2, y);
-        ctx.restore();
-      });
-      if (subFitted) {
-        subFitted.lines.forEach((line, i) => {
-          const y = top + blockH + gap + subH / 2 - ((subFitted.lines.length - 1) * subFitted.size * 1.4) / 2 + i * subFitted.size * 1.4;
-          const p = clamp((reveal - 0.45 - i * 0.08) / 0.28, 0, 1);
-          ctx.save();
-          ctx.globalAlpha = p * 0.95;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.font = `500 ${subFitted.size}px "Hind Siliguri","Noto Sans Bengali",system-ui,sans-serif`;
-          ctx.fillStyle = hexToRgb(theme.sub).r ? rgba(theme.sub, 1) : theme.sub;
-          ctx.fillText(line, W / 2, y);
-          ctx.restore();
-        });
-      }
-      break;
-    }
-    case "text": {
-      const h = cur.heading || cur.title || "";
-      const b = cur.body || cur.text || "";
-      const headFit = h ? fitText(h, maxW, 2, U * 0.055, 800) : null;
-      const bodyFit = fitText(b, maxW * 0.9, 5, U * 0.062, 600);
-      const headH = headFit ? headFit.lines.length * headFit.size * 1.24 : 0;
-      const bodyH = bodyFit.lines.length * bodyFit.size * 1.34;
-      const gap = headFit ? U * 0.05 : 0;
-      const top = winCY - (headH + gap + bodyH) / 2;
-      if (headFit) {
-        headFit.lines.forEach((line, i) => {
-          const y = top + headH / 2 - ((headFit.lines.length - 1) * headFit.size * 1.24) / 2 + i * headFit.size * 1.24;
-          const p = clamp((reveal - i * 0.06) / 0.3, 0, 1);
-          ctx.save();
-          ctx.globalAlpha = p;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.font = `800 ${headFit.size}px "Hind Siliguri","Noto Sans Bengali",system-ui,sans-serif`;
-          ctx.fillStyle = theme.accent;
-          ctx.fillText(line, W / 2, y);
-          ctx.restore();
-        });
-      }
-      bodyFit.lines.forEach((line, i) => {
-        const y = top + headH + gap + bodyH / 2 - ((bodyFit.lines.length - 1) * bodyFit.size * 1.34) / 2 + i * bodyFit.size * 1.34;
-        const p = clamp((reveal - 0.18 - i * 0.07) / 0.32, 0, 1);
-        ctx.save();
-        ctx.globalAlpha = p;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.font = `600 ${bodyFit.size}px "Hind Siliguri","Noto Sans Bengali",system-ui,sans-serif`;
-        ctx.fillStyle = accentGrad(W / 2 - maxW / 2, y - bodyFit.size / 2, maxW, bodyFit.size);
-        ctx.fillText(line, W / 2, y);
-        ctx.restore();
-      });
-      break;
-    }
-    case "bullets": {
-      const items = cur.items || [];
-      const headFit = cur.heading ? fitText(cur.heading, maxW, 2, U * 0.052, 800) : null;
-      const headH = headFit ? headFit.lines.length * headFit.size * 1.22 : 0;
-      const rowH = U * 0.115;
-      const stackH = headH + (headFit ? U * 0.09 : 0) + items.length * rowH;
-      const top = winCY - stackH / 2;
-      if (headFit) {
-        headFit.lines.forEach((line, i) => {
-          const y = top + headH / 2 - ((headFit.lines.length - 1) * headFit.size * 1.22) / 2 + i * headFit.size * 1.22;
-          ctx.save();
-          ctx.globalAlpha = clamp(reveal * 1.5 - i * 0.1, 0, 1);
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.font = `800 ${headFit.size}px "Hind Siliguri","Noto Sans Bengali",system-ui,sans-serif`;
-          ctx.fillStyle = theme.accent;
-          ctx.fillText(line, W / 2, y);
-          ctx.restore();
-        });
-      }
-      const startY = top + headH + U * 0.09;
-      items.forEach((item, idx) => {
-        const rp = clamp((reveal - 0.14 - idx * 0.12) / 0.3, 0, 1);
-        const eased = easeOutCubic(rp);
-        const y = startY + idx * rowH;
-        // chip
-        ctx.save();
-        ctx.globalAlpha = eased;
-        const chip = U * 0.032;
-        const chipGrad = ctx.createLinearGradient(margin * 1.1, y - chip, margin * 1.1 + chip * 2, y + chip);
-        chipGrad.addColorStop(0, theme.accent2);
-        chipGrad.addColorStop(1, theme.accent);
-        ctx.fillStyle = chipGrad;
-        ctx.beginPath();
-        (ctx as unknown as { roundRect?: (...a: unknown[]) => void }).roundRect
-          ? (ctx as unknown as { roundRect: (x: number, y: number, w: number, h: number, r: number) => void }).roundRect(
-              margin * 1.1,
-              y - chip * 0.8,
-              chip * 1.9,
-              chip * 1.6,
-              chip * 0.5
-            )
-          : ctx.rect(margin * 1.1, y - chip * 0.8, chip * 1.9, chip * 1.6);
-        ctx.fill();
-        ctx.restore();
-        const itemFit = fitText(item, maxW - chip * 3.2, 2, U * 0.048, 600);
-        const iy = y;
-        ctx.save();
-        ctx.globalAlpha = eased;
-        ctx.textAlign = "left";
-        ctx.textBaseline = "middle";
-        ctx.font = `600 ${itemFit.size}px "Hind Siliguri","Noto Sans Bengali",system-ui,sans-serif`;
-        ctx.fillStyle = theme.text;
-        // single line bullet
-        const txt = itemFit.lines.join(" ");
-        ctx.fillText(txt, margin * 1.1 + chip * 2.9, iy);
-        ctx.restore();
-      });
-      break;
-    }
-    case "stat": {
-      const val = cur.value ?? 0;
-      const shown = val * easeOutCubic(clamp(reveal * 1.2, 0, 1));
-      const display = (Number.isInteger(val) ? Math.round(shown).toLocaleString("en-US") : shown.toFixed(1)) + (cur.suffix || "");
-      ctx.save();
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.font = `800 ${U * 0.19}px ui-monospace,monospace`;
-      ctx.fillStyle = accentGrad(W / 2 - U * 0.3, winCY - U * 0.15, U * 0.6, U * 0.19);
-      ctx.globalAlpha = clamp(reveal * 1.4, 0, 1);
-      ctx.fillText(display, W / 2, winCY - U * 0.045);
-      ctx.restore();
-      const labelFit = cur.label ? fitText(cur.label, maxW, 2, U * 0.044, 600) : null;
-      if (labelFit) {
-        labelFit.lines.forEach((line, i) => {
-          const y = winCY + U * 0.14 + i * labelFit.size * 1.3;
-          ctx.save();
-          ctx.globalAlpha = clamp((reveal - 0.3) * 2, 0, 1);
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.font = `600 ${labelFit.size}px "Hind Siliguri","Noto Sans Bengali",system-ui,sans-serif`;
-          ctx.fillStyle = theme.sub;
-          ctx.fillText(line, W / 2, y);
-          ctx.restore();
-        });
-      }
-      // bar
-      ctx.save();
-      ctx.globalAlpha = clamp((reveal - 0.35) * 1.6, 0, 1);
-      const barW = U * 0.42 * easeOutCubic(clamp((reveal - 0.35) * 1.6, 0, 1));
-      const barGrad = ctx.createLinearGradient(W / 2 - barW / 2, 0, W / 2 + barW / 2, 0);
-      barGrad.addColorStop(0, theme.accent);
-      barGrad.addColorStop(1, theme.accent2);
-      ctx.fillStyle = barGrad;
-      ctx.fillRect(W / 2 - barW / 2, winCY + U * 0.21, barW, Math.max(2, U * 0.005));
-      ctx.restore();
-      break;
-    }
-    case "quote": {
-      ctx.save();
-      ctx.globalAlpha = 0.35;
-      ctx.fillStyle = theme.accent;
-      ctx.font = `900 ${U * 0.32}px "Hind Siliguri",system-ui,sans-serif`;
-      ctx.textAlign = "center";
-      ctx.fillText("“", W / 2, winCY - U * 0.18);
-      ctx.restore();
-      const qFit = fitText(cur.text || "", maxW * 0.84, 5, U * 0.058, 600);
-      const qH = qFit.lines.length * qFit.size * 1.36;
-      const qTop = winCY - qH / 2;
-      qFit.lines.forEach((line, i) => {
-        const y = qTop + qH / 2 - ((qFit.lines.length - 1) * qFit.size * 1.36) / 2 + i * qFit.size * 1.36;
-        ctx.save();
-        ctx.globalAlpha = clamp(reveal * 1.25 - i * 0.06, 0, 1);
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.font = `600 ${qFit.size}px "Hind Siliguri","Noto Sans Bengali",system-ui,sans-serif`;
-        ctx.fillStyle = accentGrad(W / 2 - maxW / 2, y - qFit.size / 2, maxW, qFit.size);
-        ctx.fillText(line, W / 2, y);
-        ctx.restore();
-      });
-      if (cur.author) {
-        ctx.save();
-        ctx.globalAlpha = clamp((reveal - 0.5) * 2, 0, 1);
-        ctx.textAlign = "center";
-        ctx.font = `700 ${U * 0.036}px "Hind Siliguri",system-ui,sans-serif`;
-        ctx.fillStyle = theme.accent;
-        ctx.fillText(`— ${cur.author}`, W / 2, qTop + qH + U * 0.075);
-        ctx.restore();
-      }
-      break;
-    }
-    case "broll": {
-      ctx.save();
-      // rings + bars
-      for (let i = 0; i < 5; i++) {
-        const rp = clamp(reveal * 1.4 - i * 0.12, 0, 1);
-        if (rp <= 0) continue;
-        const rr = U * (0.1 + i * 0.075) * (0.85 + 0.3 * rp);
-        ctx.globalAlpha = (0.5 - i * 0.07) * rp;
-        ctx.strokeStyle = theme.blobs[i % theme.blobs.length];
-        ctx.lineWidth = U * 0.008;
-        ctx.beginPath();
-        ctx.arc(W / 2, winCY, rr, -Math.PI / 2 + i * 0.7 + local * 0.4, -Math.PI / 2 + i * 0.7 + local * 0.4 + 1.9 + i * 0.4);
-        ctx.stroke();
-      }
-      // bars
-      const bars = 28;
-      const bw = (W * 0.62) / bars;
-      for (let b = 0; b < bars; b++) {
-        const amp = 0.45 + 0.45 * Math.sin(t * 2 + b * 0.8);
-        const hh = U * (0.02 + amp * 0.12) * reveal;
-        const x = W / 2 - (bars * bw) / 2 + b * bw;
-        const bg = ctx.createLinearGradient(0, winCY - hh / 2, 0, winCY + hh / 2);
-        bg.addColorStop(0, theme.accent2);
-        bg.addColorStop(1, theme.accent);
-        ctx.globalAlpha = 0.75;
-        ctx.fillStyle = bg;
-        ctx.beginPath();
-        (ctx as unknown as { roundRect?: (...a: unknown[]) => void }).roundRect
-          ? (ctx as unknown as { roundRect: (x: number, y: number, w: number, h: number, r: number) => void }).roundRect(x, winCY + U * 0.2 - hh / 2, bw * 0.62, hh, bw * 0.3)
-          : ctx.rect(x, winCY + U * 0.2 - hh / 2, bw * 0.62, hh);
-        ctx.fill();
-      }
-      ctx.restore();
-      break;
-    }
-    case "outro": {
-      const oFit = fitText(cur.title || "", maxW, 3, U * 0.1, 800);
-      const oSubFit = cur.subtitle ? fitText(cur.subtitle, maxW * 0.86, 3, U * 0.042, 500) : null;
-      const oTitleH = oFit.lines.length * oFit.size * 1.22;
-      const oSubH = oSubFit ? oSubFit.lines.length * oSubFit.size * 1.36 : 0;
-      const gap = oSubFit ? U * 0.05 : 0;
-      const pillH = cur.cta ? U * 0.095 : 0;
-      const pillGap = cur.cta ? U * 0.06 : 0;
-      const oTotal = oTitleH + gap + oSubH + pillGap + pillH;
-      const oTop = winCY - oTotal / 2;
-      oFit.lines.forEach((line, i) => {
-        const y = oTop + oTitleH / 2 - ((oFit.lines.length - 1) * oFit.size * 1.22) / 2 + i * oFit.size * 1.22;
-        ctx.save();
-        ctx.globalAlpha = clamp(reveal * 1.3 - i * 0.05, 0, 1);
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.font = `800 ${oFit.size}px "Hind Siliguri","Noto Sans Bengali",system-ui,sans-serif`;
-        ctx.fillStyle = accentGrad(W / 2 - maxW / 2, y - oFit.size / 2, maxW, oFit.size);
-        ctx.fillText(line, W / 2, y);
-        ctx.restore();
-      });
-      if (oSubFit) {
-        oSubFit.lines.forEach((line, i) => {
-          const y = oTop + oTitleH + gap + oSubH / 2 - ((oSubFit.lines.length - 1) * oSubFit.size * 1.36) / 2 + i * oSubFit.size * 1.36;
-          ctx.save();
-          ctx.globalAlpha = clamp((reveal - 0.35) * 2 - i * 0.07, 0, 1);
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.font = `500 ${oSubFit.size}px "Hind Siliguri","Noto Sans Bengali",system-ui,sans-serif`;
-          ctx.fillStyle = theme.sub;
-          ctx.fillText(line, W / 2, y);
-          ctx.restore();
-        });
-      }
-      if (cur.cta) {
-        const pillW = U * 0.46, pillHT = U * 0.095;
-        const px = W / 2 - pillW / 2, py = oTop + oTitleH + gap + oSubH + pillGap;
-        const pp = easeOutCubic(clamp((reveal - 0.5) * 2.2, 0, 1));
-        ctx.save();
-        ctx.globalAlpha = pp;
-        const pg = ctx.createLinearGradient(px, py, px + pillW, py + pillHT);
-        pg.addColorStop(0, theme.accent2);
-        pg.addColorStop(1, theme.accent);
-        ctx.fillStyle = pg;
-        ctx.beginPath();
-        (ctx as unknown as { roundRect?: (...a: unknown[]) => void }).roundRect
-          ? (ctx as unknown as { roundRect: (x: number, y: number, w: number, h: number, r: number) => void }).roundRect(px, py, pillW * pp, pillHT, pillHT / 2)
-          : ctx.rect(px, py, pillW * pp, pillHT);
-        ctx.fill();
-        if (pp > 0.85) {
-          ctx.fillStyle = "#05070f";
-          ctx.font = `800 ${U * 0.038}px "Hind Siliguri",system-ui,sans-serif`;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(cur.cta, W / 2, py + pillHT / 2 + 1);
-        }
-        ctx.restore();
-      }
-      break;
-    }
-    default:
-      break;
-  }
-
-  ctx.restore();
-
-  // progress bar
-  if (spec.meta.showProgress) {
-    const barH = Math.max(3, U * 0.007);
-    ctx.fillStyle = "rgba(255,255,255,0.16)";
-    ctx.fillRect(0, H - barH, W, barH);
-    const pw = W * clamp(t / total, 0, 1);
-    const g = ctx.createLinearGradient(0, 0, W, 0);
-    g.addColorStop(0, theme.accent2);
-    g.addColorStop(1, theme.accent);
-    ctx.fillStyle = g;
-    ctx.fillRect(0, H - barH, pw, barH);
-  }
-
-  // watermark
-  if (spec.meta.watermark) {
-    ctx.fillStyle = "rgba(255,255,255,0.55)";
-    ctx.font = `600 ${U * 0.028}px "Hind Siliguri",system-ui,sans-serif`;
-    ctx.textAlign = "right";
-    ctx.textBaseline = "bottom";
-    ctx.fillText(spec.meta.watermark, W - U * 0.05, H - U * 0.045);
-  }
-
-  // flash
-  const flashDur = cur.isHook ? 0.35 : 0.18;
-  const flash = clamp(1 - local / flashDur, 0, 1);
-  if (flash > 0) {
-    ctx.save();
-    ctx.globalCompositeOperation = "screen";
-    ctx.globalAlpha = (cur.isHook ? 0.22 : 0.12) * flash;
-    const fg = ctx.createLinearGradient(0, 0, W, H);
-    fg.addColorStop(0, theme.accent);
-    fg.addColorStop(1, theme.accent2);
-    ctx.fillStyle = fg;
-    ctx.fillRect(0, 0, W, H);
-    ctx.restore();
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Demo scripts
-// ---------------------------------------------------------------------------
-const DEMO_SCRIPT_BN = `৫টি সকালের অভ্যাস যা জীবন বদলে দেবে
-
-আপনি কি জানেন মাত্র ৫টি ছোট অভ্যাস আপনার পুরো দিনটাই বদলে দিতে পারে?
-
-সকাল ৬টায় ওঠা মানে দিনে ২ ঘণ্টা বেশি — বছরে ৭৩০ ঘণ্টা এক্সট্রা!
-
-যে ৩টি অভ্যাস আজ থেকেই শুরু করুন:
-- ৫ মিনিট মেডিটেশন আর গভীর শ্বাস
-- এক গ্লাস পানি আর হালকা স্ট্রেচিং
-- দিনের সবচেয়ে গুরুত্বপূর্ণ ৩টি কাজ লিখুন
-
-৯৫% সফল মানুষ বলেন — সকালের রুটিনই তাদের সাফল্যের আসল রহস্য।
-
-"সকাল কীভাবে কাটাবেন, সারাদিন সেভাবেই কাটবে।" — রবিন শর্মা
-
-আজ থেকেই শুরু করুন, ২১ দিনেই অভ্যাস গড়ে উঠবে।
-🔔 ভালো লাগলে লাইক ও সাবস্ক্রাইব করুন!`;
-
-const SHORTS_SCRIPT = `৩০ সেকেন্ডে প্রোডাক্টিভিটি হ্যাক
-
-এই একটা ট্রিক আপনার সময় দ্বিগুণ বাঁচাবে!
-
-পমোডোরো: ২৫ মিনিট কাজ + ৫ মিনিট বিরতি — মস্তিষ্ক ফোকাস থাকে ৪x বেশি।
-
-- ফোন সাইলেন্ট করুন
-- একসাথে একটা কাজ
-- বিরতিতে হাঁটুন
-
-৮০% মানুষ মাল্টিটাস্কিংয়ে ভুল করে — সিঙ্গেল-টাস্ক জিতবেই!
-
-আজই ট্রাই করুন! 🔔`;
-
-const EDU_SCRIPT = `কৃত্রিম বুদ্ধিমত্তা কীভাবে কাজ করে?
-
-AI হলো এমন প্রযুক্তি যা মানুষের মতো চিন্তা ও শেখার চেষ্টা করে।
-
-মেশিন লার্নিং হলো AI-এর হৃদয় — ডেটা থেকে প্যাটার্ন শিখে সিদ্ধান্ত নেয়।
-
-৩টি প্রধান ধাপ:
-- ডেটা সংগ্রহ ও পরিষ্কার করা
-- মডেলকে হাজারো উদাহরণ দিয়ে প্রশিক্ষণ
-- নতুন পরিস্থিতিতে ভবিষ্যদ্বাণী করা
-
-ChatGPT-এর মতো মডেল ১৭৫ বিলিয়ন প্যারামিটার দিয়ে তৈরি!
-
-"AI মানুষকে প্রতিস্থাপন করবে না, কিন্তু AI ব্যবহারকারী মানুষ করবে।"
-
-ভবিষ্যৎ এখনই — শিখতে শুরু করুন। 🚀`;
-
-// ---------------------------------------------------------------------------
-// Main Component
-// ---------------------------------------------------------------------------
 export default function App() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animRef = useRef<number>(0);
-  const spriteCacheRef = useRef<Map<string, HTMLCanvasElement>>(new Map());
-
-  const [lang, setLang] = useState<"bn" | "en">("bn");
-  const [topic, setTopic] = useState("");
-  const [script, setScript] = useState(DEMO_SCRIPT_BN);
-  const [theme, setTheme] = useState<ThemeKey>("aurora");
-  const [mood, setMood] = useState<MoodKey>("uplifting");
-  const [aspect, setAspect] = useState<Aspect>("16:9");
-  const [quality, setQuality] = useState<Quality>("720p");
-  const [perf, setPerf] = useState<Perf>("high");
-  const [wpm, setWpm] = useState(145);
-  const [shortsMode, setShortsMode] = useState(false);
-  const [watermark, setWatermark] = useState("");
-  const [activeTab, setActiveTab] = useState<"script" | "design" | "audio" | "export">("script");
-  // ——— Canonical Production Studio & Blueprint JSON v1.0 State ———
+  // ---------------------------------------------------------------------------
+  // Core Authoritative Blueprint State
+  // ---------------------------------------------------------------------------
   const [blueprint, setBlueprint] = useState<VideoBlueprint>(DEFAULT_BLUEPRINT);
-  const [selectedSceneId, setSelectedSceneId] = useState<string | null>(DEFAULT_BLUEPRINT.scenes[0]?.id || null);
+  const [duration, setDuration] = useState<number>(DEFAULT_BLUEPRINT.timeline.duration || 341.89);
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [selectedSceneId, setSelectedSceneId] = useState<string | null>(
+    DEFAULT_BLUEPRINT.scenes[0]?.id || null
+  );
+
+  // Aspect Ratio (16:9, 9:16, 1:1)
+  const [aspect, setAspect] = useState<"16:9" | "9:16" | "1:1">(
+    (DEFAULT_BLUEPRINT.project.aspectRatio as any) || "16:9"
+  );
+
+  // Navigation & Panels
+  const [leftNavTab, setLeftNavTab] = useState<LeftNavTab>("assets");
+  const [isAssetPanelOpen, setIsAssetPanelOpen] = useState<boolean>(true);
+  const [isInspectorOpen, setIsInspectorOpen] = useState<boolean>(true);
+
+  // Modals
   const [isBlueprintModalOpen, setIsBlueprintModalOpen] = useState<boolean>(false);
-  const [isAssetPanelOpen, setIsAssetPanelOpen] = useState<boolean>(false);
-  const [editorMode, setEditorMode] = useState<"timeline" | "wizard">("timeline");
-  const [actualAudioDuration, setActualAudioDuration] = useState<number | undefined>(undefined);
-  const historyRef = useRef(createHistory<VideoBlueprint>());
+  const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState<boolean>(false);
 
-  // Timeline provided by user (extra - single-page will use it)
-  const [timelineFileName, setTimelineFileName] = useState<string>("");
-  const [customTimeline, setCustomTimeline] = useState<{ w: string; s: number; e: number; para: number }[] | null>(null);
-  const [customSegments, setCustomSegments] = useState<{ time: number; text: string }[] | null>(null);
-  const timelineInputRef = useRef<HTMLInputElement>(null);
-
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [aiStatus, setAiStatus] = useState<string>(
-    lang === "bn" ? "যেকোনো বিষয়ে লিখুন — সিন, স্ট্যাট আর কোট নিজে থেকেই সাজবে।" : "Type any topic — scenes, stats & quotes auto-arranged."
-  );
-  const [spec, setSpec] = useState<Spec | null>(null);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [ttsRate, setTtsRate] = useState(1);
-  const [ttsVoice, setTtsVoice] = useState<string>("");
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [isRecording, setIsRecording] = useState(false);
-  const [showToast, setShowToast] = useState<string | null>(null);
-
-  // Video Export & Download state
-  const [isExporting, setIsExporting] = useState<boolean>(false);
-  const [exportProgress, setExportProgress] = useState<number>(0);
-  const [exportStage, setExportStage] = useState<string>("");
-  const [exportedVideo, setExportedVideo] = useState<{
-    url: string;
-    name: string;
-    size: string;
-    blob: Blob;
-    srtUrl?: string;
-    srtName?: string;
-    thumbUrl?: string;
-    thumbName?: string;
-  } | null>(null);
-  const cancelExportRef = useRef<boolean>(false);
-  const activeRecorderRef = useRef<MediaRecorder | null>(null);
-
-  // ——— Voice-tracked auto video (100% free, client-side) ———
-  const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null);
-  const [bgName, setBgName] = useState<string>("");
-  const [voiceFile, setVoiceFile] = useState<File | null>(null);
-  const [voiceName, setVoiceName] = useState<string>("");
-  const [vadResult, setVadResult] = useState<VADResult | null>(null);
-  const [voiceSpec, setVoiceSpec] = useState<Spec | null>(null);
-  const [isTracking, setIsTracking] = useState(false);
-  const [voiceError, setVoiceError] = useState<string>("");
-  const [autoStory, setAutoStory] = useState(false);
-  const [storyStyle, setStoryStyle] = useState<string>("reveal");
-  const waveformRef = useRef<HTMLCanvasElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const bgInputRef = useRef<HTMLInputElement>(null);
-  const voiceInputRef = useRef<HTMLInputElement>(null);
+  // Audio System
   const [audioUrl, setAudioUrl] = useState<string>("");
+  const [actualAudioDuration, setActualAudioDuration] = useState<number | undefined>(341.89);
+  const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | undefined>(undefined);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioInputRef = useRef<HTMLInputElement | null>(null);
 
-  const isBn = lang === "bn";
+  // Undo / Redo History
+  const historyRef = useRef(createHistory<VideoBlueprint>(30));
+  const [historyVersion, setHistoryVersion] = useState<number>(0);
 
-  // Load voices
-  useEffect(() => {
-    const load = () => {
-      const v = speechSynthesis.getVoices();
-      setVoices(v);
-      if (v.length && !ttsVoice) setTtsVoice(v[0].name);
-    };
-    load();
-    speechSynthesis.onvoiceschanged = load;
-  }, [ttsVoice]);
+  // Animation Loop ticker
+  const animFrameRef = useRef<number | null>(null);
+  const lastTickTimeRef = useRef<number>(performance.now());
 
-  // Build spec whenever script/theme etc change (auto plan)
-  const builtSpec = useMemo(() => {
-    try {
-      const s = buildSpec({
-        script,
-        language: lang,
-        theme,
-        mood,
-        aspect: shortsMode ? "9:16" : aspect,
-        quality,
-        perf,
-        shorts: shortsMode,
-        watermark,
-      });
-      return s;
-    } catch {
-      return null;
-    }
-  }, [script, lang, theme, mood, aspect, quality, perf, shortsMode, watermark]);
-
-  // Effective spec: voice-synced overrides auto spec
-  const effectiveSpec = voiceSpec || builtSpec;
-
-  useEffect(() => {
-    if (effectiveSpec) {
-      setSpec(effectiveSpec);
-      setDuration(effectiveSpec.duration);
-      setCurrentTime(0);
-      setIsPlaying(false);
-    }
-  }, [effectiveSpec]);
-
-  // If script/theme changes while voice is loaded, keep VAD but offer re-sync (don't auto-override)
-  useEffect(() => {
-    if (voiceSpec && builtSpec && vadResult) {
-      // script changed after voice sync — keep old voiceSpec until user hits re-sync
-      // just invalidate toast hint: we don't auto-rebuild to avoid jumping
-    }
-  }, [builtSpec, voiceSpec, vadResult]);
-
-  // Draw waveform when VAD ready
-  useEffect(() => {
-    if (!vadResult || !waveformRef.current) return;
-    const c = waveformRef.current;
-    const dpr = window.devicePixelRatio || 1;
-    const w = c.clientWidth * dpr;
-    const h = 64 * dpr;
-    c.width = w;
-    c.height = h;
-    c.style.width = "100%";
-    c.style.height = "64px";
-    const ctx = c.getContext("2d");
-    if (!ctx) return;
-    ctx.clearRect(0, 0, w, h);
-    // bg
-    ctx.fillStyle = "#0f172a";
-    ctx.fillRect(0, 0, w, h);
-    // envelope
-    const env = vadResult.envelope;
-    if (env.length) {
-      const max = Math.max(...Array.from(env), 0.001);
-      ctx.strokeStyle = "rgba(124,92,255,0.18)";
-      ctx.lineWidth = 1 * dpr;
-      ctx.beginPath();
-      for (let i = 0; i < env.length; i++) {
-        const x = (i / env.length) * w;
-        const y = h - (env[i] / max) * (h * 0.7) - h * 0.15;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-      // phrases
-      vadResult.phrases.forEach((p) => {
-        const x0 = (p.start / vadResult.duration) * w;
-        const x1 = (p.end / vadResult.duration) * w;
-        ctx.fillStyle = "rgba(45,212,191,0.34)";
-        ctx.fillRect(x0, h * 0.08, Math.max(1, x1 - x0), h * 0.84);
-        ctx.fillStyle = "rgba(45,212,191,0.95)";
-        ctx.fillRect(x0, h * 0.5 - 1, Math.max(1, x1 - x0), 2);
-      });
-      // threshold line
-      const thrY = h - (vadResult.threshold / max) * (h * 0.7) - h * 0.15;
-      ctx.strokeStyle = "rgba(251,191,36,0.55)";
-      ctx.setLineDash([4 * dpr, 4 * dpr]);
-      ctx.beginPath();
-      ctx.moveTo(0, thrY);
-      ctx.lineTo(w, thrY);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-    // labels
-    ctx.fillStyle = "#8d9cc2";
-    ctx.font = `${10 * dpr}px ui-monospace,monospace`;
-    ctx.fillText(`${vadResult.phrases.length} slots • ${vadResult.speechTime.toFixed(1)}s / ${vadResult.duration.toFixed(1)}s • ${(vadResult.speechRatio * 100).toFixed(0)}%`, 8 * dpr, 14 * dpr);
-  }, [vadResult]);
-
-  // canvas setup
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !spec) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const displayW = spec.width;
-    const displayH = spec.height;
-    canvas.width = displayW;
-    canvas.height = displayH;
-    canvas.style.width = "100%";
-    canvas.style.height = "auto";
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      void dpr;
-      const vw = (spec as unknown as { _voiceWords?: { w: string; s: number; e: number; para: number }[] })._voiceWords;
-      renderFrame(ctx, spec, currentTime, spriteCacheRef.current, bgImage, vw);
-    }
-  }, [spec, currentTime, bgImage]);
-
-  // Playback loop (drives unified timeline and audio playback)
-  useEffect(() => {
-    if (!isPlaying) return;
-    const activeDur = editorMode === "timeline" ? blueprint.timeline.duration : (spec?.duration || duration || 10);
-    let last = performance.now();
-    const tick = (now: number) => {
-      const dt = (now - last) / 1000;
-      last = now;
-      setCurrentTime((prev) => {
-        const next = prev + dt;
-        if (next >= activeDur) {
-          setIsPlaying(false);
-          return activeDur;
-        }
-        return next;
-      });
-      animRef.current = requestAnimationFrame(tick);
-    };
-    animRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(animRef.current);
-  }, [isPlaying, editorMode, blueprint.timeline.duration, spec, duration]);
-
-  // Unified Canvas Rendering Loop
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    if (editorMode === "timeline") {
-      canvas.width = blueprint.project.width || 1920;
-      canvas.height = blueprint.project.height || 1080;
-      videoCompositor.render(ctx, blueprint, currentTime, {
-        watermarkText: blueprint.project.watermark,
-        isShorts: blueprint.project.aspectRatio === "9:16",
-      });
-    } else {
-      if (spec) {
-        const vw = (spec as unknown as { _voiceWords?: { w: string; s: number; e: number; para: number }[] })._voiceWords;
-        renderFrame(ctx, spec, currentTime, spriteCacheRef.current, bgImage, vw);
-      } else {
-        canvas.width = blueprint.project.width || 1920;
-        canvas.height = blueprint.project.height || 1080;
-        videoCompositor.render(ctx, blueprint, currentTime, {
-          watermarkText: blueprint.project.watermark,
-          isShorts: blueprint.project.aspectRatio === "9:16",
-        });
-      }
-    }
-  }, [currentTime, blueprint, editorMode, spec, bgImage]);
-
-  const toast = useCallback((msg: string) => {
-    setShowToast(msg);
-    setTimeout(() => setShowToast(null), 2200);
-  }, []);
-
-  // ——— Background image handler (free, client-side, theme-aware overlay) ———
-  const handleBgSelect = useCallback(
-    async (file: File | null) => {
-      if (!file) return;
-      if (!file.type.startsWith("image/")) {
-        toast(isBn ? "ছবি ফাইল দিন (jpg/png/webp)" : "Please select an image file");
-        return;
-      }
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => {
-        setBgImage(img);
-        setBgName(file.name);
-        toast(isBn ? `ব্যাকগ্রাউন্ড: ${file.name}` : `Background: ${file.name}`);
-      };
-      img.onerror = () => toast(isBn ? "ছবি লোড হয়নি" : "Failed to load image");
-      img.src = url;
-    },
-    [isBn, toast]
-  );
-
-  const clearBg = useCallback(() => {
-    setBgImage(null);
-    setBgName("");
-    if (bgInputRef.current) bgInputRef.current.value = "";
-    toast(isBn ? "ব্যাকগ্রাউন্ড সরানো হলো" : "Background removed");
-  }, [isBn, toast]);
-
-  // ——— Voice-tracked animation (VAD → word timing) ———
-  const handleVoiceSelect = useCallback(
-    async (file: File | null) => {
-      if (!file) return;
-      if (!file.type.startsWith("audio/") && !file.name.match(/\.(mp3|wav|m4a|ogg|webm|aac|flac)$/i)) {
-        toast(isBn ? "অডিও ফাইল দিন (mp3/wav/m4a/ogg)" : "Please select an audio file");
-        return;
-      }
-      setVoiceFile(file);
-      setVoiceName(file.name);
-      setVoiceError("");
-      setVadResult(null);
-      setVoiceSpec(null);
-      setIsTracking(true);
-      const u = URL.createObjectURL(file);
-      setAudioUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return u;
-      });
-      try {
-        const mono = await decodeToMono(file);
-        const realAudioDur = mono.data.length / mono.sampleRate;
-        if (Number.isFinite(realAudioDur) && realAudioDur > 0) {
-          setActualAudioDuration(realAudioDur);
-          setBlueprint((prev) => {
-            historyRef.current.push(prev);
-            return repairBlueprint(prev, realAudioDur);
-          });
-          setDuration(realAudioDur);
-        }
-
-        const vad = analyseVAD(mono);
-        setVadResult(vad);
-        if (!vad.usable) {
-          setVoiceError(isBn ? `অডিওতে স্পিচ কম পাওয়া গেছে (${vad.phrases.length} স্লট)। পরিষ্কার ভয়েস দিন বা দীর্ঘ রেকর্ড ব্যবহার করুন।` : `Low speech detected (${vad.phrases.length} slots). Try clearer or longer recording.`);
-          toast(isBn ? "VAD: স্পিচ কম — অন্য অডিও ট্রাই করুন" : "VAD: low speech — try another file");
-          return;
-        }
-        // auto-build voice-synced spec if script exists
-        if (script.trim() && builtSpec) {
-          const vSpec = buildVoiceSpec(script, vad, builtSpec, { title: builtSpec.meta.title });
-          if (vSpec) {
-            setVoiceSpec(vSpec);
-            toast(isBn ? `🎙️ ভয়েস ট্র্যাকড! ${vad.phrases.length} স্লট → ${wordCount(script)} শব্দ সিঙ্ক` : `🎙️ Voice-tracked! ${vad.phrases.length} slots → ${wordCount(script)} words synced`);
-          }
-        } else {
-          toast(isBn ? `VAD রেডি: ${vad.phrases.length} স্লট, ${vad.speechTime.toFixed(1)}s speech` : `VAD ready: ${vad.phrases.length} slots, ${vad.speechTime.toFixed(1)}s speech`);
-        }
-      } catch (e) {
-        console.error(e);
-        setVoiceError(isBn ? "অডিও ডিকোড হয়নি — অন্য ফরম্যাট ট্রাই করুন" : "Audio decode failed — try another format");
-        toast(isBn ? "অডিও পড়া যায়নি" : "Failed to read audio");
-      } finally {
-        setIsTracking(false);
-      }
-    },
-    [isBn, toast, script, builtSpec]
-  );
-
-  const clearVoice = useCallback(() => {
-    setVoiceFile(null);
-    setVoiceName("");
-    setVadResult(null);
-    setVoiceSpec(null);
-    setVoiceError("");
-    setAudioUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return "";
-    });
-    if (voiceInputRef.current) voiceInputRef.current.value = "";
-    toast(isBn ? "ভয়েস সরানো হলো" : "Voice removed");
-  }, [isBn, toast]);
-
-  const applyVoiceSync = useCallback(() => {
-    if (!vadResult || !builtSpec) {
-      toast(isBn ? "আগে অডিও ও স্ক্রিপ্ট দিন" : "Add audio & script first");
-      return;
-    }
-    const vSpec = buildVoiceSpec(script, vadResult, builtSpec, { title: builtSpec.meta.title });
-    if (!vSpec) {
-      toast(isBn ? "সিঙ্ক ব্যর্থ — স্ক্রিপ্ট/অডিও চেক করুন" : "Sync failed — check script/audio");
-      return;
-    }
-    setVoiceSpec(vSpec);
-    toast(isBn ? "✅ ভয়েস-সিঙ্কড প্ল্যান প্রস্তুত!" : "✅ Voice-synced plan ready!");
-    setCurrentTime(0);
-  }, [vadResult, builtSpec, script, isBn, toast]);
-
-  // ——— User-provided timeline (speech → word timings) — supports both [{time,text}] and [{w,s,e,para}] ———
-  const handleTimelineSelect = useCallback(async (file: File | null) => {
-    if (!file) return;
-    try {
-      const text = await file.text();
-      const raw = JSON.parse(text);
-      const arr: any[] = Array.isArray(raw) ? raw : raw.words || raw.timeline || raw.segments || [];
-      if (!arr.length) throw new Error("empty");
-      // Detect segment format: {time, text} — your "বন্ধ দরজার..." JSON
-      const isSegment = arr[0] && typeof arr[0].time !== "undefined" && typeof arr[0].text === "string" && typeof arr[0].w === "undefined";
-      if (isSegment) {
-        const segs: { time: number; text: string }[] = arr.map((it:any)=>({
-          time: Number(it.time ?? it.t ?? it.start ?? 0),
-          text: String(it.text ?? it.t ?? "").trim()
-        })).filter((x:any)=>x.text);
-        if (!segs.length) throw new Error("empty segs");
-        segs.sort((a,b)=>a.time-b.time);
-        setCustomSegments(segs);
-        setCustomTimeline(null);
-        setTimelineFileName(file.name);
-        toast(isBn ? `📋 টাইমলাইন লোড: ${segs.length} সেগমেন্ট` : `📋 Timeline loaded: ${segs.length} segments`);
-        if (builtSpec && script.trim()) {
-          const tSpec = buildSpecFromSegmentTimeline(script, segs, builtSpec);
-          if (tSpec) { setVoiceSpec(tSpec); toast(isBn ? "🎬 টাইমলাইন-সিঙ্কড ভিডিও রেডি!" : "🎬 Timeline-synced video ready!"); }
-        }
-        return;
-      }
-      const words: { w: string; s: number; e: number; para: number }[] = arr.map((it:any, idx:number)=>{
-        const w = String(it.w ?? it.text ?? it.word ?? it.t ?? "").trim() || `w${idx}`;
-        const s = Number(it.s ?? it.start ?? it.st ?? it.time ?? 0);
-        const e = Number(it.e ?? it.end ?? it.et ?? s+0.3);
-        const para = Number(it.para ?? it.p ?? it.segment ?? 0);
-        return { w, s: Math.max(0,s), e: Math.max(s+0.05, e), para: Math.max(0, para) };
-      }).filter((x:any)=>x.w);
-      if (!words.length) throw new Error("empty");
-      words.sort((a,b)=>a.s-b.s);
-      setCustomTimeline(words);
-      setCustomSegments(null);
-      setTimelineFileName(file.name);
-      toast(isBn ? `📋 টাইমলাইন লোড: ${words.length} শব্দ` : `📋 Timeline loaded: ${words.length} words`);
-      if (builtSpec && script.trim()) {
-        const tSpec = buildSpecFromTimeline(script, words, builtSpec);
-        if (tSpec) { setVoiceSpec(tSpec); toast(isBn ? "🎬 টাইমলাইন-সিঙ্কড ভিডিও রেডি!" : "🎬 Timeline-synced video ready!"); }
-      }
-    } catch (e) {
-      console.error(e);
-      toast(isBn ? "টাইমলাইন JSON পার্স হয়নি — [{time,text}] বা [{w,s,e,para}] দিন" : "Failed to parse timeline JSON — need [{time,text}] or [{w,s,e,para}]");
-    }
-  }, [isBn, toast, builtSpec, script]);
-
-  const clearTimeline = useCallback(()=>{
-    setCustomTimeline(null); setCustomSegments(null); setTimelineFileName(""); if (timelineInputRef.current) timelineInputRef.current.value=""; toast(isBn ? "টাইমলাইন সরানো হলো" : "Timeline removed");
-  }, [isBn, toast]);
-
-  const applyTimelineSync = useCallback(()=>{
-    if (customSegments && builtSpec) {
-      const tSpec = buildSpecFromSegmentTimeline(script, customSegments, builtSpec);
-      if (!tSpec) { toast(isBn ? "টাইমলাইন সিঙ্ক ব্যর্থ" : "Timeline sync failed"); return; }
-      setVoiceSpec(tSpec); setCurrentTime(0); toast(isBn ? "✅ টাইমলাইন-সিঙ্ক প্রয়োগ!" : "✅ Timeline sync applied!"); return;
-    }
-    if (!customTimeline || !builtSpec) { toast(isBn ? "আগে টাইমলাইন JSON ও স্ক্রিপ্ট দিন" : "Add timeline JSON & script first"); return; }
-    const tSpec = buildSpecFromTimeline(script, customTimeline, builtSpec);
-    if (!tSpec) { toast(isBn ? "টাইমলাইন সিঙ্ক ব্যর্থ" : "Timeline sync failed"); return; }
-    setVoiceSpec(tSpec); setCurrentTime(0); toast(isBn ? "✅ টাইমলাইন-সিঙ্ক প্রয়োগ!" : "✅ Timeline sync applied!");
-  }, [customTimeline, customSegments, builtSpec, script, isBn, toast]);
-
-  // One-click auto video: script alone → quality video, voice if present → tracked
-  const handleAutoVideo = useCallback(() => {
-    const base = builtSpec;
-    if (!base) {
-      toast(isBn ? "স্ক্রিপ্ট লিখুন" : "Write a script first");
-      return;
-    }
-    if (vadResult && !voiceSpec) {
-      const v = buildVoiceSpec(script, vadResult, base, { title: base.meta.title });
-      if (v) {
-        setVoiceSpec(v);
-        toast(isBn ? "🎬 অটো ভিডিও — ভয়েস-সিঙ্কড!" : "🎬 Auto video — voice-synced!");
-        return;
-      }
-    }
-    if (voiceSpec) {
-      toast(isBn ? "🎬 ভয়েস-সিঙ্কড ভিডিও রেডি — প্রিভিউ দেখুন" : "🎬 Voice-synced video ready — see preview");
-    } else {
-      toast(isBn ? "🎬 অটো ভিডিও রেডি — প্রিভিউ দেখুন" : "🎬 Auto video ready — see preview");
-    }
-    setCurrentTime(0);
-    setIsPlaying(false);
-  }, [builtSpec, vadResult, voiceSpec, script, isBn, toast]);
-
-  const handleAiGenerate = useCallback(async () => {
-    const clean = topic.trim();
-    if (!clean) {
-      toast(isBn ? "বিষয় লিখুন (যেমন: ৫টি অভ্যাস)" : "Enter a topic (e.g. 5 habits)");
-      return;
-    }
-    setIsGenerating(true);
-    setAiStatus(isBn ? "Gemini ভাবছে..." : "Gemini is thinking...");
-    try {
-      const res = await fetch("/api/ai/script", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          topic: clean,
-          language: lang,
-          style: shortsMode ? "shorts" : "explainer",
-        }),
-      });
-      const data = await res.json();
-      if (data?.script) {
-        setScript(data.script);
-        setAiStatus(
-          data.source === "gemini"
-            ? isBn
-              ? "✨ Gemini দিয়ে তৈরি — প্ল্যান বানাতে প্রস্তুত"
-              : "✨ Generated by Gemini — ready to plan"
-            : isBn
-              ? "📝 টেমপ্লেট ইঞ্জিন থেকে তৈরি (Gemini key নেই বা অফলাইন)"
-              : "📝 From template engine (no Gemini key / offline)"
-        );
-        /* single-page: no tab switch */
-        toast(isBn ? "স্ক্রিপ্ট তৈরি হয়েছে!" : "Script generated!");
-      } else {
-        throw new Error("empty");
-      }
-    } catch (e) {
-      // fallback local
-      const fallback = buildSpec({ script: clean + "\n\n" + DEMO_SCRIPT_BN.split("\n").slice(1).join("\n"), language: lang });
-      setScript(clean + "\n\n" + DEMO_SCRIPT_BN.split("\n").slice(1).join("\n"));
-      void fallback;
-      setAiStatus(isBn ? "অফলাইন ফলব্যাক ব্যবহার করা হলো" : "Offline fallback used");
-      toast(isBn ? "অফলাইন মোডে স্ক্রিপ্ট বানানো হলো" : "Offline script generated");
-      console.warn(e);
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [topic, lang, shortsMode, isBn, toast]);
-
-  const handleChip = (t: string) => {
-    setTopic(t);
-    // auto trigger after tiny delay
-    setTimeout(() => {
-      const el = document.getElementById("aiTopic") as HTMLInputElement | null;
-      if (el) el.focus();
-    }, 50);
-  };
-
-  const handleTtsTest = useCallback(() => {
-    if (!("speechSynthesis" in window)) {
-      toast(isBn ? "এই ব্রাউজারে TTS নেই" : "TTS not supported");
-      return;
-    }
-    speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(script.split("\n").filter(Boolean)[0]?.slice(0, 120) || (isBn ? "হ্যালো, এটি কাটফ্রি স্টুডিও।" : "Hello, this is CutFree Studio."));
-    utter.lang = isBn ? "bn-BD" : "en-US";
-    utter.rate = ttsRate;
-    const v = voices.find((x) => x.name === ttsVoice);
-    if (v) utter.voice = v;
-    speechSynthesis.speak(utter);
-    toast(isBn ? "ভয়েস টেস্ট চালু" : "Voice test playing");
-  }, [script, isBn, ttsRate, ttsVoice, voices, toast]);
-
-  const cancelExport = useCallback(() => {
-    cancelExportRef.current = true;
-    if (activeRecorderRef.current && activeRecorderRef.current.state !== "inactive") {
-      try { activeRecorderRef.current.stop(); } catch {}
-    }
-    setIsExporting(false);
-    setIsPlaying(false);
-    toast(isBn ? "রেন্ডার বাতিল করা হয়েছে" : "Render cancelled");
-  }, [isBn, toast]);
-
-  // High-quality export: VP9/Opus or MP4, WebAudio voice mix, SRT + thumbnail (100% free, highest quality)
-  const handleExport = useCallback(async () => {
-    if (!spec || !canvasRef.current) return;
-    const canvas = canvasRef.current;
-    cancelExportRef.current = false;
-    setIsExporting(true);
-    setExportProgress(0);
-    setExportStage(isBn ? "অডিও ও এনকোডার প্রস্তুত হচ্ছে..." : "Preparing audio & encoder...");
-    toast(isBn ? "⚡ রেন্ডার শুরু হচ্ছে..." : "⚡ Rendering starting...");
-
-    let audioCtx: AudioContext | null = null;
-    let audioSource: AudioBufferSourceNode | null = null;
-    let voiceAudioElem: HTMLAudioElement | null = null;
-
-    try {
-      const fps = spec.fps || 30;
-      const canvasStream = (canvas as HTMLCanvasElement).captureStream(fps);
-      let mixedStream: MediaStream = new MediaStream([...canvasStream.getVideoTracks()]);
-
-      // Web Audio mixing for pristine voice recording
-      if (voiceFile) {
-        try {
-          const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-          audioCtx = new AC();
-          if (audioCtx.state === "suspended") await audioCtx.resume();
-          const ab = await voiceFile.arrayBuffer();
-          const buf = await audioCtx.decodeAudioData(ab.slice(0));
-          const audioDest = audioCtx.createMediaStreamDestination();
-          audioSource = audioCtx.createBufferSource();
-          audioSource.buffer = buf;
-          audioSource.connect(audioDest);
-          audioDest.stream.getAudioTracks().forEach((track) => {
-            mixedStream.addTrack(track);
-          });
-        } catch (err) {
-          console.warn("Audio mixing fallback:", err);
-        }
-      } else if (audioUrl) {
-        try {
-          voiceAudioElem = new Audio(audioUrl);
-          voiceAudioElem.crossOrigin = "anonymous";
-          const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-          audioCtx = new AC();
-          if (audioCtx.state === "suspended") await audioCtx.resume();
-          const audioDest = audioCtx.createMediaStreamDestination();
-          const source = audioCtx.createMediaElementSource(voiceAudioElem);
-          source.connect(audioDest);
-          audioDest.stream.getAudioTracks().forEach((track) => {
-            mixedStream.addTrack(track);
-          });
-        } catch {}
-      }
-
-      const candidates = [
-        "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
-        "video/mp4",
-        "video/webm;codecs=vp9,opus",
-        "video/webm;codecs=vp9",
-        "video/webm;codecs=vp8,opus",
-        "video/webm"
-      ];
-      const mime = candidates.find((m) => {
-        try { return MediaRecorder.isTypeSupported(m); } catch { return false; }
-      }) || "video/webm";
-
-      const bitrate = spec.width >= 1920 || quality === "1080p" ? 5000000 : spec.width >= 1280 || quality === "720p" ? 2500000 : 1200000;
-      const recorder = new MediaRecorder(mixedStream, { mimeType: mime, videoBitsPerSecond: bitrate } as unknown as MediaRecorderOptions);
-      activeRecorderRef.current = recorder;
-      const chunks: Blob[] = [];
-
-      recorder.ondataavailable = (e) => {
-        if (e.data && e.data.size) chunks.push(e.data);
-      };
-
-      recorder.onstop = async () => {
-        if (cancelExportRef.current) {
-          setIsExporting(false);
-          setIsPlaying(false);
-          return;
-        }
-
-        setExportStage(isBn ? "ফাইল চূড়ান্ত হচ্ছে..." : "Finalizing file...");
-        const blob = new Blob(chunks, { type: mime });
-        const ext = mime.includes("mp4") ? "mp4" : "webm";
-        const safeTitle = (spec.meta.title.slice(0, 40).replace(/[^\w\-]+/g, "_") || "cutfree").replace(/^_+|_+$/g, "");
-        const url = URL.createObjectURL(blob);
-        const fileName = `${safeTitle}-${spec.width}x${spec.height}.${ext}`;
-        const fileSize = (blob.size / (1024 * 1024)).toFixed(2) + " MB";
-
-        // Generate SRT
-        let srtBlob: Blob | undefined;
-        let srtUrl: string | undefined;
-        let srtName: string | undefined;
-        const caps = spec.captions && spec.captions.length ? spec.captions : null;
-        if (caps && caps.length) {
-          const srtText = caps.map((c, i) => {
-            const fmt = (s: number) => {
-              const h = Math.floor(s / 3600);
-              const m2 = Math.floor((s % 3600) / 60);
-              const s2 = Math.floor(s % 60);
-              const ms = Math.floor((s % 1) * 1000);
-              return `${String(h).padStart(2, "0")}:${String(m2).padStart(2, "0")}:${String(s2).padStart(2, "0")},${String(ms).padStart(3, "0")}`;
-            };
-            return `${i + 1}\n${fmt(c.start)} --> ${fmt(c.end)}\n${c.text}\n`;
-          }).join("\n");
-          srtBlob = new Blob([srtText], { type: "text/srt" });
-          srtUrl = URL.createObjectURL(srtBlob);
-          srtName = `${safeTitle}.srt`;
-        }
-
-        // Generate Thumbnail
-        let thumbUrl: string | undefined;
-        let thumbName: string | undefined;
-        try {
-          const thumbCanvas = document.createElement("canvas");
-          thumbCanvas.width = spec.width;
-          thumbCanvas.height = spec.height;
-          const tctx = thumbCanvas.getContext("2d")!;
-          const vw = (spec as unknown as { _voiceWords?: { w: string; s: number; e: number; para: number }[] })._voiceWords;
-          renderFrame(tctx, spec, Math.min(spec.duration * 0.12, 1.2), new Map(), bgImage, vw);
-          thumbUrl = thumbCanvas.toDataURL("image/jpeg", 0.92);
-          thumbName = `${safeTitle}-thumb.jpg`;
-        } catch {}
-
-        setExportedVideo({
-          url,
-          name: fileName,
-          size: fileSize,
-          blob,
-          srtUrl,
-          srtName,
-          thumbUrl,
-          thumbName
-        });
-        setIsExporting(false);
-        setExportProgress(100);
-        setExportStage(isBn ? "সম্পূর্ণ হয়েছে!" : "Complete!");
-
-        // Auto trigger download cleanly
-        try {
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        } catch (e) {
-          console.warn("Auto-download popup blocked, button is available", e);
-        }
-
-        toast(isBn ? `✅ ভিডিও তৈরি সম্পন্ন (${fileSize})!` : `✅ Video ready (${fileSize})!`);
-        if (voiceAudioElem) { voiceAudioElem.pause(); voiceAudioElem.src = ""; }
-        if (audioSource) { try { audioSource.stop(); } catch {} }
-        if (audioCtx) { try { audioCtx.close(); } catch {} }
-      };
-
-      recorder.start(100);
-      setCurrentTime(0);
-      setIsPlaying(true);
-      if (audioSource) audioSource.start(0);
-      if (voiceAudioElem) { voiceAudioElem.currentTime = 0; voiceAudioElem.play().catch(() => {}); }
-
-      const totalMs = spec.duration * 1000;
-      const startTime = performance.now();
-
-      const progressInterval = setInterval(() => {
-        if (cancelExportRef.current) {
-          clearInterval(progressInterval);
-          return;
-        }
-        const elapsed = performance.now() - startTime;
-        const pct = Math.min(99, Math.round((elapsed / totalMs) * 100));
-        setExportProgress(pct);
-        setExportStage(isBn ? `এনকোড হচ্ছে: ${pct}%` : `Encoding: ${pct}%`);
-
-        if (elapsed >= totalMs + 300) {
-          clearInterval(progressInterval);
-          if (recorder.state !== "inactive") {
-            recorder.stop();
-          }
-          setIsPlaying(false);
-        }
-      }, 150);
-
-    } catch (e) {
-      console.error(e);
-      setIsExporting(false);
-      setIsPlaying(false);
-      const url = canvas.toDataURL("image/png");
-      const a = document.createElement("a"); a.href = url; a.download = "cutfree-frame.png"; a.click();
-      toast(isBn ? "ফ্রেম PNG হিসেবে সেভ হলো" : "Frame saved as PNG (fallback)");
-    }
-  }, [spec, isBn, toast, audioUrl, voiceFile, bgImage, quality]);
-
-  const scenes = spec?.scenes || [];
-  const curSceneIndex = useMemo(() => {
-    if (!spec) return 0;
-    let acc = 0;
-    for (let i = 0; i < spec.scenes.length; i++) {
-      if (currentTime < acc + spec.scenes[i].dur) return i;
-      acc += spec.scenes[i].dur;
-    }
-    return spec.scenes.length - 1;
-  }, [currentTime, spec]);
-
-  const progressPct = duration ? (currentTime / duration) * 100 : 0;
-
-  const fmtTime = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
-    return `${m}:${String(sec).padStart(2, "0")}`;
-  };
-
-  const totalStats = useMemo(() => {
-    const words = wordCount(script);
-    const estMin = (words / wpm).toFixed(1);
-    return { words, estMin, scenes: scenes.length };
-  }, [script, wpm, scenes.length]);
-
+  // Currently selected scene object
   const selectedScene = useMemo(() => {
+    if (!selectedSceneId) return blueprint.scenes[0] || null;
     return blueprint.scenes.find((s) => s.id === selectedSceneId) || blueprint.scenes[0] || null;
   }, [blueprint.scenes, selectedSceneId]);
 
-  const handleUpdateScene = useCallback((updated: BlueprintScene) => {
-    historyRef.current.push(blueprint);
-    setBlueprint((prev) => ({
-      ...prev,
-      scenes: prev.scenes.map((s) => (s.id === updated.id ? updated : s)),
-    }));
-  }, [blueprint]);
+  // Push state to history
+  const commitBlueprint = useCallback(
+    (newBp: VideoBlueprint) => {
+      historyRef.current.push(blueprint);
+      setBlueprint(newBp);
+      setDuration(newBp.timeline.duration);
+      setHistoryVersion((v) => v + 1);
+    },
+    [blueprint]
+  );
 
-  const handleDeleteScene = useCallback((sceneId: string) => {
-    if (blueprint.scenes.length <= 1) {
-      toast(isBn ? "কমপক্ষে একটি সিন থাকতে হবে" : "Must have at least one scene");
+  // ---------------------------------------------------------------------------
+  // Playback Loop & Clock
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (!isPlaying) {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      if (audioRef.current && !audioRef.current.paused) {
+        audioRef.current.pause();
+      }
       return;
     }
-    historyRef.current.push(blueprint);
-    setBlueprint((prev) => {
-      const remaining = prev.scenes.filter((s) => s.id !== sceneId);
-      return {
-        ...prev,
-        scenes: remaining,
-        timeline: {
-          ...prev.timeline,
-          totalScenes: remaining.length,
-        },
-      };
-    });
-  }, [blueprint, isBn, toast]);
 
-  const handleSeek = useCallback((time: number) => {
-    const activeDur = editorMode === "timeline" ? blueprint.timeline.duration : (spec?.duration || duration || 10);
-    const clamped = Math.max(0, Math.min(activeDur, time));
-    setCurrentTime(clamped);
-    if (audioRef.current) {
-      audioRef.current.currentTime = clamped;
+    lastTickTimeRef.current = performance.now();
+
+    if (audioRef.current && audioUrl) {
+      audioRef.current.currentTime = currentTime;
+      audioRef.current.play().catch(() => {});
     }
-  }, [blueprint.timeline.duration, editorMode, spec?.duration, duration]);
 
-  const handleExportFastVideo = async () => {
-    setIsExporting(true);
-    setExportProgress(0);
-    setExportStage(isBn ? "ভিডিও এনকোডিং শুরু হচ্ছে..." : "Initializing render engine...");
-    cancelExportRef.current = false;
+    const tick = (now: number) => {
+      const deltaSec = (now - lastTickTimeRef.current) / 1000;
+      lastTickTimeRef.current = now;
 
-    const abortCtrl = new AbortController();
-    try {
-      const res = await exportVideo(
-        blueprint,
-        audioRef.current,
-        (p) => {
-          setExportProgress(p.progressPct);
-          setExportStage(p.stage);
-        },
-        abortCtrl.signal
-      );
-
-      setExportedVideo({
-        url: res.url,
-        name: res.fileName,
-        size: res.sizeMb,
-        blob: res.blob,
+      setCurrentTime((prev) => {
+        const next = prev + deltaSec;
+        if (next >= duration) {
+          setIsPlaying(false);
+          return duration;
+        }
+        return next;
       });
-      toast(isBn ? `ভিডিও প্রস্তুত (${res.sizeMb})!` : `Render complete (${res.sizeMb})!`);
-      const a = document.createElement("a");
-      a.href = res.url;
-      a.download = res.fileName;
-      a.click();
-    } catch (err: any) {
-      if (err.message !== "Export cancelled") {
-        toast(isBn ? `এক্সপোর্ট সমস্যা: ${err.message}` : `Export error: ${err.message}`);
+
+      animFrameRef.current = requestAnimationFrame(tick);
+    };
+
+    animFrameRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    };
+  }, [isPlaying, duration, audioUrl]);
+
+  // Sync active scene with currentTime
+  useEffect(() => {
+    const active = blueprint.scenes.find(
+      (s) => currentTime >= s.start && currentTime <= s.end
+    );
+    if (active && active.id !== selectedSceneId) {
+      setSelectedSceneId(active.id);
+    }
+  }, [currentTime, blueprint.scenes]);
+
+  const handleSeek = useCallback(
+    (targetSec: number) => {
+      const clamped = Math.max(0, Math.min(duration, targetSec));
+      setCurrentTime(clamped);
+      if (audioRef.current && audioUrl) {
+        audioRef.current.currentTime = clamped;
       }
-    } finally {
-      setIsExporting(false);
+    },
+    [duration, audioUrl]
+  );
+
+  const togglePlay = useCallback(() => {
+    if (currentTime >= duration) {
+      setCurrentTime(0);
+    }
+    setIsPlaying((p) => !p);
+  }, [currentTime, duration]);
+
+  // Next / Prev scene jumps
+  const handleNextScene = useCallback(() => {
+    const idx = blueprint.scenes.findIndex((s) => s.id === selectedSceneId);
+    if (idx >= 0 && idx < blueprint.scenes.length - 1) {
+      const next = blueprint.scenes[idx + 1];
+      setSelectedSceneId(next.id);
+      handleSeek(next.start + 0.05);
+    }
+  }, [blueprint.scenes, selectedSceneId, handleSeek]);
+
+  const handlePrevScene = useCallback(() => {
+    const idx = blueprint.scenes.findIndex((s) => s.id === selectedSceneId);
+    if (idx > 0) {
+      const prev = blueprint.scenes[idx - 1];
+      setSelectedSceneId(prev.id);
+      handleSeek(prev.start + 0.05);
+    }
+  }, [blueprint.scenes, selectedSceneId, handleSeek]);
+
+  // ---------------------------------------------------------------------------
+  // Scene Mutations
+  // ---------------------------------------------------------------------------
+  const handleUpdateScene = useCallback(
+    (updated: BlueprintScene) => {
+      const newScenes = blueprint.scenes.map((s) => (s.id === updated.id ? updated : s));
+      commitBlueprint({
+        ...blueprint,
+        scenes: newScenes,
+      });
+    },
+    [blueprint, commitBlueprint]
+  );
+
+  const handleDeleteScene = useCallback(
+    (sceneId: string) => {
+      if (blueprint.scenes.length <= 1) {
+        alert("A video project must have at least one scene.");
+        return;
+      }
+      const filtered = blueprint.scenes.filter((s) => s.id !== sceneId);
+      // Re-anchor start & end to maintain continuity
+      let cursor = 0;
+      const reconciled = filtered.map((s) => {
+        const len = s.end - s.start;
+        const res = { ...s, start: cursor, end: cursor + len };
+        cursor += len;
+        return res;
+      });
+
+      commitBlueprint({
+        ...blueprint,
+        scenes: reconciled,
+        timeline: {
+          ...blueprint.timeline,
+          duration: cursor,
+          totalScenes: reconciled.length,
+        },
+      });
+      setSelectedSceneId(reconciled[0]?.id || null);
+    },
+    [blueprint, commitBlueprint]
+  );
+
+  const handleSplitScene = useCallback(() => {
+    if (!selectedScene) return;
+    if (currentTime <= selectedScene.start + 0.5 || currentTime >= selectedScene.end - 0.5) {
+      return; // Cannot split too close to edges
+    }
+
+    const firstHalf: BlueprintScene = {
+      ...selectedScene,
+      end: currentTime,
+    };
+    const secondHalf: BlueprintScene = {
+      ...selectedScene,
+      id: `scene_${Date.now().toString().slice(-4)}`,
+      title: `${selectedScene.title} (Part 2)`,
+      start: currentTime,
+    };
+
+    const newScenes: BlueprintScene[] = [];
+    blueprint.scenes.forEach((s) => {
+      if (s.id === selectedScene.id) {
+        newScenes.push(firstHalf, secondHalf);
+      } else {
+        newScenes.push(s);
+      }
+    });
+
+    commitBlueprint({
+      ...blueprint,
+      scenes: newScenes,
+      timeline: {
+        ...blueprint.timeline,
+        totalScenes: newScenes.length,
+      },
+    });
+    setSelectedSceneId(secondHalf.id);
+  }, [selectedScene, currentTime, blueprint, commitBlueprint]);
+
+  const handleDuplicateSelectedScene = useCallback(() => {
+    if (!selectedScene) return;
+    const dur = selectedScene.end - selectedScene.start;
+    const dup: BlueprintScene = {
+      ...selectedScene,
+      id: `scene_${Date.now().toString().slice(-4)}`,
+      title: `${selectedScene.title} (Copy)`,
+      start: selectedScene.end,
+      end: selectedScene.end + dur,
+    };
+
+    // Shift all subsequent scenes
+    const newScenes: BlueprintScene[] = [];
+    blueprint.scenes.forEach((s) => {
+      newScenes.push(s);
+      if (s.id === selectedScene.id) {
+        newScenes.push(dup);
+      }
+    });
+
+    let cursor = 0;
+    const reconciled = newScenes.map((s) => {
+      const len = s.end - s.start;
+      const res = { ...s, start: cursor, end: cursor + len };
+      cursor += len;
+      return res;
+    });
+
+    commitBlueprint({
+      ...blueprint,
+      scenes: reconciled,
+      timeline: {
+        ...blueprint.timeline,
+        duration: cursor,
+        totalScenes: reconciled.length,
+      },
+    });
+    setSelectedSceneId(dup.id);
+  }, [selectedScene, blueprint, commitBlueprint]);
+
+  // ---------------------------------------------------------------------------
+  // Asset Insertion to Scene
+  // ---------------------------------------------------------------------------
+  const handleInsertAsset = useCallback(
+    (asset: BlueprintAsset) => {
+      if (!selectedScene) return;
+
+      if (asset.type === "background") {
+        handleUpdateScene({
+          ...selectedScene,
+          background: {
+            assetId: asset.id,
+            fit: "cover",
+            motion: "slow_pan",
+          },
+        });
+      } else if (asset.type === "character") {
+        const existingChars = selectedScene.characters || [];
+        // Prevent duplicate addition of identical character
+        if (existingChars.some((c) => c.id === asset.id)) return;
+
+        const newChar = {
+          id: asset.id,
+          position: { x: existingChars.length === 0 ? 0.5 : 0.35 + existingChars.length * 0.25, y: 0.72 },
+          scale: 1.0,
+          emotion: "happy" as const,
+          action: "idle" as const,
+          entrance: "fade_in" as const,
+        };
+
+        handleUpdateScene({
+          ...selectedScene,
+          characters: [...existingChars, newChar],
+        });
+      } else if (asset.type === "object") {
+        const existingObjs = selectedScene.objects || [];
+        const newObj = {
+          id: `${asset.id}_${Date.now().toString().slice(-4)}`,
+          assetId: asset.id,
+          position: { x: 0.2 + existingObjs.length * 0.25, y: 0.68 },
+          scale: 0.9,
+          animation: "glow" as const,
+        };
+
+        handleUpdateScene({
+          ...selectedScene,
+          objects: [...existingObjs, newObj],
+        });
+      }
+    },
+    [selectedScene, handleUpdateScene]
+  );
+
+  const handleCustomImageUpload = useCallback(
+    (id: string, img: HTMLImageElement) => {
+      assetResolver.registerCustomImage(id, img);
+      if (selectedScene) {
+        handleUpdateScene({
+          ...selectedScene,
+          background: {
+            assetId: id,
+            fit: "cover",
+            motion: "drift",
+          },
+        });
+      }
+    },
+    [selectedScene, handleUpdateScene]
+  );
+
+  // ---------------------------------------------------------------------------
+  // Audio Import (Authoritative duration sync)
+  // ---------------------------------------------------------------------------
+  const handleAudioFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const url = URL.createObjectURL(file);
+      setAudioUrl(url);
+
+      // Decode audio for authoritative duration and exporter mixing
+      const arrayBuffer = await file.arrayBuffer();
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      setAudioBuffer(decodedBuffer);
+
+      const realDur = parseFloat(decodedBuffer.duration.toFixed(2));
+      setActualAudioDuration(realDur);
+      setDuration(realDur);
+
+      // Reconcile blueprint scenes to match exact audio duration without truncating
+      const lastScene = blueprint.scenes[blueprint.scenes.length - 1];
+      if (lastScene) {
+        const updatedScenes = [...blueprint.scenes];
+        updatedScenes[updatedScenes.length - 1] = {
+          ...lastScene,
+          end: realDur,
+        };
+
+        commitBlueprint({
+          ...blueprint,
+          audio: {
+            ...blueprint.audio,
+            duration: realDur,
+            fileName: file.name,
+          },
+          timeline: {
+            ...blueprint.timeline,
+            duration: realDur,
+          },
+          scenes: updatedScenes,
+        });
+      }
+    } catch (err) {
+      console.error("Audio import error:", err);
+      alert("Failed to read audio file. Please try another MP3 or WAV file.");
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // Undo / Redo
+  // ---------------------------------------------------------------------------
+  const handleUndo = useCallback(() => {
+    const prev = historyRef.current.undo(blueprint);
+    if (prev) {
+      setBlueprint(prev);
+      setDuration(prev.timeline.duration);
+      setHistoryVersion((v) => v + 1);
+    }
+  }, [blueprint]);
+
+  const handleRedo = useCallback(() => {
+    const next = historyRef.current.redo(blueprint);
+    if (next) {
+      setBlueprint(next);
+      setDuration(next.timeline.duration);
+      setHistoryVersion((v) => v + 1);
+    }
+  }, [blueprint]);
+
+  // Keyboard Shortcuts (Space, Arrow keys, Ctrl+Z, Ctrl+Y)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in text input
+      if (["INPUT", "TEXTAREA", "SELECT"].includes((e.target as HTMLElement).tagName)) {
+        return;
+      }
+
+      if (e.code === "Space") {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.code === "ArrowLeft") {
+        e.preventDefault();
+        handleSeek(currentTime - (e.shiftKey ? 5 : 1));
+      } else if (e.code === "ArrowRight") {
+        e.preventDefault();
+        handleSeek(currentTime + (e.shiftKey ? 5 : 1));
+      } else if ((e.ctrlKey || e.metaKey) && e.code === "KeyZ") {
+        e.preventDefault();
+        if (e.shiftKey) handleRedo();
+        else handleUndo();
+      } else if ((e.ctrlKey || e.metaKey) && e.code === "KeyY") {
+        e.preventDefault();
+        handleRedo();
+      } else if (e.code === "KeyS" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        handleSplitScene();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [togglePlay, handleSeek, currentTime, handleUndo, handleRedo, handleSplitScene]);
+
   return (
-    <div className="min-h-screen bg-[#06080e] text-[#e9eefb] flex flex-col selection:bg-[#7c5cff]/30">
-      {/* Header */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#0d1120]/90 border-b border-[#232d47]">
-        <div className="mx-auto max-w-[1700px] px-4 md:px-6 h-[56px] flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#5b8dff] to-[#b06cff] grid place-items-center font-black text-white shadow-lg shadow-[#5b8dff]/20">
-              ⚡
-            </div>
-            <div className="leading-tight">
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold tracking-tight text-[15px]">CutFree</span>
-                <span className="text-[#5b8dff] font-extrabold text-[15px]">Studio</span>
-                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1a2440] border border-[#2a365c] text-[#8cb4ff]">
-                  v2.5 • Master
-                </span>
-              </div>
-              <div className="text-[11px] text-[#8d9cc2] hidden sm:block -mt-0.5 truncate max-w-[320px]">
-                {blueprint.project.title || (isBn ? "ভিডিও প্রোডাকশন স্টুডিও" : "Production Studio")}
-              </div>
-            </div>
-          </div>
+    <div className="h-screen w-screen bg-[#07101A] text-[#EEF4FB] flex flex-col overflow-hidden select-none font-sans">
+      {/* Hidden Audio Element for synchronised audio playback */}
+      {audioUrl && (
+        <audio
+          ref={audioRef}
+          src={audioUrl}
+          onEnded={() => setIsPlaying(false)}
+          className="hidden"
+        />
+      )}
 
-          {/* Mode Switcher */}
-          <div className="hidden md:flex items-center bg-[#121829] p-1 rounded-xl border border-[#232d47]">
-            <button
-              onClick={() => setEditorMode("timeline")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                editorMode === "timeline" ? "bg-[#5b8dff] text-white shadow-md shadow-[#5b8dff]/20" : "text-[#8d9cc2] hover:text-white"
-              }`}
-            >
-              <Film className="w-3.5 h-3.5" />
-              <span>{isBn ? "টাইমলাইন স্টুডিও" : "Timeline Studio"}</span>
-            </button>
-            <button
-              onClick={() => setEditorMode("wizard")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                editorMode === "wizard" ? "bg-[#5b8dff] text-white shadow-md shadow-[#5b8dff]/20" : "text-[#8d9cc2] hover:text-white"
-              }`}
-            >
-              <SquareStack className="w-3.5 h-3.5" />
-              <span>{isBn ? "কুইক উইজার্ড" : "Quick Wizard"}</span>
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Undo / Redo */}
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => {
-                  const prev = historyRef.current.undo(blueprint);
-                  if (prev) {
-                    setBlueprint(prev);
-                    toast(isBn ? "আনডু করা হয়েছে" : "Undo applied");
-                  }
-                }}
-                disabled={!historyRef.current.canUndo}
-                className="p-2 rounded-lg bg-[#151b2e] border border-[#232d47] text-[#cbd5e1] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
-                title="Undo"
-              >
-                <Undo2 className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => {
-                  const next = historyRef.current.redo(blueprint);
-                  if (next) {
-                    setBlueprint(next);
-                    toast(isBn ? "রিডু করা হয়েছে" : "Redo applied");
-                  }
-                }}
-                disabled={!historyRef.current.canRedo}
-                className="p-2 rounded-lg bg-[#151b2e] border border-[#232d47] text-[#cbd5e1] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
-                title="Redo"
-              >
-                <Redo2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* Assets button */}
-            <button
-              onClick={() => setIsAssetPanelOpen(!isAssetPanelOpen)}
-              className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
-                isAssetPanelOpen ? "bg-[#38bdf8]/20 border-[#38bdf8] text-[#38bdf8]" : "bg-[#151b2e] border-[#232d47] text-[#cbd5e1] hover:text-white"
-              }`}
-            >
-              <FolderKanban className="w-3.5 h-3.5" />
-              <span>{isBn ? "অ্যাসেট" : "Assets"}</span>
-            </button>
-
-            {/* Blueprint JSON button */}
-            <button
-              onClick={() => setIsBlueprintModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#151b2e] border border-[#2e3a5c] hover:border-[#38bdf8] text-[#38bdf8] text-xs font-bold transition cursor-pointer"
-            >
-              <FileCode2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{isBn ? "ব্লুপ্রিন্ট JSON" : "Blueprint JSON"}</span>
-            </button>
-
-            {/* Render & Download */}
-            <button
-              onClick={() => {
-                if (editorMode === "timeline") {
-                  handleExportFastVideo();
-                } else {
-                  setActiveTab("export");
-                  handleExport();
-                }
-              }}
-              disabled={isExporting}
-              className="inline-flex items-center gap-1.5 text-xs font-black px-4 py-2 rounded-full bg-gradient-to-br from-[#22d3ee] to-[#0ea5e9] text-[#051018] shadow-lg shadow-[#22d3ee]/20 hover:brightness-110 transition cursor-pointer disabled:opacity-50"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>{isExporting ? `${exportProgress}%` : isBn ? "রেন্ডার ও ডাউনলোড" : "Render & Download"}</span>
-            </button>
-
-            <button
-              onClick={() => setLang((v) => (v === "bn" ? "en" : "bn"))}
-              className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-full bg-white text-[#0d1120] hover:bg-[#e9eefb] transition cursor-pointer"
-            >
-              <Languages className="w-3.5 h-3.5" /> {lang === "bn" ? "BN" : "EN"}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Hidden Audio Element for Authoritative Playback Sync */}
-      <audio
-        ref={audioRef}
-        src={audioUrl}
-        onTimeUpdate={(e) => {
-          if (isPlaying) {
-            setCurrentTime(e.currentTarget.currentTime);
-          }
-        }}
-        onEnded={() => setIsPlaying(false)}
+      {/* Hidden Audio File Input */}
+      <input
+        ref={audioInputRef}
+        type="file"
+        accept="audio/*"
+        onChange={handleAudioFileChange}
         className="hidden"
       />
 
-      {/* Main Studio View */}
-      {editorMode === "timeline" ? (
-        <div className="flex-1 w-full flex flex-col min-h-0 bg-[#04060b]">
-          <div className="flex-1 flex min-h-0 overflow-hidden">
-            {/* Left: Asset Panel (collapsible) */}
-            {isAssetPanelOpen && (
-              <AssetPanel
-                onInsertAsset={(asset) => {
-                  if (selectedScene) {
-                    if (asset.type === "background") {
-                      handleUpdateScene({
-                        ...selectedScene,
-                        background: { ...(selectedScene.background || {}), assetId: asset.id },
-                      });
-                      toast(isBn ? `ব্যাকগ্রাউন্ড পরিবর্তন: ${asset.name || asset.id}` : `Background changed: ${asset.name || asset.id}`);
-                    } else if (asset.type === "character") {
-                      const chars = selectedScene.characters ? [...selectedScene.characters] : [];
-                      chars.push({ id: asset.id, action: "idle", emotion: "neutral", scale: 1.0 });
-                      handleUpdateScene({ ...selectedScene, characters: chars });
-                      toast(isBn ? `চরিত্র যুক্ত হলো: ${asset.name || asset.id}` : `Character added: ${asset.name || asset.id}`);
-                    } else if (asset.type === "object") {
-                      const objs = selectedScene.objects ? [...selectedScene.objects] : [];
-                      objs.push({ id: `obj_${Date.now()}`, assetId: asset.id, position: { x: 0.5, y: 0.5 }, scale: 1.0 });
-                      handleUpdateScene({ ...selectedScene, objects: objs });
-                      toast(isBn ? `অবজেক্ট যুক্ত হলো: ${asset.name || asset.id}` : `Object added: ${asset.name || asset.id}`);
-                    }
-                  }
-                }}
-                onCustomImageUpload={(id) => {
-                  toast(isBn ? `ছবি আপলোড হলো: ${id}` : `Custom image registered: ${id}`);
-                }}
-              />
-            )}
+      {/* 1. TOP TOOLBAR */}
+      <TopToolbar
+        projectTitle={blueprint.project.title || "Untitled Video"}
+        onOpenProjectModal={() => setIsProjectModalOpen(true)}
+        onImportAudioClick={() => audioInputRef.current?.click()}
+        onImportJsonClick={() => setIsBlueprintModalOpen(true)}
+        onSave={() => {
+          localStorage.setItem("cutfree_blueprint_saved", JSON.stringify(blueprint));
+        }}
+        canUndo={historyRef.current.canUndo()}
+        canRedo={historyRef.current.canRedo()}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        isPlaying={isPlaying}
+        onTogglePlay={togglePlay}
+        onOpenExportModal={() => setIsExportModalOpen(true)}
+        onOpenSettingsModal={() => setIsProjectModalOpen(true)}
+      />
 
-            {/* Center: Video Preview Stage */}
-            <main className="flex-1 flex flex-col items-center justify-center p-3 md:p-6 bg-gradient-to-br from-[#04060b] via-[#070a14] to-[#0b0f1e] overflow-hidden relative min-h-0">
-              <div
-                className="relative w-full max-w-[960px] max-h-[calc(100vh-340px)] rounded-2xl overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.06)] bg-black flex items-center justify-center"
-                style={{
-                  aspectRatio: blueprint.project.aspectRatio === "9:16" ? "9/16" : "16/9",
-                }}
-              >
-                <canvas ref={canvasRef} className="w-full h-full object-contain block" />
+      {/* 2. MAIN WORKSPACE (LeftNav + AssetPanel + Video Preview + Inspector) */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Left Navigation Rail */}
+        <LeftNav
+          activeTab={leftNavTab}
+          onSelectTab={(tab) => {
+            setLeftNavTab(tab);
+            setIsAssetPanelOpen(true);
+          }}
+          assetCount={blueprint.assets?.length || 4}
+        />
 
-                {/* Badge */}
-                <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/65 backdrop-blur-xl border border-white/10 rounded-full px-3 py-1 text-[11px] font-bold text-white z-20">
-                  <span className={`w-2 h-2 rounded-full ${isPlaying ? "bg-emerald-400 animate-pulse" : "bg-[#5b8dff]"}`} />
-                  <span>{isPlaying ? (isBn ? "প্লে হচ্ছে" : "Playing") : (isBn ? "প্রিভিউ" : "Preview")}</span>
-                  <span>•</span>
-                  <span>{blueprint.project.width}×{blueprint.project.height}</span>
-                  <span>•</span>
-                  <span>{fmtTime(currentTime)} / {fmtTime(blueprint.timeline.duration)}</span>
-                  {blueprint.project.aspectRatio === "9:16" && (
-                    <span className="px-1.5 py-0.5 rounded-full bg-[#7c5cff] text-white text-[9px] font-black">9:16</span>
-                  )}
-                </div>
-
-                {/* Watermark preview */}
-                {blueprint.project.watermark && (
-                  <div className="absolute bottom-3 right-3 text-[11px] font-semibold text-white/70 bg-black/30 backdrop-blur px-2.5 py-1 rounded-full border border-white/10 z-20">
-                    {blueprint.project.watermark}
-                  </div>
-                )}
-
-                {/* Play overlay when paused at start */}
-                {!isPlaying && currentTime < 0.05 && (
-                  <button
-                    onClick={() => setIsPlaying(true)}
-                    className="absolute inset-0 grid place-items-center bg-black/20 backdrop-blur-[1px] group cursor-pointer z-10"
-                  >
-                    <span className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-white text-[#0d1120] grid place-items-center shadow-2xl group-hover:scale-105 transition">
-                      <Play className="w-7 h-7 md:w-8 md:h-8 ml-0.5" />
-                    </span>
-                  </button>
-                )}
-              </div>
-            </main>
-
-            {/* Right: Inspector */}
-            <Inspector
-              scene={selectedScene}
-              onUpdateScene={handleUpdateScene}
-              onDeleteScene={handleDeleteScene}
-            />
-          </div>
-
-          {/* Bottom: Multi-Track Timeline */}
-          <TimelineTrackView
-            blueprint={blueprint}
-            currentTime={currentTime}
-            duration={blueprint.timeline.duration}
-            isPlaying={isPlaying}
-            onSeek={handleSeek}
-            onTogglePlay={() => setIsPlaying(!isPlaying)}
-            onSelectScene={(id) => setSelectedSceneId(id)}
-            selectedSceneId={selectedSceneId}
+        {/* Assets Library Panel */}
+        {isAssetPanelOpen && (
+          <AssetPanel
+            onInsertAsset={handleInsertAsset}
+            onCustomImageUpload={handleCustomImageUpload}
+            activeNavTab={leftNavTab}
           />
-        </div>
-      ) : (
-        /* Wizard Mode */
-        <div className="flex-1 mx-auto max-w-[1600px] w-full flex flex-col lg:flex-row min-h-0">
-          <aside className="w-full lg:w-[380px] xl:w-[400px] lg:shrink-0 bg-[#0d1120] lg:border-r border-[#232d47] flex flex-col lg:h-[calc(100vh-56px)] lg:sticky lg:top-[56px] lg:overflow-hidden">
-          {/* Clean 4-Tab Navigation */}
-          <div className="grid grid-cols-4 p-1.5 gap-1 bg-[#0b0f1a] border-b border-[#1e2740] shrink-0">
-            <button
-              onClick={() => setActiveTab("script")}
-              className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2.5 rounded-xl font-bold text-[12px] transition ${
-                activeTab === "script" ? "bg-[#5b8dff] text-white shadow-md shadow-[#5b8dff]/25" : "text-[#8d9cc2] hover:bg-[#151b2e] hover:text-white"
-              }`}
-            >
-              <Type className="w-4 h-4" /> <span>{isBn ? "স্ক্রিপ্ট" : "Script"}</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("audio")}
-              className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2.5 rounded-xl font-bold text-[12px] transition relative ${
-                activeTab === "audio" ? "bg-[#5b8dff] text-white shadow-md shadow-[#5b8dff]/25" : "text-[#8d9cc2] hover:bg-[#151b2e] hover:text-white"
-              }`}
-            >
-              <Mic2 className="w-4 h-4" /> <span>{isBn ? "ভয়েস" : "Audio"}</span>
-              {(voiceFile || customTimeline || customSegments) && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-400" />}
-            </button>
-            <button
-              onClick={() => setActiveTab("design")}
-              className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2.5 rounded-xl font-bold text-[12px] transition relative ${
-                activeTab === "design" ? "bg-[#5b8dff] text-white shadow-md shadow-[#5b8dff]/25" : "text-[#8d9cc2] hover:bg-[#151b2e] hover:text-white"
-              }`}
-            >
-              <Palette className="w-4 h-4" /> <span>{isBn ? "ডিজাইন" : "Design"}</span>
-              {bgImage && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-400" />}
-            </button>
-            <button
-              onClick={() => setActiveTab("export")}
-              className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2.5 rounded-xl font-bold text-[12px] transition relative ${
-                activeTab === "export" ? "bg-[#22d3ee] text-[#051018] font-black shadow-md shadow-[#22d3ee]/25" : "text-[#8d9cc2] hover:bg-[#151b2e] hover:text-white"
-              }`}
-            >
-              <Download className="w-4 h-4" /> <span>{isBn ? "ডাউনলোড" : "Export"}</span>
-              {exportedVideo && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-400" />}
-            </button>
-          </div>
+        )}
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[#26314e] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full">
-            {/* TAB 1: SCRIPT */}
-            {activeTab === "script" && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-[12px] font-black text-white flex items-center gap-1.5">
-                    <Type className="w-4 h-4 text-[#5b8dff]" /> {isBn ? "ভিডিওর স্ক্রিপ্ট লিখুন" : "Video Script"}
-                  </span>
-                  <span className="font-semibold text-[#5b8dff] bg-[#1a2440] px-2.5 py-1 rounded-full border border-[#2a365c] text-[11px]">
-                    {totalStats.words} {isBn ? "শব্দ" : "words"} • ~{totalStats.estMin} {isBn ? "মিনিট" : "min"}
-                  </span>
-                </div>
+        {/* Video Preview (Dominating Center) */}
+        <PreviewPlayer
+          blueprint={blueprint}
+          currentTime={currentTime}
+          duration={duration}
+          isPlaying={isPlaying}
+          onSeek={handleSeek}
+          onTogglePlay={togglePlay}
+          aspect={aspect}
+          onChangeAspect={(a) => {
+            setAspect(a);
+            commitBlueprint({
+              ...blueprint,
+              project: {
+                ...blueprint.project,
+                aspectRatio: a,
+              },
+            });
+          }}
+          onNextScene={handleNextScene}
+          onPrevScene={handlePrevScene}
+        />
 
-                <div className="text-[11px] text-[#8d9cc2] bg-[#0b0f1e] p-2.5 rounded-xl border border-[#1e2740] leading-relaxed">
-                  💡 {isBn ? "প্রতি লাইন বা প্যারাগ্রাফ = ১টি দৃশ্য। আপনার গল্প বা স্ক্রিপ্ট এখানে পেস্ট করুন।" : "Each line or paragraph = 1 scene. Paste your story or script here."}
-                </div>
-
-                <textarea
-                  value={script}
-                  onChange={(e) => setScript(e.target.value)}
-                  spellCheck={false}
-                  placeholder={isBn ? "এখানে আপনার স্ক্রিপ্ট লিখুন বা পেস্ট করুন...\n\nযেমন:\nবন্ধ দরজার ওপাশে কী ছিল?\nএকটি ছোট্ট শহর।\nসেখানে থাকত এক যুবক..." : "Write or paste your script here..."}
-                  className="w-full min-h-[300px] bg-[#151b2e] border border-[#232d47] focus:border-[#5b8dff] focus:ring-2 focus:ring-[#5b8dff]/20 rounded-xl p-3.5 text-[13.5px] leading-relaxed placeholder:text-[#5a6a9a] outline-none resize-y"
-                />
-
-                <div className="flex items-center justify-between gap-2">
-                  <button
-                    onClick={() => setScript(DEMO_SCRIPT_BN)}
-                    className="flex-1 py-2 rounded-xl bg-[#151b2e] border border-[#232d47] text-[#cbd5e1] font-bold text-[11.5px] hover:border-[#5b8dff] transition"
-                  >
-                    📝 {isBn ? "নমুনা গল্প লোড করুন" : "Load sample script"}
-                  </button>
-                  <button
-                    onClick={() => setScript("")}
-                    className="py-2 px-3 rounded-xl bg-[#151b2e] border border-[#232d47] text-[#fca5a5] font-bold text-[11.5px] hover:border-[#ef4444] transition"
-                  >
-                    🗑️ {isBn ? "মুছে ফেলুন" : "Clear"}
-                  </button>
-                </div>
-
-                {/* Optional AI helper */}
-                <div className="p-3 rounded-xl bg-[#0f1124] border border-[#232d47] space-y-2">
-                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#c4b5fd]">
-                    <Sparkles className="w-3.5 h-3.5" /> {isBn ? "AI দিয়ে স্ক্রিপ্ট বানাতে চান?" : "Want AI to write script?"}
-                  </div>
-                  <div className="flex gap-1.5">
-                    <input
-                      value={topic}
-                      onChange={(e) => setTopic(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleAiGenerate()}
-                      placeholder={isBn ? "বিষয় লিখুন (যেমন: সততার গল্প...)" : "Topic..."}
-                      className="flex-1 bg-[#151b2e] border border-[#2e1065] rounded-lg px-2.5 py-1.5 text-[12px] outline-none"
-                    />
-                    <button
-                      onClick={handleAiGenerate}
-                      disabled={isGenerating}
-                      className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#7c5cff] to-[#5b8dff] text-white font-bold text-[11.5px] disabled:opacity-50"
-                    >
-                      {isGenerating ? "..." : isBn ? "বানাও" : "Generate"}
-                    </button>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => {
-                    handleAutoVideo();
-                    toast(isBn ? "প্রিভিউ রিফ্রেশ করা হয়েছে" : "Preview refreshed");
-                  }}
-                  className="w-full py-3 rounded-xl bg-gradient-to-br from-[#5b8dff] to-[#22d3ee] text-white font-black text-[13px] shadow-lg shadow-[#5b8dff]/25 hover:brightness-110 transition flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Film className="w-4 h-4" /> {isBn ? "ভিডিও প্রিভিউ আপডেট করুন" : "Update Video Preview"}
-                </button>
-
-                <button
-                  onClick={() => setActiveTab("audio")}
-                  className="w-full py-2.5 rounded-xl bg-[#151b2e] border border-[#2a365c] text-[#cbd5e1] hover:border-[#5b8dff] hover:text-white font-bold text-[12px] transition flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <span>{isBn ? "পরবর্তী ধাপ: ভয়েস / অডিও যুক্ত করুন" : "Next: Add Voice Audio"}</span> ➔
-                </button>
-              </div>
-            )}
-
-            {/* TAB 2: AUDIO */}
-            {activeTab === "audio" && (
-              <div className="space-y-4">
-                <input ref={voiceInputRef} type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a" className="hidden" onChange={(e) => handleVoiceSelect(e.target.files?.[0] || null)} />
-                <input ref={timelineInputRef} type="file" accept=".json,application/json" className="hidden" onChange={(e) => handleTimelineSelect(e.target.files?.[0] || null)} />
-
-                {/* Voice Upload */}
-                <div className="p-4 rounded-xl bg-[#0f1124] border border-[#232d47] space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[12px] font-extrabold text-white flex items-center gap-1.5">
-                      <Mic2 className="w-4 h-4 text-[#2dd4bf]" /> {isBn ? "১ · ভয়েস রেকর্ড / অডিও ফাইল" : "1 · Voice Audio File"}
-                    </span>
-                    {voiceFile && <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-500 text-white">READY</span>}
-                  </div>
-
-                  {voiceFile ? (
-                    <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="font-bold text-white text-[12px] truncate">🎙️ {voiceName}</div>
-                        <div className="text-[10px] text-[#86efac]">
-                          {vadResult ? `${vadResult.speechTime.toFixed(1)}s speech • ${vadResult.phrases.length} slots` : isBn ? "ভয়েস লোড হয়েছে" : "Audio loaded"}
-                        </div>
-                      </div>
-                      <button onClick={clearVoice} className="px-2.5 py-1 rounded-lg bg-[#ef4444]/20 text-[#fca5a5] text-[11px] font-bold hover:bg-[#ef4444]/30">
-                        {isBn ? "মুছুন" : "Remove"}
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => voiceInputRef.current?.click()}
-                      className="w-full py-5 rounded-xl border-2 border-dashed border-[#2a365c] bg-[#151b2e]/50 hover:border-[#2dd4bf] hover:bg-[#151b2e] transition flex flex-col items-center gap-2 cursor-pointer group"
-                    >
-                      <Upload className="w-6 h-6 text-[#2dd4bf] group-hover:scale-110 transition" />
-                      <div className="font-bold text-[12px] text-white">{isBn ? "ভয়েস ফাইল বাছাই করুন (MP3 / WAV)" : "Upload Voice File (MP3 / WAV)"}</div>
-                      <div className="text-[10px] text-[#8d9cc2]">{isBn ? "আপনার কণ্ঠের অডিও দিলে কথা অনুযায়ী টেক্সট সিঙ্ক হবে" : "Voice syncs kinetic typography"}</div>
-                    </button>
-                  )}
-                </div>
-
-                {/* Timeline JSON Upload */}
-                <div className="p-4 rounded-xl bg-[#0f1124] border border-[#232d47] space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[12px] font-extrabold text-white flex items-center gap-1.5">
-                      <FileAudio className="w-4 h-4 text-[#fbbf24]" /> {isBn ? "২ · টাইমলাইন JSON (ঐচ্ছিক)" : "2 · Timeline JSON (Optional)"}
-                    </span>
-                    {(customTimeline || customSegments) && <span className="text-[10px] font-black px-2 py-0.5 rounded bg-[#fbbf24] text-[#1a1300]">LOADED</span>}
-                  </div>
-
-                  {(customTimeline || customSegments) ? (
-                    <div className="p-3 rounded-xl bg-[#fbbf24]/15 border border-[#fbbf24]/40 flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="font-bold text-white text-[12px] truncate">📋 {timelineFileName || "timeline.json"}</div>
-                        <div className="text-[10px] text-[#fde68a]">
-                          {customSegments ? `${customSegments.length} ${isBn ? "সেগমেন্ট সিঙ্কড" : "segments synced"}` : `${customTimeline?.length} ${isBn ? "শব্দ সিঙ্কড" : "words synced"}`}
-                        </div>
-                      </div>
-                      <button onClick={clearTimeline} className="px-2.5 py-1 rounded-lg bg-[#ef4444]/20 text-[#fca5a5] text-[11px] font-bold hover:bg-[#ef4444]/30">
-                        {isBn ? "মুছুন" : "Remove"}
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => timelineInputRef.current?.click()}
-                      className="w-full py-4 rounded-xl border-2 border-dashed border-[#2a365c] bg-[#151b2e]/50 hover:border-[#fbbf24] hover:bg-[#151b2e] transition flex flex-col items-center gap-1.5 cursor-pointer group"
-                    >
-                      <FileAudio className="w-5 h-5 text-[#fbbf24] group-hover:scale-110 transition" />
-                      <div className="font-bold text-[12px] text-white">{isBn ? "টাইমলাইন JSON ফাইল আপলোড" : "Upload Timeline JSON"}</div>
-                      <div className="text-[10px] text-[#8d9cc2]">{isBn ? "সেকেন্ড অনুযায়ী হুবহু প্রতিটি লাইন সিঙ্ক করতে" : "For millisecond-exact word sync"}</div>
-                    </button>
-                  )}
-                </div>
-
-                {/* Narration Speed */}
-                <div className="p-3.5 rounded-xl bg-[#0f1124] border border-[#232d47] space-y-2">
-                  <div className="flex items-center justify-between text-[11.5px] font-bold text-white">
-                    <span className="flex items-center gap-1.5"><Timer className="w-3.5 h-3.5 text-[#5b8dff]" /> {isBn ? "কথার গতি" : "Speech Speed"}</span>
-                    <span className="text-[#5b8dff]">{wpm} WPM</span>
-                  </div>
-                  <input type="range" min={90} max={220} value={wpm} onChange={(e) => setWpm(parseInt(e.target.value))} className="w-full accent-[#5b8dff] h-1.5 cursor-pointer" />
-                </div>
-
-                <button
-                  onClick={() => setActiveTab("design")}
-                  className="w-full py-2.5 rounded-xl bg-[#151b2e] border border-[#2a365c] text-[#cbd5e1] hover:border-[#5b8dff] hover:text-white font-bold text-[12px] transition flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <span>{isBn ? "পরবর্তী ধাপ: ফরম্যাট ও ব্যাকগ্রাউন্ড ডিজাইন" : "Next: Design & Format"}</span> ➔
-                </button>
-              </div>
-            )}
-
-            {/* TAB 3: DESIGN */}
-            {activeTab === "design" && (
-              <div className="space-y-4">
-                <input ref={bgInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleBgSelect(e.target.files?.[0] || null)} />
-
-                {/* Aspect Ratio */}
-                <div className="p-3.5 rounded-xl bg-[#0f1124] border border-[#232d47] space-y-2.5">
-                  <label className="text-[11px] font-extrabold uppercase tracking-wider text-[#8d9cc2] block">
-                    {isBn ? "ভিডিও ফরম্যাট / রেশিও" : "Format / Aspect Ratio"}
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => { setShortsMode(false); setAspect("16:9"); }}
-                      className={`py-3 px-3 rounded-xl border font-bold text-[12px] flex items-center justify-center gap-2 transition ${
-                        !shortsMode ? "bg-[#5b8dff] text-white border-[#5b8dff] shadow-md shadow-[#5b8dff]/25" : "bg-[#151b2e] border-[#232d47] text-[#8d9cc2] hover:text-white"
-                      }`}
-                    >
-                      <Monitor className="w-4 h-4" /> <span>YouTube (16:9)</span>
-                    </button>
-                    <button
-                      onClick={() => { setShortsMode(true); setAspect("9:16"); }}
-                      className={`py-3 px-3 rounded-xl border font-bold text-[12px] flex items-center justify-center gap-2 transition ${
-                        shortsMode ? "bg-[#5b8dff] text-white border-[#5b8dff] shadow-md shadow-[#5b8dff]/25" : "bg-[#151b2e] border-[#232d47] text-[#8d9cc2] hover:text-white"
-                      }`}
-                    >
-                      <Smartphone className="w-4 h-4" /> <span>Shorts / Reels (9:16)</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Background Image */}
-                <div className="p-3.5 rounded-xl bg-[#0f1124] border border-[#232d47] space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-extrabold uppercase tracking-wider text-[#8d9cc2] flex items-center gap-1.5">
-                      <ImageIcon className="w-3.5 h-3.5" /> {isBn ? "ব্যাকগ্রাউন্ড ছবি" : "Background Image"}
-                    </label>
-                    {bgImage && <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-500 text-white">ACTIVE</span>}
-                  </div>
-
-                  {bgImage ? (
-                    <div className="p-3 rounded-xl bg-[#151b2e] border border-[#232d47] flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <img src={bgImage.src} alt="" className="w-10 h-10 rounded-lg object-cover border border-white/20 shrink-0" />
-                        <span className="text-[12px] font-bold text-white truncate">{bgName}</span>
-                      </div>
-                      <button onClick={clearBg} className="px-2.5 py-1 rounded-lg bg-[#ef4444]/20 text-[#fca5a5] text-[11px] font-bold hover:bg-[#ef4444]/30">
-                        {isBn ? "মুছুন" : "Remove"}
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => bgInputRef.current?.click()}
-                      className="w-full py-4 rounded-xl border-2 border-dashed border-[#2a365c] bg-[#151b2e]/50 hover:border-[#5b8dff] hover:bg-[#151b2e] transition flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <Upload className="w-4 h-4 text-[#5b8dff]" />
-                      <span className="text-[12px] font-bold text-white">{isBn ? "🖼️ নিজের ছবি যুক্ত করুন" : "Upload Image"}</span>
-                    </button>
-                  )}
-                </div>
-
-                {/* Theme presets */}
-                <div className="p-3.5 rounded-xl bg-[#0f1124] border border-[#232d47] space-y-2.5">
-                  <label className="text-[11px] font-extrabold uppercase tracking-wider text-[#8d9cc2] block">
-                    {isBn ? "থিম ও কালার" : "Color Theme"}
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { k: "aurora", name: isBn ? "🌌 অরোরা (ডার্ক ব্লু)" : "Aurora", color: "from-[#0a1530] to-[#1a103c]" },
-                      { k: "sunset", name: isBn ? "🌆 সানসেট (ওয়ার্ম)" : "Sunset", color: "from-[#2a1020] to-[#120a20]" },
-                      { k: "cyber", name: isBn ? "⚡ সাইবার (নিওন)" : "Cyber", color: "from-[#081f20] to-[#041018]" },
-                      { k: "midnight", name: isBn ? "🌑 মিডনাইট (ব্ল্যাক)" : "Midnight", color: "from-[#05060a] to-[#0d0f18]" }
-                    ].map((th) => (
-                      <button
-                        key={th.k}
-                        onClick={() => setTheme(th.k as ThemeKey)}
-                        className={`p-2.5 rounded-xl border-2 transition text-left bg-gradient-to-br ${th.color} ${
-                          theme === th.k ? "border-[#5b8dff] shadow-md shadow-[#5b8dff]/20" : "border-[#232d47] hover:border-[#3a4a75]"
-                        }`}
-                      >
-                        <div className="text-[11.5px] font-black text-white">{th.name}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Watermark */}
-                <div className="p-3.5 rounded-xl bg-[#0f1124] border border-[#232d47] space-y-2">
-                  <label className="text-[11px] font-extrabold uppercase tracking-wider text-[#8d9cc2] block">
-                    {isBn ? "চ্যানেল নাম / ওয়াটারমার্ক (ঐচ্ছিক)" : "Channel / Watermark (Optional)"}
-                  </label>
-                  <input
-                    type="text"
-                    value={watermark}
-                    onChange={(e) => setWatermark(e.target.value)}
-                    placeholder="@IslamicVoiceBengali"
-                    className="w-full bg-[#151b2e] border border-[#232d47] rounded-xl px-3 py-2 text-[12.5px] text-white outline-none focus:border-[#5b8dff]"
-                  />
-                </div>
-
-                <button
-                  onClick={() => setActiveTab("export")}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#22d3ee] to-[#0ea5e9] text-[#051018] font-black text-[13px] shadow-lg shadow-[#22d3ee]/25 hover:brightness-110 transition flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>{isBn ? "ভিডিও ডাউনলোড পেজে যান" : "Proceed to Download Video"}</span> ➔
-                </button>
-              </div>
-            )}
-
-            {/* TAB 4: EXPORT & DOWNLOAD */}
-            {activeTab === "export" && (
-              <div id="export-section" className="space-y-4">
-                <div className="rounded-2xl bg-gradient-to-br from-[#0f172a] to-[#0f1a2e] border border-[#1e3a5e] p-4 space-y-3.5">
-                  <div className="text-[12px] font-extrabold text-white flex items-center gap-2">
-                    <Video className="w-4 h-4 text-[#22d3ee]" /> {isBn ? "ভিডিও ডাউনলোড ও পাবলিশ" : "Export & Publish"}
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="bg-[#0b1220] rounded-xl p-2.5 border border-[#1e3a5e]">
-                      <div className="text-[10px] font-bold text-[#8d9cc2]">{isBn ? "ফরম্যাট" : "Ratio"}</div>
-                      <div className="text-[12px] font-black text-white mt-0.5">{shortsMode ? "9:16" : "16:9"}</div>
-                    </div>
-                    <div className="bg-[#0b1220] rounded-xl p-2.5 border border-[#1e3a5e]">
-                      <div className="text-[10px] font-bold text-[#8d9cc2]">{isBn ? "দৈর্ঘ্য" : "Duration"}</div>
-                      <div className="text-[12px] font-black text-white mt-0.5">{fmtTime(duration)}</div>
-                    </div>
-                    <div className="bg-[#0b1220] rounded-xl p-2.5 border border-[#1e3a5e]">
-                      <div className="text-[10px] font-bold text-[#8d9cc2]">{isBn ? "রেজোলিউশন" : "Resolution"}</div>
-                      <div className="text-[12px] font-black text-white mt-0.5">{spec?.width}×{spec?.height}</div>
-                    </div>
-                  </div>
-
-                  {isExporting ? (
-                    <div className="space-y-3 p-4 rounded-xl bg-[#0b1220] border border-[#22d3ee]/40">
-                      <div className="flex items-center justify-between text-[13px] font-extrabold text-white">
-                        <span className="flex items-center gap-2">
-                          <Loader2 className="w-4 h-4 text-[#22d3ee] animate-spin" />
-                          {exportStage || (isBn ? "ভিডিও তৈরি হচ্ছে..." : "Rendering video...")}
-                        </span>
-                        <span className="text-[#22d3ee] font-black text-[15px]">{exportProgress}%</span>
-                      </div>
-                      <div className="w-full bg-[#151b2e] rounded-full h-3 overflow-hidden border border-[#232d47]">
-                        <div
-                          className="bg-gradient-to-r from-[#22d3ee] via-[#38bdf8] to-[#0ea5e9] h-3 rounded-full transition-all duration-200"
-                          style={{ width: `${exportProgress}%` }}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-[#8d9cc2]">
-                          {isBn ? "ট্যাব বন্ধ করবেন না, এনকোডিং শেষ হলে অটো ডাউনলোড হবে।" : "Keep this tab open, download starts on finish."}
-                        </span>
-                        <button
-                          onClick={cancelExport}
-                          className="px-3 py-1 rounded-lg bg-[#ef4444]/20 border border-[#ef4444]/40 text-[#fca5a5] text-[11px] font-bold hover:bg-[#ef4444]/30 transition"
-                        >
-                          {isBn ? "বাতিল" : "Cancel"}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={handleExport}
-                      className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-gradient-to-br from-[#22d3ee] to-[#0ea5e9] text-[#051018] font-black text-[14.5px] shadow-lg shadow-[#22d3ee]/25 hover:brightness-110 active:scale-[0.99] transition cursor-pointer"
-                    >
-                      <Download className="w-5 h-5" /> {isBn ? "⚡ ভিডিও রেন্ডার & ডাউনলোড করুন" : "⚡ Fast Render & Download"}
-                    </button>
-                  )}
-
-                  {exportedVideo && (
-                    <div className="mt-3 p-4 rounded-xl bg-[#22c55e]/15 border-2 border-[#22c55e]/50 text-white shadow-xl shadow-[#22c55e]/10">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <div className="flex items-center gap-2">
-                          <Check className="w-5 h-5 text-[#22c55e]" />
-                          <span className="font-black text-[14px] text-[#86efac]">
-                            {isBn ? "ভিডিও ডাউনলোড প্রস্তুত!" : "Video Ready for Download!"}
-                          </span>
-                        </div>
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-[#22c55e]/25 text-[#86efac]">
-                          {exportedVideo.size}
-                        </span>
-                      </div>
-
-                      <a
-                        href={exportedVideo.url}
-                        download={exportedVideo.name}
-                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-[#22c55e] to-[#16a34a] text-black font-black text-[14px] hover:brightness-110 shadow-lg shadow-[#22c55e]/25 transition cursor-pointer mb-2"
-                      >
-                        <Download className="w-5 h-5" />
-                        {isBn ? `⬇️ ভিডিও ডাউনলোড করুন (${exportedVideo.name})` : `⬇️ Download Video (${exportedVideo.name})`}
-                      </a>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        {exportedVideo.srtUrl && (
-                          <a
-                            href={exportedVideo.srtUrl}
-                            download={exportedVideo.srtName}
-                            className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-[#151b2e] border border-[#232d47] text-[#86efac] font-bold text-[11px] hover:border-[#22c55e] transition"
-                          >
-                            <Type className="w-3.5 h-3.5" />
-                            {isBn ? "📄 SRT সাবটাইটেল" : "📄 SRT Subtitles"}
-                          </a>
-                        )}
-                        {exportedVideo.thumbUrl && (
-                          <a
-                            href={exportedVideo.thumbUrl}
-                            download={exportedVideo.thumbName}
-                            className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-[#151b2e] border border-[#232d47] text-[#86efac] font-bold text-[11px] hover:border-[#22c55e] transition"
-                          >
-                            <Palette className="w-3.5 h-3.5" />
-                            {isBn ? "🖼️ থাম্বনেইল JPG" : "🖼️ Thumbnail JPG"}
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-2 mt-3">
-                    <button
-                      onClick={() => {
-                        if (!spec) return;
-                        const data = {
-                          title: spec.meta.title,
-                          spec,
-                          script,
-                          exportedAt: new Date().toISOString(),
-                        };
-                        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = `cutfree-${Date.now()}.cutfree.json`;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                        toast(isBn ? "প্রজেক্ট JSON সেভ হলো" : "Project JSON saved");
-                      }}
-                      className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#151b2e] border border-[#232d47] text-white font-bold text-[12px] hover:border-[#5b8dff] transition"
-                    >
-                      <SquareStack className="w-4 h-4" /> {isBn ? "প্রজেক্ট সেভ" : "Save project"}
-                    </button>
-                    <button
-                      onClick={() => {
-                        const canvas = canvasRef.current;
-                        if (!canvas) return;
-                        const url = canvas.toDataURL("image/png");
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = "cutfree-thumbnail.png";
-                        a.click();
-                        toast(isBn ? "থাম্বনেইল PNG সেভ হলো" : "Thumbnail saved");
-                      }}
-                      className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#151b2e] border border-[#232d47] text-white font-bold text-[12px] hover:border-[#5b8dff] transition"
-                    >
-                      <Palette className="w-4 h-4" /> {isBn ? "থাম্বনেইল" : "Thumbnail"}
-                    </button>
-                  </div>
-
-                  <div className="mt-3 rounded-xl bg-[#ffb020]/10 border border-[#ffb020]/20 p-3 text-[11px] leading-relaxed text-[#ffd88a]">
-                    {isBn
-                      ? "WebCodecs থাকলে GPU-তে সেকেন্ডে রেন্ডার হবে; না থাকলে MediaRecorder ফলব্যাকে রিয়েল-টাইম রেন্ডার (Chrome/Edge = MP4, Firefox = WebM)।"
-                      : "GPU render in seconds with WebCodecs; otherwise MediaRecorder fallback renders in real-time (Chrome/Edge = MP4, Firefox = WebM)."}
-                  </div>
-                </div>
-
-                <div className="rounded-xl bg-[#0f1124] border border-[#232d47] p-4">
-                  <div className="text-[11px] font-extrabold tracking-widest uppercase text-[#8d9cc2] mb-3 flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5" /> {isBn ? "YouTube পাবলিশ কিট" : "YouTube publish kit"}
-                  </div>
-                  <div className="space-y-2 text-[12px] leading-relaxed">
-                    <div className="bg-[#151b2e] rounded-xl p-3 border border-[#232d47]">
-                      <div className="font-bold text-white truncate">{spec?.meta.title || "—"}</div>
-                      <div className="text-[#8d9cc2] text-[11px] mt-1 line-clamp-2">
-                        {spec?.scenes
-                          .slice(0, 2)
-                          .map((s) => s.title || s.heading || s.body || s.text || "")
-                          .join(" • ")
-                          .slice(0, 160) || (isBn ? "ডেসক্রিপশন অটো-জেনারেট হবে" : "Description auto-generates")}
-                      </div>
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {(spec?.meta.theme ? [spec.meta.theme, spec.meta.mood, spec.meta.aspect] : ["aurora", "uplifting", "16:9"]).map((t) => (
-                          <span key={t} className="px-2 py-1 rounded-full bg-[#1e2a4a] border border-[#2a365c] text-[#8cb4ff] text-[10px] font-bold">
-                            #{String(t).replace(/\s+/g, "")}
-                          </span>
-                        ))}
-                        {shortsMode && <span className="px-2 py-1 rounded-full bg-[#7c5cff] text-white text-[10px] font-black">#Shorts</span>}
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-[11px]">
-                      <div className="bg-[#151b2e] rounded-xl px-3 py-2.5 border border-[#232d47]">
-                        <div className="font-bold text-[#8d9cc2] uppercase tracking-wide text-[10px]">Tags</div>
-                        <div className="text-white font-semibold truncate">video, education, {spec?.meta.theme}</div>
-                      </div>
-                      <div className="bg-[#151b2e] rounded-xl px-3 py-2.5 border border-[#232d47]">
-                        <div className="font-bold text-[#8d9cc2] uppercase tracking-wide text-[10px]">Chapters</div>
-                        <div className="text-white font-semibold">{spec?.scenes.length || 0} • 0:00 start</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-dashed border-[#2a365c] bg-[#0f1124]/50 p-4 text-center">
-                  <div className="text-[12px] font-bold text-white mb-1">{isBn ? "CLI দিয়ে অটো আপলোড" : "Auto upload via CLI"}</div>
-                  <code className="block text-left text-[11px] bg-[#0b0f1e] border border-[#232d47] rounded-xl px-3 py-2.5 font-mono text-[#cbd5e1] overflow-x-auto">
-                    node tools/yt-upload.mjs upload --dir ./publish
-                  </code>
-                  <div className="text-[11px] text-[#6b7bb0] mt-2">
-                    {isBn ? "YouTube Data API ফ্রি 10k ইউনিট/দিন → ৬টি ভিডিও/দিন" : "YouTube Data API free 10k units/day → 6 videos/day"}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </aside>
-
-        {/* Preview */}
-        <main className="flex-1 min-w-0 flex flex-col bg-[#04060b] lg:h-[calc(100vh-56px)] lg:overflow-hidden">
-          {/* Stage */}
-          <div className="flex-1 relative flex items-center justify-center p-3 md:p-6 bg-gradient-to-br from-[#04060b] via-[#070a14] to-[#0b0f1e] min-h-[360px] lg:min-h-0">
-            {/* canvas wrapper with aspect */}
-            <div className="relative w-full max-w-[960px] mx-auto">
-              <div className="relative rounded-2xl overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.06)] bg-black">
-                <canvas ref={canvasRef} className="w-full h-auto block" style={{ aspectRatio: spec ? `${spec.width}/${spec.height}` : "16/9" }} />
-                {/* badge */}
-                <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/55 backdrop-blur-xl border border-white/10 rounded-full px-3 py-1.5 text-[11px] font-bold text-white">
-                  <span className={`w-2 h-2 rounded-full ${isPlaying ? "bg-emerald-400 animate-pulse" : "bg-[#5b8dff]"}`} />
-                  {isPlaying ? (isBn ? "প্লে হচ্ছে" : "Playing") : isBn ? "প্রিভিউ" : "Preview"} • {spec?.width}×{spec?.height} • {fmtTime(currentTime)} / {fmtTime(duration)}
-                  {shortsMode && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-[#7c5cff] text-white text-[10px] font-black">9:16</span>}
-                </div>
-                {/* watermark preview */}
-                {watermark && <div className="absolute bottom-3 right-3 text-[11px] font-semibold text-white/70 bg-black/30 backdrop-blur px-2 py-1 rounded-full border border-white/10">{watermark}</div>}
-                {/* play overlay when paused at 0 */}
-                {!isPlaying && currentTime < 0.05 && (
-                  <button
-                    onClick={() => setIsPlaying(true)}
-                    className="absolute inset-0 grid place-items-center bg-black/20 backdrop-blur-[1px] group"
-                  >
-                    <span className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-white text-[#0d1120] grid place-items-center shadow-2xl group-hover:scale-105 transition">
-                      <Play className="w-7 h-7 md:w-8 md:h-8 ml-0.5" />
-                    </span>
-                  </button>
-                )}
-              </div>
-
-              {/* scene chips directly under canvas on mobile */}
-              <div className="mt-3 flex items-center justify-between text-[11px] text-[#8d9cc2]">
-                <span className="flex items-center gap-1.5">
-                  <Layers3 className="w-3.5 h-3.5" /> {isBn ? `${curSceneIndex + 1} / ${scenes.length} সিন` : `${curSceneIndex + 1} / ${scenes.length} scenes`}
-                  <span className="hidden sm:inline-flex items-center gap-1 ml-2 px-2 py-1 rounded-full bg-[#1a2440] border border-[#2a365c] text-[#8cb4ff] font-bold text-[10px]">
-                    {scenes[curSceneIndex]?.type || "intro"}
-                  </span>
-                </span>
-                <span className="hidden md:inline-flex items-center gap-1.5">
-                  <Clock3 className="w-3.5 h-3.5" /> {fmtTime(currentTime)} / {fmtTime(duration)} • {progressPct.toFixed(1)}%
-                </span>
-              </div>
-            </div>
-
-            {showToast && (
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-[#151b2e] border border-[#2e3a5c] text-white px-4 py-2.5 rounded-full shadow-2xl text-[13px] font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
-                <Check className="w-4 h-4 text-emerald-400" /> {showToast}
-              </div>
-            )}
-          </div>
-
-          {/* Transport */}
-          <div className="border-t border-[#1e293b] bg-[#0d1120] px-3 md:px-4 py-3 flex flex-col gap-3">
-            <div className="flex items-center gap-2 md:gap-3">
-              <button
-                onClick={() => setIsPlaying((v) => !v)}
-                className={`w-10 h-10 md:w-11 md:h-11 rounded-full grid place-items-center shrink-0 shadow-lg transition ${isPlaying ? "bg-[#1e293b] border border-[#334155] text-white" : "bg-gradient-to-br from-[#5b8dff] to-[#7c5cff] text-white shadow-[#5b8dff]/20"}`}
-              >
-                {isPlaying ? <Pause className="w-4 h-4 md:w-5 md:h-5" /> : <Play className="w-4 h-4 md:w-5 md:h-5 ml-0.5" />}
-              </button>
-
-              <button
-                onClick={() => {
-                  setCurrentTime(0);
-                  setIsPlaying(false);
-                }}
-                className="w-9 h-9 rounded-full bg-[#151b2e] border border-[#232d47] grid place-items-center text-[#8d9cc2] hover:text-white hover:border-[#5b8dff] transition shrink-0"
-                title={isBn ? "শুরুতে" : "Restart"}
-              >
-                <RotateCcw className="w-4 h-4" />
-              </button>
-
-              <div className="flex-1 min-w-0">
-                <div
-                  className="relative h-[28px] flex items-center cursor-pointer group"
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const pct = clamp((e.clientX - rect.left) / rect.width, 0, 1);
-                    setCurrentTime(pct * duration);
-                  }}
-                >
-                  <div className="absolute left-0 right-0 h-[6px] bg-[#1a2440] rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-[#5b8dff] to-[#b06cff] rounded-full transition-[width] duration-75" style={{ width: `${progressPct}%` }} />
-                  </div>
-                  <div
-                    className="absolute top-1/2 -translate-y-1/2 w-[16px] h-[16px] rounded-full bg-white shadow-[0_0_0_4px_rgba(91,141,255,0.3)] -translate-x-1/2 transition-[left] duration-75"
-                    style={{ left: `${progressPct}%` }}
-                  />
-                  {/* scene ticks */}
-                  <div className="absolute inset-0 pointer-events-none">
-                    {spec &&
-                      (() => {
-                        let acc = 0;
-                        return spec.scenes.map((s, i) => {
-                          const left = (acc / duration) * 100;
-                          acc += s.dur;
-                          return <span key={i} className="absolute top-1/2 -translate-y-1/2 w-px h-3 bg-white/25 -translate-x-px" style={{ left: `${left}%` }} />;
-                        });
-                      })()}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-[11px] font-medium text-[#6b7bb0] mt-1">
-                  <span className="font-mono text-[#cbd5e1]">{fmtTime(currentTime)}</span>
-                  <span className="hidden sm:block text-[#8d9cc2]">{scenes[curSceneIndex]?.title || scenes[curSceneIndex]?.heading || scenes[curSceneIndex]?.label || scenes[curSceneIndex]?.type}</span>
-                  <span className="font-mono">{fmtTime(duration)}</span>
-                </div>
-              </div>
-
-              <div className="hidden md:flex items-center gap-1.5 shrink-0">
-                <button
-                  onClick={() => setCurrentTime((t) => clamp(t - 2, 0, duration))}
-                  className="px-3 py-2 rounded-full bg-[#151b2e] border border-[#232d47] text-[#cbd5e1] text-[12px] font-bold hover:border-[#5b8dff] transition"
-                >
-                  -2s
-                </button>
-                <button
-                  onClick={() => setCurrentTime((t) => clamp(t + 2, 0, duration))}
-                  className="px-3 py-2 rounded-full bg-[#151b2e] border border-[#232d47] text-[#cbd5e1] text-[12px] font-bold hover:border-[#5b8dff] transition"
-                >
-                  +2s
-                </button>
-              </div>
-            </div>
-
-            {/* Timeline chips */}
-            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-[#26314e] [&::-webkit-scrollbar]:h-1.5">
-              {scenes.map((sc, i) => {
-                const active = i === curSceneIndex;
-                // compute start time
-                let start = 0;
-                for (let k = 0; k < i; k++) start += scenes[k].dur;
-                const typeColor: Record<string, string> = {
-                  intro: "from-[#2b2350] to-[#3a2a6a]",
-                  bullets: "from-[#16324a] to-[#1e4a6a]",
-                  stat: "from-[#3a2a1a] to-[#5a3a1a]",
-                  quote: "from-[#2f1f3a] to-[#4a2f5a]",
-                  text: "from-[#1c2a4d] to-[#2a3a6a]",
-                  broll: "from-[#1c2436] to-[#2a344a]",
-                  outro: "from-[#3a1f2a] to-[#5a2a3a]",
-                };
-                return (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      setCurrentTime(start + 0.05);
-                      setIsPlaying(false);
-                    }}
-                    className={`shrink-0 min-w-[92px] max-w-[160px] text-left px-2.5 py-2 rounded-xl border text-[11px] leading-tight transition bg-gradient-to-br ${typeColor[sc.type] || typeColor.text} ${active ? "border-[#5b8dff] ring-2 ring-[#5b8dff]/30 scale-[1.02]" : "border-white/10 hover:border-white/20"}`}
-                  >
-                    <div className="flex items-center justify-between gap-1 mb-1">
-                      <span className="text-white/60 font-mono text-[10px]">{fmtTime(start)}</span>
-                      <span className="text-white/90 font-black text-[10px] uppercase tracking-wide">{sc.type}</span>
-                    </div>
-                    <div className="text-white font-semibold truncate text-[11px]">{(sc.title || sc.heading || sc.label || sc.text || sc.body || "").slice(0, 28) || "—"}</div>
-                    <div className="text-white/60 text-[10px]">{sc.dur.toFixed(1)}s</div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </main>
+        {/* Dynamic Inspector (Right Panel) */}
+        {isInspectorOpen && (
+          <Inspector
+            scene={selectedScene}
+            captions={blueprint.captions}
+            currentTime={currentTime}
+            onUpdateScene={handleUpdateScene}
+            onDeleteScene={handleDeleteScene}
+            onClose={() => setIsInspectorOpen(false)}
+          />
+        )}
       </div>
-      )}
 
+      {/* 3. MULTI-TRACK TIMELINE (Bottom Area) */}
+      <TimelineTrackView
+        blueprint={blueprint}
+        currentTime={currentTime}
+        duration={duration}
+        isPlaying={isPlaying}
+        onSeek={handleSeek}
+        onTogglePlay={togglePlay}
+        onSelectScene={(id) => setSelectedSceneId(id)}
+        selectedSceneId={selectedSceneId}
+        onSplitScene={handleSplitScene}
+        onDeleteScene={() => selectedScene && handleDeleteScene(selectedScene.id)}
+        onDuplicateScene={handleDuplicateSelectedScene}
+      />
+
+      {/* 4. STATUS BAR (Very bottom, compact 24px) */}
+      <footer className="h-[24px] bg-[#070e17] border-t border-[#213248] px-3 flex items-center justify-between text-[10px] text-[#8DA0B4] shrink-0 select-none">
+        <div className="flex items-center gap-2">
+          <span className="font-extrabold text-white">CutFree Studio</span>
+          <span>v2.6 • Production</span>
+          <span className="text-[#475569]">•</span>
+          <span>Create • Animate • Edit • Export</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[#e2e8f0]">❤️ Made for Creators</span>
+          <span className="text-[#475569]">|</span>
+          <span className="text-[#94a3b8]">Turn Ideas into Videos</span>
+        </div>
+      </footer>
+
+      {/* 5. MODALS & POPUPS */}
       {/* Blueprint JSON Modal */}
       <BlueprintModal
         isOpen={isBlueprintModalOpen}
@@ -3392,38 +600,49 @@ export default function App() {
         currentBlueprint={blueprint}
         actualAudioDuration={actualAudioDuration}
         onApplyBlueprint={(bp) => {
-          historyRef.current.push(blueprint);
-          setBlueprint(bp);
-          setDuration(bp.timeline.duration);
+          commitBlueprint(bp);
           if (bp.scenes.length > 0) {
             setSelectedSceneId(bp.scenes[0].id);
           }
-          toast(isBn ? "ব্লুপ্রিন্ট স্টুডিওতে প্রয়োগ করা হলো!" : "Blueprint applied to studio!");
         }}
       />
 
-      {/* Footer */}
-      <footer className="border-t border-[#1a2440] bg-[#0d1120] px-4 md:px-6 py-3">
-        <div className="mx-auto max-w-[1600px] flex flex-col md:flex-row items-center justify-between gap-3 text-[11px] text-[#6b7bb0]">
-          <div className="flex items-center gap-2 flex-wrap justify-center md:justify-start">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#0f1124] border border-[#232d47] text-[#8d9cc2] font-bold">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> {isBn ? "১০০% ক্লায়েন্ট-সাইড • কোনো আপলোড নেই" : "100% client-side • no upload"}
-            </span>
-            <span className="hidden sm:inline">•</span>
-            <span>{isBn ? "MIT লাইসেন্স • ফ্রি, ওয়াটারমার্ক-ফ্রি" : "MIT • free, watermark-free"}</span>
-            <span className="hidden sm:inline">•</span>
-            <span className="flex items-center gap-1">
-              <Globe className="w-3 h-3" /> {isBn ? "অফলাইন PWA রেডি" : "Offline PWA ready"}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <a href="https://github.com/Khairul990/cutfree" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#151b2e] border border-[#232d47] hover:border-[#5b8dff] text-[#cbd5e1] font-semibold transition">
-              GitHub
-            </a>
-            <span className="text-[#475569] hidden sm:inline">CutFree Studio — {isBn ? "শূন্য খরচে ভিডিও ফ্যাক্টরি" : "zero-cost video factory"}</span>
-          </div>
-        </div>
-      </footer>
+      {/* Video Exporter Modal */}
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        blueprint={blueprint}
+        audioBuffer={audioBuffer}
+      />
+
+      {/* Project Settings Modal */}
+      <ProjectModal
+        isOpen={isProjectModalOpen}
+        onClose={() => setIsProjectModalOpen(false)}
+        blueprint={blueprint}
+        onUpdateTitle={(title) => {
+          commitBlueprint({
+            ...blueprint,
+            project: { ...blueprint.project, title },
+          });
+        }}
+        onNewProject={() => {
+          commitBlueprint(DEFAULT_BLUEPRINT);
+          setCurrentTime(0);
+          setSelectedSceneId(DEFAULT_BLUEPRINT.scenes[0]?.id || null);
+        }}
+        onExportBlueprintJson={() => {
+          const jsonStr = JSON.stringify(blueprint, null, 2);
+          const blob = new Blob([jsonStr], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${(blueprint.project.title || "blueprint").replace(/[^a-zA-Z0-9_-]/g, "_")}.json`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }}
+        onImportBlueprintClick={() => setIsBlueprintModalOpen(true)}
+      />
     </div>
   );
 }

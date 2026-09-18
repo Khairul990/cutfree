@@ -1,1 +1,48 @@
 @import "tailwindcss";
+
+:root {
+  --cf-bg: #07101A;
+  --cf-panel: #0C1724;
+  --cf-panel-hover: #0F1C2A;
+  --cf-border: #213248;
+  --cf-primary: #259CFF;
+  --cf-secondary: #765CFF;
+  --cf-success: #28D7A0;
+  --cf-text: #EEF4FB;
+  --cf-muted: #8DA0B4;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #07101A;
+  color: #EEF4FB;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Bengali", "Hind Siliguri", sans-serif;
+  overflow: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbars for professional dense editor */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #07101A;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #213248;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #259CFF;
+}
+
+/* Range input styling */
+input[type="range"] {
+  accent-color: #259CFF;
+}

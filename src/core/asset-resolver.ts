@@ -29,7 +29,57 @@ class AssetRegistry {
   }
 
   private registerBuiltInPresets() {
-    // Preset backgrounds
+    // Preset characters from design specification
+    this.registerAsset({
+      id: "nooruddin",
+      type: "character",
+      name: "Nooruddin",
+      description: "Young cheerful boy wearing a white kufi and green jubbah",
+    });
+    this.registerAsset({
+      id: "nuri",
+      type: "character",
+      name: "Nuri",
+      description: "Friendly smiling yellow glowing star companion",
+    });
+    this.registerAsset({
+      id: "ayesha",
+      type: "character",
+      name: "Ayesha",
+      description: "Gentle girl wearing a lavender hijab",
+    });
+    this.registerAsset({
+      id: "narrator",
+      type: "character",
+      name: "Narrator (Islamic Voice)",
+      description: "Wise silhouette character with gentle speech gesture",
+    });
+    this.registerAsset({
+      id: "salman",
+      type: "character",
+      name: "Salman",
+      description: "Young contemplative man walking at night",
+    });
+
+    // Preset backgrounds from design specification
+    this.registerAsset({
+      id: "mosque",
+      type: "background",
+      name: "Mosque",
+      description: "Illuminated nighttime Islamic mosque with golden minarets and crescent moon",
+    });
+    this.registerAsset({
+      id: "village",
+      type: "background",
+      name: "Village",
+      description: "Picturesque peaceful countryside village with green rolling hills",
+    });
+    this.registerAsset({
+      id: "forest",
+      type: "background",
+      name: "Forest",
+      description: "Lush ancient woodland with sunbeams cutting through canopy",
+    });
     this.registerAsset({
       id: "night_sky",
       type: "background",
@@ -48,45 +98,31 @@ class AssetRegistry {
       name: "Mysterious Closed Door",
       description: "Historic closed wooden doorway with moonlight glow",
     });
-    this.registerAsset({
-      id: "islamic_mosque",
-      type: "background",
-      name: "Islamic Architecture",
-      description: "Golden arches with spiritual geometric patterns",
-    });
 
-    // Preset characters
+    // Preset objects / props from design specification
     this.registerAsset({
-      id: "narrator",
-      type: "character",
-      name: "Narrator (Islamic Voice)",
-      description: "Wise silhouette character with gentle speech gesture",
+      id: "lantern",
+      type: "object",
+      name: "Lantern",
+      description: "Warm brass lantern emitting soft golden light",
     });
     this.registerAsset({
-      id: "salman",
-      type: "character",
-      name: "Salman",
-      description: "Young contemplative man walking at night",
+      id: "book",
+      type: "object",
+      name: "Book",
+      description: "Illuminated open sacred book with gentle radiant glow",
     });
-
-    // Preset objects
+    this.registerAsset({
+      id: "tree",
+      type: "object",
+      name: "Tree",
+      description: "Lush flourishing tree with deep green foliage",
+    });
     this.registerAsset({
       id: "closed_door",
       type: "object",
       name: "Closed Door",
       description: "Engraved wooden door with antique handle",
-    });
-    this.registerAsset({
-      id: "lantern",
-      type: "object",
-      name: "Glowing Lantern",
-      description: "Warm brass lantern emitting soft amber light",
-    });
-    this.registerAsset({
-      id: "book",
-      type: "object",
-      name: "Sacred Book",
-      description: "Illuminated open manuscript",
     });
   }
 
