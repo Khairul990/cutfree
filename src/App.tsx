@@ -877,6 +877,50 @@ function buildVoiceSpec(script: string, vad: VADResult, baseSpec: Spec, opts: { 
   return spec;
 }
 
+// Timeline provided by user (speech ↔ word timings) — zero VAD needed
+function buildSpecFromTimeline(script: string, words: { w: string; s: number; e: number; para: number }[], baseSpec: Spec): Spec | null {
+  if (!words.length) return null;
+  const blocks = script.split("\n").map(s=>s.trim()).filter(Boolean);
+  const lang = baseSpec.meta.language;
+  const title = baseSpec.meta.title;
+  const scenes: Scene[] = [];
+  scenes.push({ type: "intro", dur: 2.2, title, subtitle: (blocks[0]||"").slice(0,80), isHook: true, transitionOut: "zoom" });
+  const maxPara = Math.max(...words.map(w=>w.para), 0);
+  for (let pi=0; pi<=maxPara; pi++) {
+    const ws = words.filter(w=>w.para===pi);
+    if (!ws.length) continue;
+    const text = blocks[pi] || ws.map(x=>x.w).join(" ");
+    const dur = Math.max(1.8, Math.min(9.5, ws[ws.length-1].e - ws[0].s + 0.5));
+    const parts = text.split(/[.।!?]\s+/);
+    const heading = parts.length>1 && parts[0].length<60 ? parts[0] : "";
+    const body = heading ? text.slice(heading.length).trim() : text;
+    const shift = 2.2 - (words[0]?.s || 0);
+    const localWords = ws.map(w=>({ w: w.w, s: w.s+shift, e: w.e+shift }));
+    scenes.push({
+      type: "text", heading: heading||undefined, body: body||text, dur, transitionOut: pi%2?"slide":"fade",
+      words: localWords as unknown as { w: string; s: number; e: number }[],
+    } as Scene);
+  }
+  scenes.push({ type: "outro", dur: 3.5, title: lang==="bn"?"ধন্যবাদ!":"Thanks for watching!", subtitle: lang==="bn"?"লাইক • শেয়ার • সাবস্ক্রাইব":"Like • Share • Subscribe", cta: lang==="bn"?"সাবস্ক্রাইব":"SUBSCRIBE", transitionOut: "fade" });
+  const shift2 = 2.2 - (words[0]?.s || 0);
+  const srt: {start:number,end:number,text:string}[] = [];
+  let curWords: typeof words = [];
+  let curStart = words[0]?.s||0;
+  words.forEach(w=>{
+    curWords.push(w);
+    const txt = curWords.map(c=>c.w).join(" ");
+    const dur = w.e - curStart;
+    if (txt.length>42 || dur>2.6) {
+      srt.push({ start: curStart+shift2, end: w.e+shift2, text: txt });
+      curWords = []; curStart = (words[words.indexOf(w)+1]?.s)||w.e+0.05;
+    }
+  });
+  if (curWords.length) srt.push({ start: curStart+shift2, end: curWords[curWords.length-1].e+shift2, text: curWords.map(c=>c.w).join(" ") });
+  const spec: Spec = { ...baseSpec, width: baseSpec.width, height: baseSpec.height, duration: scenes.reduce((a,b)=>a+b.dur,0), scenes, captions: srt, meta: { ...baseSpec.meta, title } };
+  (spec as unknown as { _voiceWords: typeof words })._voiceWords = words.map(w=>({ ...w, s: w.s+shift2, e: w.e+shift2 }));
+  return spec;
+}
+
 // ---------------------------------------------------------------------------
 // Canvas renderer (lightweight React port of engine.js)
 // ---------------------------------------------------------------------------
@@ -1527,6 +1571,10 @@ export default function App() {
   const [shortsMode, setShortsMode] = useState(false);
   const [watermark, setWatermark] = useState("");
   const [activeTab, setActiveTab] = useState<"script" | "design" | "audio" | "export">("script");
+  // Timeline provided by user (extra - single-page will use it)
+  const [timelineFileName, setTimelineFileName] = useState<string>("");
+  const [customTimeline, setCustomTimeline] = useState<{ w: string; s: number; e: number; para: number }[] | null>(null);
+  const timelineInputRef = useRef<HTMLInputElement>(null);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiStatus, setAiStatus] = useState<string>(
@@ -1829,6 +1877,46 @@ export default function App() {
     setCurrentTime(0);
   }, [vadResult, builtSpec, script, isBn, toast]);
 
+  // ——— User-provided timeline (speech → word timings) ———
+  const handleTimelineSelect = useCallback(async (file: File | null) => {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const raw = JSON.parse(text);
+      const arr: any[] = Array.isArray(raw) ? raw : raw.words || raw.timeline || [];
+      const words: { w: string; s: number; e: number; para: number }[] = arr.map((it:any, idx:number)=>{
+        const w = String(it.w ?? it.text ?? it.word ?? it.t ?? "").trim() || `w${idx}`;
+        const s = Number(it.s ?? it.start ?? it.st ?? 0);
+        const e = Number(it.e ?? it.end ?? it.et ?? s+0.3);
+        const para = Number(it.para ?? it.p ?? 0);
+        return { w, s: Math.max(0,s), e: Math.max(s+0.05, e), para: Math.max(0, para) };
+      }).filter((x:any)=>x.w);
+      if (!words.length) throw new Error("empty");
+      words.sort((a,b)=>a.s-b.s);
+      setCustomTimeline(words);
+      setTimelineFileName(file.name);
+      toast(isBn ? `📋 টাইমলাইন লোড: ${words.length} শব্দ` : `📋 Timeline loaded: ${words.length} words`);
+      if (builtSpec && script.trim()) {
+        const tSpec = buildSpecFromTimeline(script, words, builtSpec);
+        if (tSpec) { setVoiceSpec(tSpec); toast(isBn ? "🎬 টাইমলাইন-সিঙ্কড ভিডিও রেডি!" : "🎬 Timeline-synced video ready!"); }
+      }
+    } catch (e) {
+      console.error(e);
+      toast(isBn ? "টাইমলাইন JSON পার্স হয়নি — [{w,start,end,para}] ফরম্যাট দিন" : "Failed to parse timeline JSON — need [{w,start,end,para}]");
+    }
+  }, [isBn, toast, builtSpec, script]);
+
+  const clearTimeline = useCallback(()=>{
+    setCustomTimeline(null); setTimelineFileName(""); if (timelineInputRef.current) timelineInputRef.current.value=""; toast(isBn ? "টাইমলাইন সরানো হলো" : "Timeline removed");
+  }, [isBn, toast]);
+
+  const applyTimelineSync = useCallback(()=>{
+    if (!customTimeline || !builtSpec) { toast(isBn ? "আগে টাইমলাইন JSON ও স্ক্রিপ্ট দিন" : "Add timeline JSON & script first"); return; }
+    const tSpec = buildSpecFromTimeline(script, customTimeline, builtSpec);
+    if (!tSpec) { toast(isBn ? "টাইমলাইন সিঙ্ক ব্যর্থ" : "Timeline sync failed"); return; }
+    setVoiceSpec(tSpec); setCurrentTime(0); toast(isBn ? "✅ টাইমলাইন-সিঙ্ক প্রয়োগ!" : "✅ Timeline sync applied!");
+  }, [customTimeline, builtSpec, script, isBn, toast]);
+
   // One-click auto video: script alone → quality video, voice if present → tracked
   const handleAutoVideo = useCallback(() => {
     const base = builtSpec;
@@ -1883,7 +1971,7 @@ export default function App() {
               ? "📝 টেমপ্লেট ইঞ্জিন থেকে তৈরি (Gemini key নেই বা অফলাইন)"
               : "📝 From template engine (no Gemini key / offline)"
         );
-        setActiveTab("script");
+        /* single-page: no tab switch */
         toast(isBn ? "স্ক্রিপ্ট তৈরি হয়েছে!" : "Script generated!");
       } else {
         throw new Error("empty");
@@ -2065,7 +2153,7 @@ export default function App() {
             </a>
             <button
               onClick={() => {
-                setActiveTab("script");
+                /* single-page: no tab switch */
                 handleAutoVideo();
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }}
@@ -2087,31 +2175,18 @@ export default function App() {
       <div className="flex-1 mx-auto max-w-[1600px] w-full flex flex-col lg:flex-row min-h-0">
         {/* Sidebar */}
         <aside className="w-full lg:w-[380px] xl:w-[400px] lg:shrink-0 bg-[#0d1120] lg:border-r border-[#232d47] flex flex-col lg:h-[calc(100vh-56px)] lg:sticky lg:top-[56px] lg:overflow-hidden">
-          {/* Tabs */}
-          <div className="flex items-center gap-1 p-2 border-b border-[#232d47] bg-[#0d1120] sticky top-0 z-10">
-            {[
-              { id: "script", label: isBn ? "স্ক্রিপ্ট" : "Script", icon: Type },
-              { id: "design", label: isBn ? "ডিজাইন" : "Design", icon: Palette },
-              { id: "audio", label: isBn ? "অডিও" : "Audio", icon: Music4 },
-              { id: "export", label: isBn ? "এক্সপোর্ট" : "Export", icon: Download },
-            ].map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setActiveTab(t.id as typeof activeTab)}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-[12px] font-bold transition border ${
-                  activeTab === t.id
-                    ? "bg-gradient-to-br from-[#5b8dff] to-[#b06cff] text-white border-transparent shadow-lg shadow-[#5b8dff]/20"
-                    : "bg-[#151b2e] text-[#8d9cc2] border-[#232d47] hover:text-white hover:border-[#2e3a5c]"
-                }`}
-              >
-                <t.icon className="w-3.5 h-3.5" /> {t.label}
-              </button>
-            ))}
+          {/* Single-page header — no tabs, everything on one page */}
+          <div className="px-4 py-3 border-b border-[#232d47] bg-gradient-to-br from-[#0f1124] to-[#1a1540] sticky top-0 z-10">
+            <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-[#8d9cc2]">
+              <Layers3 className="w-3.5 h-3.5 text-[#5b8dff]" /> {isBn ? "এক পেজে সবকিছু — স্ক্রিপ্ট + ভয়েস + ডিজাইন + এক্সপোর্ট" : "All in one page — script + voice + design + export"}
+              <span className="ml-auto px-2 py-1 rounded-full bg-[#5b8dff] text-white text-[10px]">SINGLE PAGE</span>
+            </div>
+            <div className="mt-1 text-[11px] leading-relaxed text-[#a3b4dc]">{isBn ? "আপনি শুধু স্পিচ + ভয়েস + টাইমলাইন দেবেন, বাকি সব এখানেই হবে — নিচে স্ক্রল করুন।" : "You provide speech + voice + timeline, we do the rest — scroll down."}</div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[#26314e] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full">
             {/* SCRIPT TAB */}
-            {activeTab === "script" && (
+            {/* single-page: script */}
               <>
                 {/* AI Box */}
                 <div className="rounded-2xl bg-gradient-to-br from-[#16192b] to-[#1a1540] border border-[#3c2a68] p-4 shadow-xl">
@@ -2351,7 +2426,7 @@ export default function App() {
                       <RotateCcw className="w-4 h-4" /> {isBn ? "রিসেট (VAD ছাড়া)" : "Reset (no VAD)"}
                     </button>
                     <button
-                      onClick={() => setActiveTab("export")}
+                      onClick={() => /* single-page */ (document.getElementById("export-section")?.scrollIntoView({behavior:"smooth"}))}
                       className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#0f172a] border border-[#1e3a5e] text-[#22d3ee] font-bold text-[12px] hover:bg-[#1e293b] transition"
                     >
                       <Download className="w-4 h-4" /> {isBn ? "এক্সপোর্ট" : "Export"}
@@ -2379,9 +2454,8 @@ export default function App() {
                   </div>
                 </div>
               </>
-            )}
 
-            {activeTab === "design" && (
+            {/* single-page: design */}
               <div className="space-y-5">
                 <div className="rounded-xl bg-gradient-to-br from-[#0f1124] to-[#15152b] border border-[#232d47] p-3">
                   <div className="text-[11px] font-extrabold tracking-widest uppercase text-[#8d9cc2] mb-3 flex items-center gap-1.5">
@@ -2591,9 +2665,8 @@ export default function App() {
                   </div>
                 </div>
               </div>
-            )}
 
-            {activeTab === "audio" && (
+            {/* single-page: audio */}
               <div className="space-y-4">
                 {/* Voice-tracked kinetic typography — free VAD */}
                 <div className="rounded-2xl bg-gradient-to-br from-[#0f172a] via-[#1a1440] to-[#0f1f2e] border border-[#2a365c] p-4 shadow-xl">
@@ -2662,9 +2735,45 @@ export default function App() {
                   )}
                 </div>
 
+                {/* Timeline JSON — user provides word timings (you said you will provide) */}
+                <div className="rounded-2xl bg-gradient-to-br from-[#0f1420] via-[#1a1525] to-[#0f1a20] border border-[#2a365c] p-4 shadow-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-[12px] font-extrabold text-white flex items-center gap-2"><FileAudio className="w-4 h-4 text-[#fbbf24]" /> {isBn ? "টাইমলাইন JSON (আপনি দেবেন)" : "Timeline JSON (you provide)"}</div>
+                    {customTimeline && <span className="text-[10px] font-black px-2 py-1 rounded-full bg-[#fbbf24] text-[#1a1300]">{customTimeline.length} WORDS</span>}
+                  </div>
+                  <div className="text-[11px] leading-relaxed text-[#a3b4dc] mb-3 bg-[#0f1124]/60 rounded-xl px-3 py-2 border border-[#2a365c]/60">
+                    {isBn ? "আপনি স্পিচ + ভয়েস বানিয়ে টাইমলাইন JSON দেবেন — যেমন [{w:\"হ্যালো\", s:0.4, e:0.8, para:0}] — আমরা সেটাই হুবহু ব্যবহার করে টেক্সট ফুটাবো/থামাবো।" : "You provide speech + voice + timeline JSON like [{w:\"hello\", s:0.4, e:0.8, para:0}] — we render text exactly on those timings."}
+                  </div>
+                  <input ref={timelineInputRef} type="file" accept=".json,application/json" className="hidden" onChange={(e)=>handleTimelineSelect(e.target.files?.[0]||null)} />
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={()=>timelineInputRef.current?.click()} className="flex flex-col items-center gap-1.5 py-4 rounded-xl border-2 border-dashed border-[#2a365c] bg-[#0f1124] hover:border-[#fbbf24] hover:bg-[#1a180f] transition group">
+                      <Upload className="w-5 h-5 text-[#fbbf24] group-hover:text-white" />
+                      <span className="text-[12px] font-black text-white">{timelineFileName ? timelineFileName.slice(0,22) : (isBn ? "টাইমলাইন JSON বাছাই" : "Choose timeline JSON")}</span>
+                      <span className="text-[10px] text-[#8d9cc2]">JSON • w/start/end/para</span>
+                    </button>
+                    <div className="flex flex-col gap-2">
+                      <button onClick={applyTimelineSync} disabled={!customTimeline} className="flex-1 py-2.5 rounded-xl bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] text-[#1a1300] font-black text-[12px] flex items-center justify-center gap-1.5 disabled:opacity-50 hover:brightness-110 transition">
+                        <Highlighter className="w-4 h-4" /> {isBn ? "টাইমলাইন প্রয়োগ" : "Apply timeline"}
+                      </button>
+                      <button onClick={clearTimeline} className="py-2 rounded-xl bg-[#1a233e] border border-[#2a365c] text-white font-bold text-[11px] hover:border-[#ef4444] transition">{isBn ? "সরান" : "Clear"}</button>
+                      <div className="text-[10px] text-[#6b7bb0] leading-tight">{isBn ? "ফরম্যাট: [{\"w\":\"শব্দ\", \"s\":0.5, \"e\":0.9, \"para\":0}]" : "Format: [{\"w\":\"word\", \"s\":0.5, \"e\":0.9, \"para\":0}]"}</div>
+                    </div>
+                  </div>
+                  {customTimeline && (
+                    <div className="mt-3 rounded-xl bg-[#1a1505] border border-[#fbbf24]/20 p-2 max-h-[120px] overflow-y-auto">
+                      <div className="text-[10px] font-bold text-[#fbbf24] mb-1">Preview (first 12)</div>
+                      <div className="flex flex-wrap gap-1">
+                        {customTimeline.slice(0,12).map((w,i)=>(<span key={i} className="px-1.5 py-0.5 rounded bg-[#2a1f0a] border border-[#fbbf24]/20 text-[10px] text-[#fde68a]">{w.w} {w.s.toFixed(2)}→{w.e.toFixed(2)}</span>))}
+                        {customTimeline.length>12 && <span className="text-[10px] text-[#8d9cc2]">+{customTimeline.length-12} more</span>}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="rounded-2xl bg-gradient-to-br from-[#0f172a] to-[#1e1b3a] border border-[#2a365c] p-4">
                   <div className="text-[12px] font-extrabold tracking-wide text-white mb-3 flex items-center gap-2">
                     <Mic2 className="w-4 h-4 text-[#7c5cff]" /> {isBn ? "ভয়েসওভার (TTS) — ব্রাউজারেই" : "Voice-over (TTS) — in browser"}
+
                   </div>
 
                   <div className="space-y-3">
@@ -2770,10 +2879,9 @@ export default function App() {
                   </div>
                 </div>
               </div>
-            )}
 
-            {activeTab === "export" && (
-              <div className="space-y-4">
+            {/* single-page: export */}
+              <div id="export-section" className="space-y-4">
                 <div className="rounded-2xl bg-gradient-to-br from-[#0f172a] to-[#0f1a2e] border border-[#1e3a5e] p-4">
                   <div className="text-[12px] font-extrabold text-white mb-3 flex items-center gap-2">
                     <Video className="w-4 h-4 text-[#22d3ee]" /> {isBn ? "এক্সপোর্ট — ১০০% ব্রাউজারে" : "Export — 100% in browser"}
@@ -2899,7 +3007,6 @@ export default function App() {
                   </div>
                 </div>
               </div>
-            )}
           </div>
         </aside>
 
