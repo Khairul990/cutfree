@@ -2472,7 +2472,7 @@ export default function App() {
                 <span className="font-extrabold tracking-tight text-[15px]">CutFree</span>
                 <span className="text-[#5b8dff] font-extrabold text-[15px]">Studio</span>
                 <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1a2440] border border-[#2a365c] text-[#8cb4ff]">
-                  v2.5 • Master
+                  v2.6 • Production
                 </span>
               </div>
               <div className="text-[11px] text-[#8d9cc2] hidden sm:block -mt-0.5 truncate max-w-[320px]">
