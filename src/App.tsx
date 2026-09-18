@@ -545,6 +545,7 @@ export default function App() {
             onInsertAsset={handleInsertAsset}
             onCustomImageUpload={handleCustomImageUpload}
             activeNavTab={leftNavTab}
+            onApplyTemplate={handleApplyTemplate}
           />
         )}
 
