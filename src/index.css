@@ -1,1 +1,154 @@
 @import "tailwindcss";
+
+/* CutFree — clean production-studio UI
+   Video output is the priority: calm chrome, strong hierarchy, minimal decoration.
+*/
+:root {
+  color-scheme: dark;
+  --cf-bg: #070a0f;
+  --cf-panel: #0d1219;
+  --cf-panel-2: #111821;
+  --cf-border: #202a36;
+  --cf-border-soft: #18212c;
+  --cf-text: #edf2f7;
+  --cf-muted: #8b98a8;
+  --cf-accent: #38bdf8;
+  --cf-accent-2: #22c55e;
+}
+
+html, body, #root {
+  min-height: 100%;
+}
+
+html, body {
+  margin: 0;
+  background: var(--cf-bg);
+  color: var(--cf-text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.cutfree-app {
+  background: var(--cf-bg) !important;
+  color: var(--cf-text);
+  letter-spacing: -0.01em;
+}
+
+/* Calm chrome: remove the "everything is glowing" look. */
+.cutfree-app header {
+  background: rgba(10, 14, 20, 0.96) !important;
+  border-color: var(--cf-border) !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,.02);
+}
+
+.cutfree-app header .bg-gradient-to-br {
+  background: #172333 !important;
+  box-shadow: none !important;
+}
+
+.cutfree-app button {
+  transition: background-color .16s ease, border-color .16s ease, color .16s ease, transform .12s ease;
+}
+
+.cutfree-app button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.cutfree-app input,
+.cutfree-app textarea,
+.cutfree-app select {
+  border-color: var(--cf-border) !important;
+  background-color: var(--cf-panel-2) !important;
+}
+
+.cutfree-app input:focus,
+.cutfree-app textarea:focus,
+.cutfree-app select:focus {
+  border-color: rgba(56,189,248,.7) !important;
+  box-shadow: 0 0 0 2px rgba(56,189,248,.10) !important;
+}
+
+/* Cards/panels: flatter and easier to scan. */
+.cutfree-app .rounded-2xl,
+.cutfree-app .rounded-xl {
+  box-shadow: none;
+}
+
+.cutfree-app .border-\[\#232d47\],
+.cutfree-app .border-\[\#1e2740\],
+.cutfree-app .border-\[\#2a365c\] {
+  border-color: var(--cf-border) !important;
+}
+
+.cutfree-app .bg-\[\#0d1120\],
+.cutfree-app .bg-\[\#0b0f1d\],
+.cutfree-app .bg-\[\#0b0f1a\],
+.cutfree-app .bg-\[\#0f1124\],
+.cutfree-app .bg-\[\#121829\],
+.cutfree-app .bg-\[\#151b2e\] {
+  background-color: var(--cf-panel) !important;
+}
+
+/* Keep the preview stage visually dominant. */
+.cutfree-app canvas {
+  image-rendering: auto;
+}
+
+.cutfree-app main {
+  min-width: 0;
+}
+
+/* Timeline remains the workbench: readable, dense, but not noisy. */
+.cutfree-app [class*="overflow-x-auto"] {
+  scrollbar-color: #334155 transparent;
+}
+
+.cutfree-app ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.cutfree-app ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cutfree-app ::-webkit-scrollbar-thumb {
+  background: #263241;
+  border-radius: 999px;
+}
+
+.cutfree-app ::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Accent actions stay obvious; decorative gradients are toned down elsewhere. */
+.cutfree-app .bg-gradient-to-r.from-\[\#38bdf8\],
+.cutfree-app .bg-gradient-to-br.from-\[\#22d3ee\] {
+  box-shadow: none !important;
+}
+
+/* Mobile: preserve the editor, prevent horizontal overflow. */
+@media (max-width: 900px) {
+  .cutfree-app header .max-w-\[1700px\] {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .cutfree-app header {
+    position: sticky;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cutfree-app *,
+  .cutfree-app *::before,
+  .cutfree-app *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
