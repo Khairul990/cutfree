@@ -1,5 +1,5 @@
 {
-  "outputDirectory": ".",
+  "outputDirectory": "dist",
   "cleanUrls": false,
   "rewrites": [
     { "source": "/studio-pro", "destination": "/studio-pro.html" },

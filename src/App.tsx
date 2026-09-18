@@ -921,6 +921,44 @@ function buildSpecFromTimeline(script: string, words: { w: string; s: number; e:
   return spec;
 }
 
+function buildSpecFromSegmentTimeline(script: string, segments: { time: number; text: string }[], baseSpec: Spec): Spec | null {
+  if (!segments.length) return null;
+  const sorted = [...segments].sort((a,b)=>a.time-b.time);
+  const lang = baseSpec.meta.language;
+  const title = baseSpec.meta.title;
+  const blocks = script.split("\n").map(s=>s.trim()).filter(Boolean);
+  const scenes: Scene[] = [];
+  scenes.push({ type: "intro", dur: 2.2, title, subtitle: (blocks[0]||sorted[0]?.text||"").slice(0,80), isHook: true, transitionOut: "zoom" });
+  const shift = 2.2 - (sorted[0]?.time || 0);
+  for (let i=0; i<sorted.length; i++) {
+    const seg = sorted[i];
+    const next = sorted[i+1];
+    const dur = next ? Math.max(0.9, Math.min(9.5, next.time - seg.time)) : Math.max(1.8, Math.min(9.5, (wordCount(seg.text)/WORDS_PER_SEC)+0.9));
+    const text = seg.text || "";
+    const parts = text.split(/[.।!?]\s+/);
+    const heading = parts.length>1 && parts[0].length<60 ? parts[0] : "";
+    const body = heading ? text.slice(heading.length).trim() : text;
+    scenes.push({
+      type: "text",
+      heading: heading||undefined,
+      body: body||text,
+      dur,
+      transitionOut: i%2?"slide":"fade",
+    } as Scene);
+  }
+  scenes.push({ type: "outro", dur: 3.5, title: lang==="bn"?"ধন্যবাদ!":"Thanks for watching!", subtitle: lang==="bn"?"লাইক • শেয়ার • সাবস্ক্রাইব":"Like • Share • Subscribe", cta: lang==="bn"?"সাবস্ক্রাইব":"SUBSCRIBE", transitionOut: "fade" });
+  const srt = sorted.map((seg,i)=>{
+    const next = sorted[i+1];
+    const start = seg.time + shift;
+    const end = next ? next.time + shift - 0.05 : start + Math.max(1.2, Math.min(3.2, wordCount(seg.text)/WORDS_PER_SEC+0.7));
+    return { start, end: Math.max(start+0.45, end), text: seg.text };
+  });
+  const spec: Spec = { ...baseSpec, width: baseSpec.width, height: baseSpec.height, duration: scenes.reduce((a,b)=>a+b.dur,0), scenes, captions: srt, meta: { ...baseSpec.meta, title } };
+  (spec as unknown as { _segments: typeof sorted })._segments = sorted.map(s=>({ ...s, time: s.time+shift }));
+  (spec as unknown as { _voiceWords: {w:string,s:number,e:number,para:number}[] })._voiceWords = sorted.map((s,i)=>({ w: s.text, s: s.time+shift, e: (sorted[i+1]?.time||(s.time+2.2))+shift, para: i }));
+  return spec;
+}
+
 // ---------------------------------------------------------------------------
 // Canvas renderer (lightweight React port of engine.js)
 // ---------------------------------------------------------------------------
@@ -1574,6 +1612,7 @@ export default function App() {
   // Timeline provided by user (extra - single-page will use it)
   const [timelineFileName, setTimelineFileName] = useState<string>("");
   const [customTimeline, setCustomTimeline] = useState<{ w: string; s: number; e: number; para: number }[] | null>(null);
+  const [customSegments, setCustomSegments] = useState<{ time: number; text: string }[] | null>(null);
   const timelineInputRef = useRef<HTMLInputElement>(null);
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -1877,23 +1916,44 @@ export default function App() {
     setCurrentTime(0);
   }, [vadResult, builtSpec, script, isBn, toast]);
 
-  // ——— User-provided timeline (speech → word timings) ———
+  // ——— User-provided timeline (speech → word timings) — supports both [{time,text}] and [{w,s,e,para}] ———
   const handleTimelineSelect = useCallback(async (file: File | null) => {
     if (!file) return;
     try {
       const text = await file.text();
       const raw = JSON.parse(text);
-      const arr: any[] = Array.isArray(raw) ? raw : raw.words || raw.timeline || [];
+      const arr: any[] = Array.isArray(raw) ? raw : raw.words || raw.timeline || raw.segments || [];
+      if (!arr.length) throw new Error("empty");
+      // Detect segment format: {time, text} — your "বন্ধ দরজার..." JSON
+      const isSegment = arr[0] && typeof arr[0].time !== "undefined" && typeof arr[0].text === "string" && typeof arr[0].w === "undefined";
+      if (isSegment) {
+        const segs: { time: number; text: string }[] = arr.map((it:any)=>({
+          time: Number(it.time ?? it.t ?? it.start ?? 0),
+          text: String(it.text ?? it.t ?? "").trim()
+        })).filter((x:any)=>x.text);
+        if (!segs.length) throw new Error("empty segs");
+        segs.sort((a,b)=>a.time-b.time);
+        setCustomSegments(segs);
+        setCustomTimeline(null);
+        setTimelineFileName(file.name);
+        toast(isBn ? `📋 টাইমলাইন লোড: ${segs.length} সেগমেন্ট` : `📋 Timeline loaded: ${segs.length} segments`);
+        if (builtSpec && script.trim()) {
+          const tSpec = buildSpecFromSegmentTimeline(script, segs, builtSpec);
+          if (tSpec) { setVoiceSpec(tSpec); toast(isBn ? "🎬 টাইমলাইন-সিঙ্কড ভিডিও রেডি!" : "🎬 Timeline-synced video ready!"); }
+        }
+        return;
+      }
       const words: { w: string; s: number; e: number; para: number }[] = arr.map((it:any, idx:number)=>{
         const w = String(it.w ?? it.text ?? it.word ?? it.t ?? "").trim() || `w${idx}`;
-        const s = Number(it.s ?? it.start ?? it.st ?? 0);
+        const s = Number(it.s ?? it.start ?? it.st ?? it.time ?? 0);
         const e = Number(it.e ?? it.end ?? it.et ?? s+0.3);
-        const para = Number(it.para ?? it.p ?? 0);
+        const para = Number(it.para ?? it.p ?? it.segment ?? 0);
         return { w, s: Math.max(0,s), e: Math.max(s+0.05, e), para: Math.max(0, para) };
       }).filter((x:any)=>x.w);
       if (!words.length) throw new Error("empty");
       words.sort((a,b)=>a.s-b.s);
       setCustomTimeline(words);
+      setCustomSegments(null);
       setTimelineFileName(file.name);
       toast(isBn ? `📋 টাইমলাইন লোড: ${words.length} শব্দ` : `📋 Timeline loaded: ${words.length} words`);
       if (builtSpec && script.trim()) {
@@ -1902,20 +1962,25 @@ export default function App() {
       }
     } catch (e) {
       console.error(e);
-      toast(isBn ? "টাইমলাইন JSON পার্স হয়নি — [{w,start,end,para}] ফরম্যাট দিন" : "Failed to parse timeline JSON — need [{w,start,end,para}]");
+      toast(isBn ? "টাইমলাইন JSON পার্স হয়নি — [{time,text}] বা [{w,s,e,para}] দিন" : "Failed to parse timeline JSON — need [{time,text}] or [{w,s,e,para}]");
     }
   }, [isBn, toast, builtSpec, script]);
 
   const clearTimeline = useCallback(()=>{
-    setCustomTimeline(null); setTimelineFileName(""); if (timelineInputRef.current) timelineInputRef.current.value=""; toast(isBn ? "টাইমলাইন সরানো হলো" : "Timeline removed");
+    setCustomTimeline(null); setCustomSegments(null); setTimelineFileName(""); if (timelineInputRef.current) timelineInputRef.current.value=""; toast(isBn ? "টাইমলাইন সরানো হলো" : "Timeline removed");
   }, [isBn, toast]);
 
   const applyTimelineSync = useCallback(()=>{
+    if (customSegments && builtSpec) {
+      const tSpec = buildSpecFromSegmentTimeline(script, customSegments, builtSpec);
+      if (!tSpec) { toast(isBn ? "টাইমলাইন সিঙ্ক ব্যর্থ" : "Timeline sync failed"); return; }
+      setVoiceSpec(tSpec); setCurrentTime(0); toast(isBn ? "✅ টাইমলাইন-সিঙ্ক প্রয়োগ!" : "✅ Timeline sync applied!"); return;
+    }
     if (!customTimeline || !builtSpec) { toast(isBn ? "আগে টাইমলাইন JSON ও স্ক্রিপ্ট দিন" : "Add timeline JSON & script first"); return; }
     const tSpec = buildSpecFromTimeline(script, customTimeline, builtSpec);
     if (!tSpec) { toast(isBn ? "টাইমলাইন সিঙ্ক ব্যর্থ" : "Timeline sync failed"); return; }
     setVoiceSpec(tSpec); setCurrentTime(0); toast(isBn ? "✅ টাইমলাইন-সিঙ্ক প্রয়োগ!" : "✅ Timeline sync applied!");
-  }, [customTimeline, builtSpec, script, isBn, toast]);
+  }, [customTimeline, customSegments, builtSpec, script, isBn, toast]);
 
   // One-click auto video: script alone → quality video, voice if present → tracked
   const handleAutoVideo = useCallback(() => {
@@ -2739,32 +2804,41 @@ export default function App() {
                 <div className="rounded-2xl bg-gradient-to-br from-[#0f1420] via-[#1a1525] to-[#0f1a20] border border-[#2a365c] p-4 shadow-xl">
                   <div className="flex items-center justify-between mb-2">
                     <div className="text-[12px] font-extrabold text-white flex items-center gap-2"><FileAudio className="w-4 h-4 text-[#fbbf24]" /> {isBn ? "টাইমলাইন JSON (আপনি দেবেন)" : "Timeline JSON (you provide)"}</div>
-                    {customTimeline && <span className="text-[10px] font-black px-2 py-1 rounded-full bg-[#fbbf24] text-[#1a1300]">{customTimeline.length} WORDS</span>}
+                    {(customTimeline || customSegments) && <span className="text-[10px] font-black px-2 py-1 rounded-full bg-[#fbbf24] text-[#1a1300]">{customSegments ? `${customSegments.length} SEGS` : `${customTimeline?.length} WORDS`}</span>}
                   </div>
                   <div className="text-[11px] leading-relaxed text-[#a3b4dc] mb-3 bg-[#0f1124]/60 rounded-xl px-3 py-2 border border-[#2a365c]/60">
-                    {isBn ? "আপনি স্পিচ + ভয়েস বানিয়ে টাইমলাইন JSON দেবেন — যেমন [{w:\"হ্যালো\", s:0.4, e:0.8, para:0}] — আমরা সেটাই হুবহু ব্যবহার করে টেক্সট ফুটাবো/থামাবো।" : "You provide speech + voice + timeline JSON like [{w:\"hello\", s:0.4, e:0.8, para:0}] — we render text exactly on those timings."}
+                    {isBn ? "আপনার [{time,text}] ফরম্যাট সরাসরি চলবে — যেমন {time:0.0, text:\"বন্ধ দরজার ওপাশে কী ছিল?\"} — আমরা মিলিসেকেন্ডে সিঙ্ক করব। [{w,s,e,para}] ও চলবে।" : "Your [{time,text}] format works directly — e.g. {time:0.0, text:\"...\"} — we sync millisecond-accurate. [{w,s,e,para}] also works."}
                   </div>
                   <input ref={timelineInputRef} type="file" accept=".json,application/json" className="hidden" onChange={(e)=>handleTimelineSelect(e.target.files?.[0]||null)} />
                   <div className="grid grid-cols-2 gap-2">
                     <button onClick={()=>timelineInputRef.current?.click()} className="flex flex-col items-center gap-1.5 py-4 rounded-xl border-2 border-dashed border-[#2a365c] bg-[#0f1124] hover:border-[#fbbf24] hover:bg-[#1a180f] transition group">
                       <Upload className="w-5 h-5 text-[#fbbf24] group-hover:text-white" />
                       <span className="text-[12px] font-black text-white">{timelineFileName ? timelineFileName.slice(0,22) : (isBn ? "টাইমলাইন JSON বাছাই" : "Choose timeline JSON")}</span>
-                      <span className="text-[10px] text-[#8d9cc2]">JSON • w/start/end/para</span>
+                      <span className="text-[10px] text-[#8d9cc2]">JSON • time/text বা w/s/e</span>
                     </button>
                     <div className="flex flex-col gap-2">
-                      <button onClick={applyTimelineSync} disabled={!customTimeline} className="flex-1 py-2.5 rounded-xl bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] text-[#1a1300] font-black text-[12px] flex items-center justify-center gap-1.5 disabled:opacity-50 hover:brightness-110 transition">
+                      <button onClick={applyTimelineSync} disabled={!customTimeline && !customSegments} className="flex-1 py-2.5 rounded-xl bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] text-[#1a1300] font-black text-[12px] flex items-center justify-center gap-1.5 disabled:opacity-50 hover:brightness-110 transition">
                         <Highlighter className="w-4 h-4" /> {isBn ? "টাইমলাইন প্রয়োগ" : "Apply timeline"}
                       </button>
                       <button onClick={clearTimeline} className="py-2 rounded-xl bg-[#1a233e] border border-[#2a365c] text-white font-bold text-[11px] hover:border-[#ef4444] transition">{isBn ? "সরান" : "Clear"}</button>
-                      <div className="text-[10px] text-[#6b7bb0] leading-tight">{isBn ? "ফরম্যাট: [{\"w\":\"শব্দ\", \"s\":0.5, \"e\":0.9, \"para\":0}]" : "Format: [{\"w\":\"word\", \"s\":0.5, \"e\":0.9, \"para\":0}]"}</div>
+                      <div className="text-[10px] text-[#6b7bb0] leading-tight">{isBn ? "ফরম্যাট: [{\"time\":0.0, \"text\":\"বিসমিল্লাহ...\"}] ✓" : "Format: [{\"time\":0.0, \"text\":\"hello\"}] ✓"}</div>
                     </div>
                   </div>
                   {customTimeline && (
                     <div className="mt-3 rounded-xl bg-[#1a1505] border border-[#fbbf24]/20 p-2 max-h-[120px] overflow-y-auto">
-                      <div className="text-[10px] font-bold text-[#fbbf24] mb-1">Preview (first 12)</div>
+                      <div className="text-[10px] font-bold text-[#fbbf24] mb-1">Preview (first 12 words)</div>
                       <div className="flex flex-wrap gap-1">
                         {customTimeline.slice(0,12).map((w,i)=>(<span key={i} className="px-1.5 py-0.5 rounded bg-[#2a1f0a] border border-[#fbbf24]/20 text-[10px] text-[#fde68a]">{w.w} {w.s.toFixed(2)}→{w.e.toFixed(2)}</span>))}
                         {customTimeline.length>12 && <span className="text-[10px] text-[#8d9cc2]">+{customTimeline.length-12} more</span>}
+                      </div>
+                    </div>
+                  )}
+                  {customSegments && (
+                    <div className="mt-3 rounded-xl bg-[#1a1505] border border-[#fbbf24]/20 p-2 max-h-[140px] overflow-y-auto">
+                      <div className="text-[10px] font-bold text-[#fbbf24] mb-1">Preview — {customSegments.length} segments (first 8)</div>
+                      <div className="flex flex-col gap-1">
+                        {customSegments.slice(0,8).map((s,i)=>(<span key={i} className="px-2 py-1 rounded bg-[#2a1f0a] border border-[#fbbf24]/20 text-[11px] text-[#fde68a] flex justify-between"><span className="font-mono text-[#fbbf24]">{s.time.toFixed(2)}s</span> <span className="truncate ml-2">{s.text.slice(0,48)}</span></span>))}
+                        {customSegments.length>8 && <span className="text-[10px] text-[#8d9cc2]">+{customSegments.length-8} more segments</span>}
                       </div>
                     </div>
                   )}
