@@ -43,7 +43,24 @@ import {
   Youtube,
   ShieldCheck,
   Cpu,
+  Undo2,
+  Redo2,
+  FileCode2,
+  FolderKanban,
+  LayoutTemplate,
 } from "lucide-react";
+
+import { VideoBlueprint, BlueprintScene, BlueprintAsset } from "./types/blueprint";
+import { DEFAULT_BLUEPRINT } from "./core/default-blueprint";
+import { validateBlueprint, repairBlueprint } from "./core/validator";
+import { createHistory } from "./core/history";
+import { videoCompositor } from "./render/compositor";
+import { exportVideo } from "./render/exporter";
+import { TimelineTrackView } from "./ui/TimelineTrackView";
+import { Inspector } from "./ui/Inspector";
+import { BlueprintModal } from "./ui/BlueprintModal";
+import { AssetPanel } from "./ui/AssetPanel";
+import { assetResolver } from "./core/asset-resolver";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -1609,6 +1626,15 @@ export default function App() {
   const [shortsMode, setShortsMode] = useState(false);
   const [watermark, setWatermark] = useState("");
   const [activeTab, setActiveTab] = useState<"script" | "design" | "audio" | "export">("script");
+  // ——— Canonical Production Studio & Blueprint JSON v1.0 State ———
+  const [blueprint, setBlueprint] = useState<VideoBlueprint>(DEFAULT_BLUEPRINT);
+  const [selectedSceneId, setSelectedSceneId] = useState<string | null>(DEFAULT_BLUEPRINT.scenes[0]?.id || null);
+  const [isBlueprintModalOpen, setIsBlueprintModalOpen] = useState<boolean>(false);
+  const [isAssetPanelOpen, setIsAssetPanelOpen] = useState<boolean>(false);
+  const [editorMode, setEditorMode] = useState<"timeline" | "wizard">("timeline");
+  const [actualAudioDuration, setActualAudioDuration] = useState<number | undefined>(undefined);
+  const historyRef = useRef(createHistory<VideoBlueprint>());
+
   // Timeline provided by user (extra - single-page will use it)
   const [timelineFileName, setTimelineFileName] = useState<string>("");
   const [customTimeline, setCustomTimeline] = useState<{ w: string; s: number; e: number; para: number }[] | null>(null);
@@ -1791,18 +1817,19 @@ export default function App() {
     }
   }, [spec, currentTime, bgImage]);
 
-  // playback loop
+  // Playback loop (drives unified timeline and audio playback)
   useEffect(() => {
-    if (!isPlaying || !spec) return;
+    if (!isPlaying) return;
+    const activeDur = editorMode === "timeline" ? blueprint.timeline.duration : (spec?.duration || duration || 10);
     let last = performance.now();
     const tick = (now: number) => {
       const dt = (now - last) / 1000;
       last = now;
       setCurrentTime((prev) => {
         const next = prev + dt;
-        if (next >= spec.duration) {
+        if (next >= activeDur) {
           setIsPlaying(false);
-          return spec.duration;
+          return activeDur;
         }
         return next;
       });
@@ -1810,17 +1837,36 @@ export default function App() {
     };
     animRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animRef.current);
-  }, [isPlaying, spec]);
+  }, [isPlaying, editorMode, blueprint.timeline.duration, spec, duration]);
 
-  // render on time change (includes bg + voice sync)
+  // Unified Canvas Rendering Loop
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !spec) return;
+    if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const vw = (spec as unknown as { _voiceWords?: { w: string; s: number; e: number; para: number }[] })._voiceWords;
-    renderFrame(ctx, spec, currentTime, spriteCacheRef.current, bgImage, vw);
-  }, [currentTime, spec, bgImage]);
+
+    if (editorMode === "timeline") {
+      canvas.width = blueprint.project.width || 1920;
+      canvas.height = blueprint.project.height || 1080;
+      videoCompositor.render(ctx, blueprint, currentTime, {
+        watermarkText: blueprint.project.watermark,
+        isShorts: blueprint.project.aspectRatio === "9:16",
+      });
+    } else {
+      if (spec) {
+        const vw = (spec as unknown as { _voiceWords?: { w: string; s: number; e: number; para: number }[] })._voiceWords;
+        renderFrame(ctx, spec, currentTime, spriteCacheRef.current, bgImage, vw);
+      } else {
+        canvas.width = blueprint.project.width || 1920;
+        canvas.height = blueprint.project.height || 1080;
+        videoCompositor.render(ctx, blueprint, currentTime, {
+          watermarkText: blueprint.project.watermark,
+          isShorts: blueprint.project.aspectRatio === "9:16",
+        });
+      }
+    }
+  }, [currentTime, blueprint, editorMode, spec, bgImage]);
 
   const toast = useCallback((msg: string) => {
     setShowToast(msg);
@@ -1876,6 +1922,16 @@ export default function App() {
       });
       try {
         const mono = await decodeToMono(file);
+        const realAudioDur = mono.data.length / mono.sampleRate;
+        if (Number.isFinite(realAudioDur) && realAudioDur > 0) {
+          setActualAudioDuration(realAudioDur);
+          setBlueprint((prev) => {
+            historyRef.current.push(prev);
+            return repairBlueprint(prev, realAudioDur);
+          });
+          setDuration(realAudioDur);
+        }
+
         const vad = analyseVAD(mono);
         setVadResult(vad);
         if (!vad.usable) {
@@ -2324,11 +2380,89 @@ export default function App() {
     return { words, estMin, scenes: scenes.length };
   }, [script, wpm, scenes.length]);
 
+  const selectedScene = useMemo(() => {
+    return blueprint.scenes.find((s) => s.id === selectedSceneId) || blueprint.scenes[0] || null;
+  }, [blueprint.scenes, selectedSceneId]);
+
+  const handleUpdateScene = useCallback((updated: BlueprintScene) => {
+    historyRef.current.push(blueprint);
+    setBlueprint((prev) => ({
+      ...prev,
+      scenes: prev.scenes.map((s) => (s.id === updated.id ? updated : s)),
+    }));
+  }, [blueprint]);
+
+  const handleDeleteScene = useCallback((sceneId: string) => {
+    if (blueprint.scenes.length <= 1) {
+      toast(isBn ? "কমপক্ষে একটি সিন থাকতে হবে" : "Must have at least one scene");
+      return;
+    }
+    historyRef.current.push(blueprint);
+    setBlueprint((prev) => {
+      const remaining = prev.scenes.filter((s) => s.id !== sceneId);
+      return {
+        ...prev,
+        scenes: remaining,
+        timeline: {
+          ...prev.timeline,
+          totalScenes: remaining.length,
+        },
+      };
+    });
+  }, [blueprint, isBn, toast]);
+
+  const handleSeek = useCallback((time: number) => {
+    const activeDur = editorMode === "timeline" ? blueprint.timeline.duration : (spec?.duration || duration || 10);
+    const clamped = Math.max(0, Math.min(activeDur, time));
+    setCurrentTime(clamped);
+    if (audioRef.current) {
+      audioRef.current.currentTime = clamped;
+    }
+  }, [blueprint.timeline.duration, editorMode, spec?.duration, duration]);
+
+  const handleExportFastVideo = async () => {
+    setIsExporting(true);
+    setExportProgress(0);
+    setExportStage(isBn ? "ভিডিও এনকোডিং শুরু হচ্ছে..." : "Initializing render engine...");
+    cancelExportRef.current = false;
+
+    const abortCtrl = new AbortController();
+    try {
+      const res = await exportVideo(
+        blueprint,
+        audioRef.current,
+        (p) => {
+          setExportProgress(p.progressPct);
+          setExportStage(p.stage);
+        },
+        abortCtrl.signal
+      );
+
+      setExportedVideo({
+        url: res.url,
+        name: res.fileName,
+        size: res.sizeMb,
+        blob: res.blob,
+      });
+      toast(isBn ? `ভিডিও প্রস্তুত (${res.sizeMb})!` : `Render complete (${res.sizeMb})!`);
+      const a = document.createElement("a");
+      a.href = res.url;
+      a.download = res.fileName;
+      a.click();
+    } catch (err: any) {
+      if (err.message !== "Export cancelled") {
+        toast(isBn ? `এক্সপোর্ট সমস্যা: ${err.message}` : `Export error: ${err.message}`);
+      }
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#06080e] text-[#e9eefb] flex flex-col selection:bg-[#7c5cff]/30">
       {/* Header */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#0d1120]/80 border-b border-[#232d47]">
-        <div className="mx-auto max-w-[1600px] px-4 md:px-6 h-[56px] flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#0d1120]/90 border-b border-[#232d47]">
+        <div className="mx-auto max-w-[1700px] px-4 md:px-6 h-[56px] flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#5b8dff] to-[#b06cff] grid place-items-center font-black text-white shadow-lg shadow-[#5b8dff]/20">
               ⚡
@@ -2338,59 +2472,232 @@ export default function App() {
                 <span className="font-extrabold tracking-tight text-[15px]">CutFree</span>
                 <span className="text-[#5b8dff] font-extrabold text-[15px]">Studio</span>
                 <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1a2440] border border-[#2a365c] text-[#8cb4ff]">
-                  v2.4 • Factory
+                  v2.5 • Master
                 </span>
               </div>
-              <div className="text-[11px] text-[#8d9cc2] hidden sm:block -mt-0.5">
-                {isBn ? "ব্রাউজারেই পুরো ভিডিও ফ্যাক্টরি — শূন্য খরচ, শূন্য সার্ভার" : "Full video factory in your browser — zero cost, zero server"}
+              <div className="text-[11px] text-[#8d9cc2] hidden sm:block -mt-0.5 truncate max-w-[320px]">
+                {blueprint.project.title || (isBn ? "ভিডিও প্রোডাকশন স্টুডিও" : "Production Studio")}
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="hidden lg:flex items-center gap-1.5 text-[11px] bg-[#151b2e] border border-[#232d47] rounded-full px-2.5 py-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[#8d9cc2]">{isBn ? "AI রেডি" : "AI ready"}</span>
-              <span className="w-px h-3 bg-[#232d47] mx-1" />
-              <span className="text-white font-semibold">
-                {spec ? `${fmtTime(duration)} • ${spec.scenes.length} সিন` : "—"}
-              </span>
-            </div>
-            <a
-              href="/studio.html"
-              className="hidden md:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full bg-[#151b2e] border border-[#2e3a5c] hover:border-[#5b8dff] transition"
-            >
-              <Film className="w-3.5 h-3.5" /> {isBn ? "ক্লাসিক স্টুডিও" : "Classic Studio"}
-            </a>
-            <a
-              href="/cutfree.html"
-              className="hidden md:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full bg-[#151b2e] border border-[#2e3a5c] hover:border-[#5b8dff] transition"
-            >
-              ✂️ {isBn ? "এডিটর" : "Editor"}
-            </a>
+          {/* Mode Switcher */}
+          <div className="hidden md:flex items-center bg-[#121829] p-1 rounded-xl border border-[#232d47]">
             <button
-              onClick={() => {
-                setActiveTab("export");
-                handleExport();
-              }}
-              className="hidden md:inline-flex items-center gap-1.5 text-xs font-black px-4 py-2 rounded-full bg-gradient-to-br from-[#22d3ee] to-[#0ea5e9] text-[#051018] shadow-lg shadow-[#22d3ee]/20 hover:brightness-110 transition cursor-pointer"
+              onClick={() => setEditorMode("timeline")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                editorMode === "timeline" ? "bg-[#5b8dff] text-white shadow-md shadow-[#5b8dff]/20" : "text-[#8d9cc2] hover:text-white"
+              }`}
             >
-              <Download className="w-3.5 h-3.5" /> {isBn ? "ভিডিও ডাউনলোড" : "Download Video"}
+              <Film className="w-3.5 h-3.5" />
+              <span>{isBn ? "টাইমলাইন স্টুডিও" : "Timeline Studio"}</span>
             </button>
             <button
-              onClick={() => setLang((v) => (v === "bn" ? "en" : "bn"))}
-              className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-full bg-white text-[#0d1120] hover:bg-[#e9eefb] transition"
+              onClick={() => setEditorMode("wizard")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                editorMode === "wizard" ? "bg-[#5b8dff] text-white shadow-md shadow-[#5b8dff]/20" : "text-[#8d9cc2] hover:text-white"
+              }`}
             >
-              <Languages className="w-3.5 h-3.5" /> {lang === "bn" ? "বাংলা / EN" : "EN / বাংলা"}
+              <SquareStack className="w-3.5 h-3.5" />
+              <span>{isBn ? "কুইক উইজার্ড" : "Quick Wizard"}</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Undo / Redo */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => {
+                  const prev = historyRef.current.undo(blueprint);
+                  if (prev) {
+                    setBlueprint(prev);
+                    toast(isBn ? "আনডু করা হয়েছে" : "Undo applied");
+                  }
+                }}
+                disabled={!historyRef.current.canUndo}
+                className="p-2 rounded-lg bg-[#151b2e] border border-[#232d47] text-[#cbd5e1] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+                title="Undo"
+              >
+                <Undo2 className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => {
+                  const next = historyRef.current.redo(blueprint);
+                  if (next) {
+                    setBlueprint(next);
+                    toast(isBn ? "রিডু করা হয়েছে" : "Redo applied");
+                  }
+                }}
+                disabled={!historyRef.current.canRedo}
+                className="p-2 rounded-lg bg-[#151b2e] border border-[#232d47] text-[#cbd5e1] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+                title="Redo"
+              >
+                <Redo2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Assets button */}
+            <button
+              onClick={() => setIsAssetPanelOpen(!isAssetPanelOpen)}
+              className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
+                isAssetPanelOpen ? "bg-[#38bdf8]/20 border-[#38bdf8] text-[#38bdf8]" : "bg-[#151b2e] border-[#232d47] text-[#cbd5e1] hover:text-white"
+              }`}
+            >
+              <FolderKanban className="w-3.5 h-3.5" />
+              <span>{isBn ? "অ্যাসেট" : "Assets"}</span>
+            </button>
+
+            {/* Blueprint JSON button */}
+            <button
+              onClick={() => setIsBlueprintModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#151b2e] border border-[#2e3a5c] hover:border-[#38bdf8] text-[#38bdf8] text-xs font-bold transition cursor-pointer"
+            >
+              <FileCode2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{isBn ? "ব্লুপ্রিন্ট JSON" : "Blueprint JSON"}</span>
+            </button>
+
+            {/* Render & Download */}
+            <button
+              onClick={() => {
+                if (editorMode === "timeline") {
+                  handleExportFastVideo();
+                } else {
+                  setActiveTab("export");
+                  handleExport();
+                }
+              }}
+              disabled={isExporting}
+              className="inline-flex items-center gap-1.5 text-xs font-black px-4 py-2 rounded-full bg-gradient-to-br from-[#22d3ee] to-[#0ea5e9] text-[#051018] shadow-lg shadow-[#22d3ee]/20 hover:brightness-110 transition cursor-pointer disabled:opacity-50"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>{isExporting ? `${exportProgress}%` : isBn ? "রেন্ডার ও ডাউনলোড" : "Render & Download"}</span>
+            </button>
+
+            <button
+              onClick={() => setLang((v) => (v === "bn" ? "en" : "bn"))}
+              className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-full bg-white text-[#0d1120] hover:bg-[#e9eefb] transition cursor-pointer"
+            >
+              <Languages className="w-3.5 h-3.5" /> {lang === "bn" ? "BN" : "EN"}
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main */}
-      <div className="flex-1 mx-auto max-w-[1600px] w-full flex flex-col lg:flex-row min-h-0">
-        {/* Sidebar */}
-        <aside className="w-full lg:w-[380px] xl:w-[400px] lg:shrink-0 bg-[#0d1120] lg:border-r border-[#232d47] flex flex-col lg:h-[calc(100vh-56px)] lg:sticky lg:top-[56px] lg:overflow-hidden">
+      {/* Hidden Audio Element for Authoritative Playback Sync */}
+      <audio
+        ref={audioRef}
+        src={audioUrl}
+        onTimeUpdate={(e) => {
+          if (isPlaying) {
+            setCurrentTime(e.currentTarget.currentTime);
+          }
+        }}
+        onEnded={() => setIsPlaying(false)}
+        className="hidden"
+      />
+
+      {/* Main Studio View */}
+      {editorMode === "timeline" ? (
+        <div className="flex-1 w-full flex flex-col min-h-0 bg-[#04060b]">
+          <div className="flex-1 flex min-h-0 overflow-hidden">
+            {/* Left: Asset Panel (collapsible) */}
+            {isAssetPanelOpen && (
+              <AssetPanel
+                onInsertAsset={(asset) => {
+                  if (selectedScene) {
+                    if (asset.type === "background") {
+                      handleUpdateScene({
+                        ...selectedScene,
+                        background: { ...(selectedScene.background || {}), assetId: asset.id },
+                      });
+                      toast(isBn ? `ব্যাকগ্রাউন্ড পরিবর্তন: ${asset.name || asset.id}` : `Background changed: ${asset.name || asset.id}`);
+                    } else if (asset.type === "character") {
+                      const chars = selectedScene.characters ? [...selectedScene.characters] : [];
+                      chars.push({ id: asset.id, action: "idle", emotion: "neutral", scale: 1.0 });
+                      handleUpdateScene({ ...selectedScene, characters: chars });
+                      toast(isBn ? `চরিত্র যুক্ত হলো: ${asset.name || asset.id}` : `Character added: ${asset.name || asset.id}`);
+                    } else if (asset.type === "object") {
+                      const objs = selectedScene.objects ? [...selectedScene.objects] : [];
+                      objs.push({ id: `obj_${Date.now()}`, assetId: asset.id, position: { x: 0.5, y: 0.5 }, scale: 1.0 });
+                      handleUpdateScene({ ...selectedScene, objects: objs });
+                      toast(isBn ? `অবজেক্ট যুক্ত হলো: ${asset.name || asset.id}` : `Object added: ${asset.name || asset.id}`);
+                    }
+                  }
+                }}
+                onCustomImageUpload={(id) => {
+                  toast(isBn ? `ছবি আপলোড হলো: ${id}` : `Custom image registered: ${id}`);
+                }}
+              />
+            )}
+
+            {/* Center: Video Preview Stage */}
+            <main className="flex-1 flex flex-col items-center justify-center p-3 md:p-6 bg-gradient-to-br from-[#04060b] via-[#070a14] to-[#0b0f1e] overflow-hidden relative min-h-0">
+              <div
+                className="relative w-full max-w-[960px] max-h-[calc(100vh-340px)] rounded-2xl overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.06)] bg-black flex items-center justify-center"
+                style={{
+                  aspectRatio: blueprint.project.aspectRatio === "9:16" ? "9/16" : "16/9",
+                }}
+              >
+                <canvas ref={canvasRef} className="w-full h-full object-contain block" />
+
+                {/* Badge */}
+                <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/65 backdrop-blur-xl border border-white/10 rounded-full px-3 py-1 text-[11px] font-bold text-white z-20">
+                  <span className={`w-2 h-2 rounded-full ${isPlaying ? "bg-emerald-400 animate-pulse" : "bg-[#5b8dff]"}`} />
+                  <span>{isPlaying ? (isBn ? "প্লে হচ্ছে" : "Playing") : (isBn ? "প্রিভিউ" : "Preview")}</span>
+                  <span>•</span>
+                  <span>{blueprint.project.width}×{blueprint.project.height}</span>
+                  <span>•</span>
+                  <span>{fmtTime(currentTime)} / {fmtTime(blueprint.timeline.duration)}</span>
+                  {blueprint.project.aspectRatio === "9:16" && (
+                    <span className="px-1.5 py-0.5 rounded-full bg-[#7c5cff] text-white text-[9px] font-black">9:16</span>
+                  )}
+                </div>
+
+                {/* Watermark preview */}
+                {blueprint.project.watermark && (
+                  <div className="absolute bottom-3 right-3 text-[11px] font-semibold text-white/70 bg-black/30 backdrop-blur px-2.5 py-1 rounded-full border border-white/10 z-20">
+                    {blueprint.project.watermark}
+                  </div>
+                )}
+
+                {/* Play overlay when paused at start */}
+                {!isPlaying && currentTime < 0.05 && (
+                  <button
+                    onClick={() => setIsPlaying(true)}
+                    className="absolute inset-0 grid place-items-center bg-black/20 backdrop-blur-[1px] group cursor-pointer z-10"
+                  >
+                    <span className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-white text-[#0d1120] grid place-items-center shadow-2xl group-hover:scale-105 transition">
+                      <Play className="w-7 h-7 md:w-8 md:h-8 ml-0.5" />
+                    </span>
+                  </button>
+                )}
+              </div>
+            </main>
+
+            {/* Right: Inspector */}
+            <Inspector
+              scene={selectedScene}
+              onUpdateScene={handleUpdateScene}
+              onDeleteScene={handleDeleteScene}
+            />
+          </div>
+
+          {/* Bottom: Multi-Track Timeline */}
+          <TimelineTrackView
+            blueprint={blueprint}
+            currentTime={currentTime}
+            duration={blueprint.timeline.duration}
+            isPlaying={isPlaying}
+            onSeek={handleSeek}
+            onTogglePlay={() => setIsPlaying(!isPlaying)}
+            onSelectScene={(id) => setSelectedSceneId(id)}
+            selectedSceneId={selectedSceneId}
+          />
+        </div>
+      ) : (
+        /* Wizard Mode */
+        <div className="flex-1 mx-auto max-w-[1600px] w-full flex flex-col lg:flex-row min-h-0">
+          <aside className="w-full lg:w-[380px] xl:w-[400px] lg:shrink-0 bg-[#0d1120] lg:border-r border-[#232d47] flex flex-col lg:h-[calc(100vh-56px)] lg:sticky lg:top-[56px] lg:overflow-hidden">
           {/* Clean 4-Tab Navigation */}
           <div className="grid grid-cols-4 p-1.5 gap-1 bg-[#0b0f1a] border-b border-[#1e2740] shrink-0">
             <button
@@ -3076,6 +3383,24 @@ export default function App() {
           </div>
         </main>
       </div>
+      )}
+
+      {/* Blueprint JSON Modal */}
+      <BlueprintModal
+        isOpen={isBlueprintModalOpen}
+        onClose={() => setIsBlueprintModalOpen(false)}
+        currentBlueprint={blueprint}
+        actualAudioDuration={actualAudioDuration}
+        onApplyBlueprint={(bp) => {
+          historyRef.current.push(blueprint);
+          setBlueprint(bp);
+          setDuration(bp.timeline.duration);
+          if (bp.scenes.length > 0) {
+            setSelectedSceneId(bp.scenes[0].id);
+          }
+          toast(isBn ? "ব্লুপ্রিন্ট স্টুডিওতে প্রয়োগ করা হলো!" : "Blueprint applied to studio!");
+        }}
+      />
 
       {/* Footer */}
       <footer className="border-t border-[#1a2440] bg-[#0d1120] px-4 md:px-6 py-3">

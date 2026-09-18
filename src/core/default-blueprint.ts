@@ -1,0 +1,264 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ * Initial Default CutFree Blueprint JSON v1.0
+ */
+
+import { VideoBlueprint } from "../types/blueprint";
+
+export const DEFAULT_BLUEPRINT: VideoBlueprint = {
+  version: "1.0",
+  project: {
+    id: "islamic-story-341s",
+    title: "বন্ধ দরজার ওপাশে কী ছিল? | Islamic Voice Bengali",
+    language: "bn-BD",
+    fps: 30,
+    width: 1920,
+    height: 1080,
+    aspectRatio: "16:9",
+    theme: "aurora",
+    mood: "cinematic",
+    watermark: "@IslamicVoiceBengali",
+  },
+  audio: {
+    source: "voice.mp3",
+    duration: 341.89,
+    sampleRate: 44100,
+    channels: 2,
+    fileName: "islamic-voice-narration.mp3",
+  },
+  timeline: {
+    duration: 341.89,
+    totalScenes: 6,
+    totalSegments: 12,
+    totalCaptions: 6,
+  },
+  scenes: [
+    {
+      id: "scene_01",
+      start: 0.0,
+      end: 45.0,
+      purpose: "intro_hook",
+      title: "বন্ধ দরজার ওপাশে কী ছিল?",
+      body: "বিসমিল্লাহির রাহমানির রাহিম। আপনারা শুনছেন Islamic Voice Bengali।",
+      background: {
+        assetId: "night_sky",
+        fit: "cover",
+        motion: "slow_pan",
+      },
+      characters: [
+        {
+          id: "narrator",
+          position: { x: 0.5, y: 0.72 },
+          scale: 1.0,
+          emotion: "mysterious",
+          action: "talk",
+          entrance: "fade_in",
+        },
+      ],
+      objects: [
+        {
+          id: "door_obj",
+          assetId: "closed_door",
+          position: { x: 0.82, y: 0.65 },
+          scale: 0.9,
+          animation: "glow",
+        },
+      ],
+      camera: {
+        preset: "slow_zoom_in",
+        intensity: 1.0,
+      },
+      transition: "fade",
+    },
+    {
+      id: "scene_02",
+      start: 45.0,
+      end: 98.5,
+      purpose: "context_setting",
+      title: "একটি ছোট্ট শহরের গল্প",
+      body: "সেখানে বাস করত এক সততাপ্রিয় যুবক সালমান। রাতের গভীর নীরবতায় এক অচেনা দরজা তার চোখে পড়ে।",
+      background: {
+        assetId: "rainy_street",
+        fit: "cover",
+        motion: "drift",
+      },
+      characters: [
+        {
+          id: "salman",
+          position: { x: 0.35, y: 0.74 },
+          scale: 0.95,
+          emotion: "alert",
+          action: "walk",
+          entrance: "enter_left",
+        },
+      ],
+      objects: [
+        {
+          id: "lantern_prop",
+          assetId: "lantern",
+          position: { x: 0.42, y: 0.68 },
+          scale: 0.8,
+          animation: "pulse",
+        },
+      ],
+      camera: {
+        preset: "pan_right",
+        intensity: 0.9,
+      },
+      transition: "slide",
+    },
+    {
+      id: "scene_03",
+      start: 98.5,
+      end: 172.0,
+      purpose: "conflict_test",
+      title: "অন্তরের পরীক্ষা",
+      body: "দরজার ওপাশে ছিল এক পরম মূল্যবান আমানত। লোভ নয়, সততাই ছিল আসল পরীক্ষা।",
+      background: {
+        assetId: "old_mysterious_door",
+        fit: "cover",
+      },
+      characters: [
+        {
+          id: "salman",
+          position: { x: 0.5, y: 0.72 },
+          scale: 1.0,
+          emotion: "serious",
+          action: "idle",
+        },
+      ],
+      objects: [
+        {
+          id: "sacred_book",
+          assetId: "book",
+          position: { x: 0.5, y: 0.5 },
+          scale: 1.1,
+          animation: "float",
+        },
+      ],
+      camera: {
+        preset: "zoom_focus",
+        intensity: 1.1,
+      },
+      transition: "fade",
+    },
+    {
+      id: "scene_04",
+      start: 172.0,
+      end: 235.5,
+      purpose: "divine_resolution",
+      title: "সততার পুরস্কার",
+      body: "আল্লাহর ভয়ে যে ব্যক্তি নিজের নফসকে সংযত রাখে, তার জন্য রয়েছে উত্তম প্রতিদান।",
+      background: {
+        assetId: "islamic_mosque",
+        fit: "cover",
+      },
+      characters: [
+        {
+          id: "salman",
+          position: { x: 0.5, y: 0.72 },
+          scale: 1.0,
+          emotion: "inspired",
+          action: "nod",
+        },
+      ],
+      camera: {
+        preset: "camera_push",
+        intensity: 0.8,
+      },
+      transition: "wipe",
+    },
+    {
+      id: "scene_05",
+      start: 235.5,
+      end: 298.0,
+      purpose: "moral_takeaway",
+      title: "জীবনের বড় শিক্ষা",
+      body: "মানুষ যখন একা থাকে, তখন তার সততাই তার প্রকৃত ঈমানের প্রমাণ দেয়।",
+      background: {
+        assetId: "night_sky",
+        fit: "cover",
+      },
+      characters: [
+        {
+          id: "narrator",
+          position: { x: 0.5, y: 0.72 },
+          scale: 1.0,
+          emotion: "inspired",
+          action: "talk",
+        },
+      ],
+      camera: {
+        preset: "slow_zoom_out",
+        intensity: 0.8,
+      },
+      transition: "fade",
+    },
+    {
+      id: "scene_06",
+      start: 298.0,
+      end: 341.89,
+      purpose: "outro_call_to_action",
+      title: "Islamic Voice Bengali",
+      body: "প্রতিদিন সুন্দর ইসলামিক গল্প ও শিক্ষামূলক কথা শুনতে সাবস্ক্রাইব করে পাশে থাকুন। জাযাকাল্লাহু খাইরান।",
+      background: {
+        assetId: "night_sky",
+        fit: "cover",
+      },
+      characters: [
+        {
+          id: "narrator",
+          position: { x: 0.5, y: 0.72 },
+          scale: 1.0,
+          emotion: "happy",
+          action: "talk",
+          exit: "fade_out",
+        },
+      ],
+      camera: {
+        preset: "static",
+        intensity: 1.0,
+      },
+      transition: "fade",
+    },
+  ],
+  segments: [
+    { id: "seg_01", start: 0.0, end: 28.5, type: "speech", text: "বিসমিল্লাহির রাহমানির রাহিম। আপনারা শুনছেন Islamic Voice Bengali।" },
+    { id: "pause_01", start: 28.5, end: 45.0, type: "pause" },
+    { id: "seg_02", start: 45.0, end: 85.0, type: "speech", text: "সেখানে বাস করত এক সততাপ্রিয় যুবক সালমান।" },
+    { id: "pause_02", start: 85.0, end: 98.5, type: "pause" },
+    { id: "seg_03", start: 98.5, end: 155.0, type: "speech", text: "দরজার ওপাশে ছিল এক পরম মূল্যবান আমানত।" },
+    { id: "pause_03", start: 155.0, end: 172.0, type: "pause" },
+    { id: "seg_04", start: 172.0, end: 218.0, type: "speech", text: "আল্লাহর ভয়ে যে ব্যক্তি নিজের নফসকে সংযত রাখে..." },
+    { id: "pause_04", start: 218.0, end: 235.5, type: "pause" },
+    { id: "seg_05", start: 235.5, end: 280.0, type: "speech", text: "মানুষ যখন একা থাকে, তখন তার সততাই তার প্রকৃত ঈমানের প্রমাণ দেয়।" },
+    { id: "pause_05", start: 280.0, end: 298.0, type: "pause" },
+    { id: "seg_06", start: 298.0, end: 332.0, type: "speech", text: "প্রতিদিন সুন্দর ইসলামিক গল্প শুনতে সাবস্ক্রাইব করে পাশে থাকুন।" },
+    { id: "pause_06", start: 332.0, end: 341.89, type: "pause" },
+  ],
+  captions: [
+    { id: "cap_01", start: 0.0, end: 28.5, text: "বিসমিল্লাহির রাহমানির রাহিম। আপনারা শুনছেন Islamic Voice Bengali।" },
+    { id: "cap_02", start: 45.0, end: 85.0, text: "সেখানে বাস করত এক সততাপ্রিয় যুবক সালমান।" },
+    { id: "cap_03", start: 98.5, end: 155.0, text: "দরজার ওপাশে ছিল এক পরম মূল্যবান আমানত।" },
+    { id: "cap_04", start: 172.0, end: 218.0, text: "আল্লাহর ভয়ে যে ব্যক্তি নিজের নফসকে সংযত রাখে..." },
+    { id: "cap_05", start: 235.5, end: 280.0, text: "মানুষ যখন একা থাকে, তখন তার সততাই ঈমানের প্রমাণ দেয়।" },
+    { id: "cap_06", start: 298.0, end: 338.0, text: "সাবস্ক্রাইব করে পাশে থাকুন। জাযাকাল্লাহু খাইরান।" },
+  ],
+  assets: [
+    { id: "night_sky", type: "background", name: "Night Sky", description: "Starry dark blue night sky" },
+    { id: "rainy_street", type: "background", name: "Rainy Street", description: "Rainy empty street with reflections" },
+    { id: "old_mysterious_door", type: "background", name: "Mysterious Door", description: "Moonlit historic doorway" },
+    { id: "islamic_mosque", type: "background", name: "Islamic Mosque", description: "Golden archway architecture" },
+    { id: "narrator", type: "character", name: "Islamic Voice", description: "Narrator figure" },
+    { id: "salman", type: "character", name: "Salman", description: "Contemplative young man" },
+    { id: "closed_door", type: "object", name: "Closed Door" },
+    { id: "lantern", type: "object", name: "Lantern" },
+    { id: "book", type: "object", name: "Book" },
+  ],
+  export: {
+    format: "mp4",
+    videoCodec: "h264",
+    audioCodec: "aac",
+  },
+};
