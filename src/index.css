@@ -152,3 +152,58 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+
+/* === CutFree production workspace v2.6 === */
+.cutfree-app {
+  --cf-bg: #070a0f;
+  --cf-panel: #0c1118;
+  --cf-panel-2: #101720;
+  --cf-border: #202a35;
+  --cf-muted: #8290a0;
+  --cf-blue: #38bdf8;
+}
+.cutfree-app header { height: 64px !important; }
+.cutfree-app header > div { height: 64px !important; max-width: none !important; padding-left: 18px !important; padding-right: 18px !important; }
+.cutfree-app header .bg-gradient-to-br { background: #182331 !important; }
+.cutfree-app header .shadow-lg { box-shadow: none !important; }
+.cutfree-app header .rounded-full { border-radius: 8px !important; }
+.cutfree-app header button { box-shadow: none !important; }
+.cutfree-app main { background: #070a0f !important; }
+.cutfree-app main > div:first-child { background: #070a0f !important; }
+.cutfree-app canvas { background: #020406; }
+.cutfree-app [class*="shadow-[0_24px_80px"] { box-shadow: 0 16px 40px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.07) !important; }
+.cutfree-app .bg-gradient-to-br { background-image: none !important; }
+.cutfree-app .bg-gradient-to-r { background-image: none !important; }
+.cutfree-app .bg-gradient-to-r.from-\[\#22d3ee\] { background: #38bdf8 !important; }
+.cutfree-app .bg-gradient-to-br.from-\[\#22d3ee\] { background: #38bdf8 !important; }
+.cutfree-app aside { background: #0c1118 !important; border-color: #202a35 !important; }
+.cutfree-app aside .bg-\[\#080c18\],
+.cutfree-app aside .bg-\[\#090e1c\] { background: #0a0f15 !important; }
+.cutfree-app .rounded-2xl,
+.cutfree-app .rounded-xl { border-color: #202a35; }
+.cutfree-app input, .cutfree-app textarea, .cutfree-app select { background: #101720 !important; border-color: #26313d !important; }
+.cutfree-app input:focus, .cutfree-app textarea:focus, .cutfree-app select:focus { border-color: #38bdf8 !important; box-shadow: 0 0 0 2px rgba(56,189,248,.10) !important; }
+.cutfree-app > footer { display: none !important; }
+
+/* Timeline is the primary workbench. */
+.cutfree-app [class*="h-[220px]"] { height: 250px !important; background: #0a0f15 !important; border-color: #202a35 !important; }
+.cutfree-app [class*="h-[220px]"] [class*="h-10"] { height: 42px !important; background: #0c1118 !important; border-color: #202a35 !important; }
+.cutfree-app [class*="h-[220px]"] [class*="bg-[#080c16]"] { background: #0c1118 !important; }
+.cutfree-app [class*="h-[220px]"] [class*="bg-[#060913]"],
+.cutfree-app [class*="h-[220px]"] [class*="bg-[#090d1c]"] { background: #080d13 !important; }
+
+/* Make the canvas stage spacious and neutral. */
+.cutfree-app main.flex-1.flex.flex-col.items-center.justify-center { padding: 20px !important; }
+.cutfree-app main.flex-1.flex.flex-col.items-center.justify-center > div { max-width: 1100px !important; }
+
+/* Cleaner controls. */
+.cutfree-app button:hover { filter: brightness(1.06); }
+.cutfree-app .text-\[\#8d9cc2\] { color: #8996a6 !important; }
+.cutfree-app .text-\[\#6b7bb0\] { color: #667586 !important; }
+
+@media (max-width: 900px) {
+  .cutfree-app header > div { padding: 0 10px !important; }
+  .cutfree-app main.flex-1.flex.flex-col.items-center.justify-center { padding: 10px !important; }
+  .cutfree-app [class*="h-[220px]"] { height: 220px !important; }
+}
