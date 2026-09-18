@@ -5,7 +5,7 @@
  * Matches exact layout, styling, and categories from design specification.
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Search,
   SlidersHorizontal,
@@ -74,6 +74,12 @@ export const AssetPanel: React.FC<AssetPanelProps> = ({
     };
     reader.readAsDataURL(file);
   };
+
+  useEffect(() => {
+    const map: Record<string, string> = { characters: "characters", backgrounds: "backgrounds", objects: "objects" };
+    if (map[activeNavTab]) setSelectedFilter(map[activeNavTab]);
+    else if (activeNavTab === "assets") setSelectedFilter("all");
+  }, [activeNavTab]);
 
   const matchesSearch = (name: string, id: string) => {
     if (!searchQuery) return true;
@@ -163,6 +169,46 @@ export const AssetPanel: React.FC<AssetPanelProps> = ({
 
       {/* Scrollable Categories List */}
       <div className="flex-1 overflow-y-auto p-3.5 space-y-4 scrollbar-thin">
+        {activeNavTab === "templates" && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <LayoutTemplate className="w-4 h-4 text-[#765CFF]" />
+              <div>
+                <div className="font-extrabold text-white text-[12px]">Production Templates</div>
+                <div className="text-[10px] text-[#8DA0B4]">Apply a visual treatment to the whole project.</div>
+              </div>
+            </div>
+            {[
+              ["islamic_story", "Islamic Story", "Warm • slow camera • word reveal"],
+              ["cinematic", "Cinematic", "Dramatic camera • blur transitions"],
+              ["shorts_fast", "Shorts Fast", "9:16 • energetic motion • pop text"],
+              ["minimal", "Minimal", "Clean cuts • static camera"],
+            ].map(([id, name, desc]) => (
+              <button key={id} onClick={() => onApplyTemplate?.(id)} className="w-full text-left p-3 rounded-xl bg-[#07101A] border border-[#213248] hover:border-[#765CFF] hover:bg-[#0F1C2A] transition group">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[#765CFF]" />
+                  <span className="font-bold text-white text-[12px]">{name}</span>
+                </div>
+                <div className="text-[10px] text-[#8DA0B4] mt-1 pl-6">{desc}</div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {activeNavTab === "text" && (
+          <div className="p-3 rounded-xl bg-[#07101A] border border-[#213248]">
+            <div className="font-bold text-white text-[12px]">Text & Captions</div>
+            <p className="text-[10px] text-[#8DA0B4] mt-1">Select a scene, then use Inspector → Text to edit text animation.</p>
+          </div>
+        )}
+
+        {activeNavTab === "scenes" && (
+          <div className="p-3 rounded-xl bg-[#07101A] border border-[#213248]">
+            <div className="font-bold text-white text-[12px]">Scenes</div>
+            <p className="text-[10px] text-[#8DA0B4] mt-1">Use the timeline to select, split, duplicate and delete scenes.</p>
+          </div>
+        )}
+
         {/* CHARACTERS SECTION */}
         {showCharacters && (
           <div>
