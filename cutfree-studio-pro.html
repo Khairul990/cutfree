@@ -798,6 +798,20 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
   box-shadow: 0 6px 18px rgba(16, 185, 129, 0.6);
   transform: translateY(-1px);
 }
+
+/* selection readout under the align timeline */
+.align-sel {
+  margin: 6px 0 2px;
+  padding: 6px 10px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #ffd9e8;
+  background: rgba(255, 92, 138, .10);
+  border: 1px solid rgba(255, 92, 138, .38);
+  border-radius: 8px;
+}
+#fTextShift { width: 100%; }
+.field > span b { color: var(--ac); }
 </style>
 </head>
 <body class="studio">
@@ -910,12 +924,22 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
             <input type="text" id="fEndCard" placeholder="সমাপ্ত" />
           </label>
         </div>
+        <label class="field">
+          <span><span data-i18n="fTextShift">টেক্সট শিফট</span> · <b id="textShiftVal">0.00s</b></span>
+          <input type="range" id="fTextShift" min="-40" max="80" step="5" value="0" />
+          <small class="hint" data-i18n="fTextShiftHint">নেগেটিভ = লেখা ভয়েসের আগেই ভেসে ওঠে, পজিটিভ = একটু পরে (ক্যাপশন নড়ে না, শুধু পর্দার টাইপোগ্রাফি)</small>
+        </label>
+        <label class="chk">
+          <input type="checkbox" id="fCaptionBars" />
+          <span data-i18n="fCaptionBars">লাইন ছাড়াও নিচে ক্যাপশন বার (বার্ন-ইন সাবটাইটেল)</span>
+        </label>
         <div id="alignWrap" hidden>
           <div class="align-head">
             <span class="align-stats" id="alignStats"></span>
             <button class="btn ghost small" id="btnAlignPlay" type="button" title="Track again" data-i18n="ctaEstimate">🎧 আবার ট্র্যাক</button>
           </div>
-          <canvas id="alignCanvas" height="130"></canvas>
+          <canvas id="alignCanvas" height="130" title="ক্লিক করে যান · ক্যাপশন বারের প্রান্ত টেনে টাইমিং ঠিক করুন"></canvas>
+          <div class="align-sel" id="alignSel" hidden></div>
           <div class="align-list" id="alignList"></div>
           <p class="hint" data-i18n="stAlignHint">ওয়েভফর্মে ক্লিক করে সেই মুহূর্তে যান · নিচের লাইনে ক্লিক করে লাইন ধরে শুনুন</p>
         </div>
@@ -1071,7 +1095,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
           <button class="btn icon" id="btnRew" type="button" title="Start">⏮</button>
           <button class="btn primary icon-round" id="btnPlay" type="button">▶</button>
           <button class="btn icon" id="btnFwd" type="button" title="End">⏭</button>
-          <input type="range" id="scrub" min="0" max="100" value="0" step="0.1" />
+          <input type="range" id="scrub" min="0" max="1000" value="0" step="1" aria-label="টাইমলাইন স্ক্রাব" />
           <span class="time" id="timeLabel">00:00 / 00:00</span>
         </div>
         <div class="scene-strip" id="sceneStrip"></div>
@@ -1464,6 +1488,18 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       sampleBatch: 'নমুনা ব্যাচ', clearBrief: 'খালি করুন',
       storyTitle: 'স্টোরি মোড — ভয়েস ট্র্যাক',
       fStory: 'স্টোরি মোড (ভয়েস ট্র্যাক করে গল্পের ভিডিও)',
+      fTextShift: 'টেক্সট শিফট',
+      fTextShiftHint: 'নেগেটিভ = লেখা ভয়েসের আগেই ভেসে ওঠে, পজিটিভ = একটু পরে (ক্যাপশন নড়ে না, শুধু পর্দার টাইপোগ্রাফি)',
+      fCaptionBars: 'লাইন ছাড়াও নিচে ক্যাপশন বার (বার্ন-ইন সাবটাইটেল)',
+      alignSelCue: 'নির্বাচিত ক্যাপশন {a} → {b} ({dur}s) · ←/→ দিয়ে সরান (Shift = ছোট ধাপ), প্রান্ত টেনে লম্বা/ছোট করুন',
+      alignCueMoved: 'ক্যাপশন টাইমিং আপডেট হয়েছে — রেন্ডার আর SRT-তেও যাবে',
+      alignBarsOn: 'ক্যাপশন বার চালু — ট্র্যাক করা কিউগুলোই বার্ন-ইন হবে',
+      fTextShift: 'Text shift',
+      fTextShiftHint: 'Negative rises the words before the voice, positive a little after (captions stay put — only the on-screen typography moves)',
+      fCaptionBars: 'Also burn in caption bars under the line',
+      alignSelCue: 'Caption {a} → {b} ({dur}s) · ←/→ to nudge (Shift = fine), drag an edge to stretch',
+      alignCueMoved: 'Caption timing updated — the render and the SRT follow',
+      alignBarsOn: 'Caption bars on — the tracked cues will be burned in',
       storyHint: 'গল্পের টেক্সট লিখে ভয়েসটা দিন — ভয়েস ট্র্যাক করে প্রতিটা শব্দ কখন বলা হচ্ছে বের করা হয়, তারপর সেই মুহূর্তেই শব্দ ফুটিয়ে তোলে টাইপোগ্রাফি। পর্দার লাইনটাই এখানে ক্যাপশন; বিরতির জায়গায় বসে বিরতি কার্ড। চাইলে আলাদা সাবটাইটেলও দিতে পারেন — সেটাই তখন প্রাধান্য পাবে।',
       ctaTrack: '🎧 ভয়েস ট্র্যাক করুন',
       fStoryStyle: 'টাইপোগ্রাফি',
@@ -2161,7 +2197,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
 
     // typewriter caret sitting right after the word being spoken
     if (o.hard && times && now >= 0 && activeIdx > -1) {
-      var caret = caretPosFor(o, times, activeIdx, size, maxWidth);
+      var caret = caretPosFor(ctx, o, times, activeIdx, size, maxWidth);
       if (caret) {
         ctx.save();
         ctx.globalAlpha = (0.55 + 0.45 * Math.abs(Math.sin(now * 6))) * (o.alpha == null ? 1 : o.alpha);
@@ -2224,7 +2260,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
   }
 
   // Where does the caret go for the word currently being spoken?
-  function caretPosFor(o, times, activeIdx, size, maxWidth) {
+  function caretPosFor(ctx, o, times, activeIdx, size, maxWidth) {
     var family = o.family || CFX.FONTS.display;
     var weight = o.weight || 700;
     var lineHeight = size * (o.lineHeight || 1.24);
@@ -4992,9 +5028,10 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
     }
     plan2.forEach(function (item) {
       var packed = packScene(item.scene, item.start, item.end, item.index, lang, input, shift);
-      // the story line on screen already is the caption — unless the user brought
-      // their own cues (imported/edited SRT), which always win
-      if (!input.captionCues) packed.caption = false;
+      // the story line on screen already is the caption: burn-in bars are only
+      // drawn when asked for (or when the user brought their own cues)
+      var wantBars = input.captionBars == null ? !!input.captionCues : !!input.captionBars;
+      if (!wantBars) packed.caption = false;
       scenes.push(packed);
       if (item.beat) {
         scenes.push({
@@ -5049,6 +5086,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
         perf: input.perf || 'high',
         shorts: !!input.shorts,
         safe: input.shorts ? { top: 0.11, bottom: 0.19 } : { top: 0.05, bottom: 0.08 },
+        textOffset: clamp(numOf(input.textOffset, 0), -1, 1.5),
         captions: {
           enabled: input.captions !== false, style: captionStyle,
           scale: input.shorts ? 1.1 : 1
@@ -5086,12 +5124,20 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
 
   // A body scene with scene-relative word timings (that is what the renderer
   // needs to pop each word exactly when it is spoken).
+  function numOf(v, dflt) {
+    var n = typeof v === 'number' ? v : parseFloat(v);
+    return (isFinite(n)) ? n : dflt;
+  }
+
   function packScene(scene, videoStart, videoEnd, index, lang, input, voiceShift) {
-    var shift = voiceShift || 0;
+    var shift = (voiceShift || 0);
+    // "text shift": nudge the typography against the voice without touching the
+    // audio — negative means the words rise a moment *before* they are spoken
+    var off = clamp(numOf(input && input.textOffset, 0), -1, 1.5);
     var dur = Math.max(1.15, round2(videoEnd - videoStart));
     var words = scene.words.map(function (wd) {
-      var s = round2(clamp(wd.start + shift - videoStart, 0, Math.max(0, dur - 0.05)));
-      var e = round2(clamp(wd.end + shift - videoStart, s + 0.05, dur));
+      var s = round2(clamp(wd.start + shift - videoStart + off, 0, Math.max(0, dur - 0.05)));
+      var e = round2(clamp(wd.end + shift - videoStart + off, s + 0.05, dur));
       return { w: wd.word, core: wd.core, s: s, e: e };
     });
     var text = scene.parts.join(scene.kind === 'list' ? '\n' : ' ').trim();
@@ -6917,6 +6963,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
   var t = function (k, v) { return window.cfT(k, v); };
 
   function store(key, val) {
@@ -6974,6 +7021,7 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
     cancelRequested: false,
     thumbTime: null,
     rendererKey: 0,
+    buildChain: null,     // serialises plan rebuilds (newest request paints last)
     timings: null,        // measured / estimated narration timing
     voiceBuffer: null,    // captured or uploaded narration audio
     track: null,          // voice-tracked alignment (CFX.align.track)
@@ -7033,8 +7081,10 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
         shorts: $('#fShorts').checked,
         story: $('#fStory').checked,
         multi: multi,
+        textOffset: (parseFloat(($('#fTextShift') || {}).value) || 0) / 100,
+        captionBars: !!($('#fCaptionBars') && $('#fCaptionBars').checked),
         captionStyle: $('#fCaptionStyle').value,
-        captionCues: S.srtCues || null,
+        captionCues: S.srtCues || ((S.track && (S.cuesEdited || ($('#fCaptionBars') && $('#fCaptionBars').checked))) ? S.track.cues : null),
         fitCaptions: true
       }
     };
@@ -7067,7 +7117,12 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       }
       if (!track) track = window.CFX.align.proportional(scriptForStory, { wps: 2.45 });
       var typedTitle = ($('#fTitle').value || '').trim();
+      var barsOn = !!($('#fCaptionBars') && $('#fCaptionBars').checked);
+      var shiftEl = $('#fTextShift');
       var spec2 = window.CFX.story.plan({
+        textOffset: shiftEl ? (parseFloat(shiftEl.value) || 0) / 100 : 0,
+        captionBars: barsOn || !!S.srtCues,
+        captionCues: S.srtCues || (barsOn && track.cues ? track.cues : null),
         title: typedTitle || item.title, script: scriptForStory, track: track,
         kicker: $('#fKicker').value.trim(), endCard: $('#fEndCard').value.trim(),
         style: $('#fStoryStyle').value, language: opts.language,
@@ -7487,11 +7542,20 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
     }
     var spec = buildSpec(form.items[0], form.options);
     toast(t('stMusicRendering'));
-    return prepareSpec(spec, $('#fMusic').checked).then(function (prepared) {
-      setPlan(prepared.spec, prepared.audioBuffer);
-      toast(t('stPlanReady'));
-      return { form: form, spec: prepared.spec, audioBuffer: prepared.audioBuffer };
-    });
+    var run = function () {
+      return prepareSpec(spec, $('#fMusic').checked).then(function (prepared) {
+        setPlan(prepared.spec, prepared.audioBuffer);
+        toast(t('stPlanReady'));
+        return { form: form, spec: prepared.spec, audioBuffer: prepared.audioBuffer };
+      });
+    };
+    // Rebuilds are serialised: two quick changes (Shorts then Build) each spend
+    // ~4 s in music synthesis, and without a queue the older one could land last
+    // and leave a stale plan (wrong aspect) in the preview.
+    var prev = S.buildChain || Promise.resolve();
+    var next = prev.then(run, run);
+    S.buildChain = next.then(function () { return null; }, function () { return null; });
+    return next;
   }
 
   function renderWith(mode, preferMp4) {
@@ -7643,6 +7707,8 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
         S.track = track;
         S.track.voiceStart = 0;                       // the story planner sets the real shift
         S.trackScript = script;
+        S.alignSel = null;                            // a fresh track, fresh selection
+        S.cuesEdited = false;
         renderAlign();
         toast((track.estimated ? t('stTrackEstimated') : t('stTracked')) + ' · ' + fmtTime(track.duration));
         showVoiceNote(track.estimated ? t('stTrackEstimated')
@@ -7714,13 +7780,19 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       c.stroke();
     }
 
-    // caption / line bars
-    (track.cues || []).forEach(function (cue) {
+    // caption / line bars — the selected one gets handles so it can be dragged
+    (track.cues || []).forEach(function (cue, ci) {
       var x = xOf(cue.start), w = Math.max(2, xOf(cue.end) - xOf(cue.start));
-      c.fillStyle = 'rgba(90,225,205,.20)';
+      var sel = (S.alignSel === ci);
+      c.fillStyle = sel ? 'rgba(255,140,190,.34)' : 'rgba(90,225,205,.20)';
       c.fillRect(x, cssH * 0.76, w, 10);
-      c.fillStyle = 'rgba(90,225,205,.65)';
+      c.fillStyle = sel ? '#ff5c8a' : 'rgba(90,225,205,.65)';
       c.fillRect(x, cssH * 0.76, w, 2);
+      if (sel) {
+        c.fillStyle = '#ff9ec4';
+        c.fillRect(x - 1.5, cssH * 0.72, 3, 18);
+        c.fillRect(x + w - 1.5, cssH * 0.72, 3, 18);
+      }
     });
 
     // paragraph boundaries (where a line starts)
@@ -7765,6 +7837,49 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       });
       list.appendChild(chip);
     });
+
+    // what (if anything) is selected, and how to move it
+    var selEl = $('#alignSel');
+    var selCue = (S.alignSel != null && track.cues) ? track.cues[S.alignSel] : null;
+    if (selEl) {
+      if (selCue) {
+        selEl.hidden = false;
+        selEl.textContent = t('alignSelCue', {
+          a: fmtTime(selCue.start), b: fmtTime(selCue.end),
+          dur: (selCue.end - selCue.start).toFixed(1)
+        });
+      } else {
+        selEl.hidden = true;
+        selEl.textContent = '';
+      }
+    }
+  }
+
+  // ---------- editing the caption bars straight on the timeline
+  function clampCue(idx) {
+    var r2 = function (x) { return Math.round(x * 100) / 100; };
+    var track = S.track;
+    if (!track || !track.cues || !track.cues[idx]) return;
+    var cues = track.cues, cue = cues[idx], prev = cues[idx - 1], next = cues[idx + 1];
+    var minDur = 0.12, dur = track.duration || 10;
+    cue.start = r2(Math.max(prev ? prev.end : 0, Math.min(cue.start, cue.end - minDur)));
+    cue.end = r2(Math.max(cue.start + minDur, Math.min(cue.end, next ? next.start : dur, dur)));
+    // the karaoke words must stay inside their own cue
+    (cue.words || []).forEach(function (wd) {
+      wd.s = r2(Math.max(cue.start, Math.min(wd.s, cue.end - 0.05)));
+      wd.e = r2(Math.max(wd.s + 0.05, Math.min(wd.e, cue.end)));
+    });
+  }
+
+  function commitCueEdit(msg) {
+    S.cuesEdited = true;
+    // the plan is rebuilt from the very same track, so the spec captions (video
+    // time, i.e. voiceStart already added) carry the edit; the SRT export reads
+    // those. Do NOT copy the raw audio-time cues into S.srtCues — that would
+    // shift the subtitles back by the title card's length.
+    if (S.spec) buildCurrentPlan();
+    renderAlign();
+    if (msg) toast(t(msg));
   }
 
   // Jump the preview to a moment in the *audio* time (the story shifts it).
@@ -7939,6 +8054,8 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
         shorts: $('#fShorts').checked,
         story: $('#fStory').checked,
         storyStyle: $('#fStoryStyle').value,
+        textShift: $('#fTextShift') ? parseFloat($('#fTextShift').value) : 0,
+        captionBars: !!($('#fCaptionBars') && $('#fCaptionBars').checked),
         kicker: $('#fKicker').value,
         endCard: $('#fEndCard').value,
         voiceId: $('#fVoicePick').value,
@@ -7995,6 +8112,12 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       $('#fNarrFit').checked = f.narrationFit !== false;
       $('#fStory').checked = !!f.story;
       if (f.storyStyle) $('#fStoryStyle').value = f.storyStyle;
+      if (f.textShift != null) {
+        $('#fTextShift').value = f.textShift;
+        var tv = $('#textShiftVal');
+        if (tv) tv.textContent = (parseFloat(f.textShift) / 100).toFixed(2) + 's';
+      }
+      $('#fCaptionBars').checked = !!f.captionBars;
       if (f.kicker != null) $('#fKicker').value = f.kicker;
       if (f.endCard != null) $('#fEndCard').value = f.endCard;
       if (f.privacy) $('#fPrivacy').value = f.privacy;
@@ -8132,26 +8255,120 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
     $('#fStoryStyle').addEventListener('change', function () {
       if (S.spec && S.spec.meta && S.spec.meta.story) buildCurrentPlan();
     });
+    // text shift: the label tracks the slider, the plan follows on release
+    var shiftInput = $('#fTextShift');
+    if (shiftInput) {
+      shiftInput.addEventListener('input', function () {
+        $('#textShiftVal').textContent = ((parseFloat(this.value) || 0) / 100).toFixed(2) + 's';
+      });
+      shiftInput.addEventListener('change', function () {
+        if (S.spec && S.spec.meta && S.spec.meta.story) buildCurrentPlan();
+      });
+    }
+    var barsBox = $('#fCaptionBars');
+    if (barsBox) {
+      barsBox.addEventListener('change', function () {
+        if (S.spec) buildCurrentPlan();
+        if (this.checked) toast(t('alignBarsOn'));
+      });
+    }
 
-    // align canvas: drag & click live audio/video scrubbing
+    // align canvas: the caption bars are editable, the rest of the strip scrubs
     var alignDragging = false;
+    var cueDrag = null;                 // { i, edge }
+    var EDGE = 7;                       // grab radius in css px
+
+    function canvasTime(e) {
+      var rect = $('#alignCanvas').getBoundingClientRect();
+      var frac = clamp((e.clientX - rect.left) / Math.max(1, rect.width), 0, 1);
+      return frac * (S.track ? (S.track.duration || 0) : 0);
+    }
+
+    function cueAt(clientX, clientY) {
+      var track = S.track;
+      if (!track || !track.cues || !track.cues.length) return null;
+      var rect = $('#alignCanvas').getBoundingClientRect();
+      var px = clientX - rect.left, py = clientY - rect.top;
+      var dur = Math.max(0.1, track.duration || 1);
+      var xOf = function (t2) { return (t2 / dur) * rect.width; };
+      var inBand = py >= rect.height * 0.70 && py <= rect.height * 0.92;
+      for (var i = 0; i < track.cues.length; i++) {
+        var cue = track.cues[i];
+        var xs = xOf(cue.start), xe = xOf(cue.end);
+        if (py >= rect.height * 0.55 && (Math.abs(px - xs) <= EDGE || Math.abs(px - xe) <= EDGE)) {
+          return { i: i, edge: Math.abs(px - xs) <= Math.abs(px - xe) ? 'start' : 'end' };
+        }
+        if (inBand && px >= xs && px <= xe) return { i: i, edge: null };
+      }
+      return null;
+    }
+
     function scrubAlign(e) {
       if (!S.track) return;
-      var canvas = $('#alignCanvas');
-      var rect = canvas.getBoundingClientRect();
-      var frac = clamp((e.clientX - rect.left) / Math.max(1, rect.width), 0, 1);
-      seekAudio(frac * (S.track.duration || 0));
+      seekAudio(canvasTime(e));
     }
+
+    $('#alignCanvas').addEventListener('mousemove', function (e) {
+      var hit = cueAt(e.clientX, e.clientY);
+      this.style.cursor = (hit && hit.edge) ? 'ew-resize' : (hit ? 'pointer' : 'crosshair');
+    });
+
     $('#alignCanvas').addEventListener('mousedown', function (e) {
+      var hit = cueAt(e.clientX, e.clientY);
+      if (hit && hit.edge) {
+        e.preventDefault();
+        cueDrag = hit;
+        S.alignSel = hit.i;
+        renderAlign();
+        return;
+      }
+      if (hit) {
+        S.alignSel = (S.alignSel === hit.i) ? null : hit.i;    // click it again to deselect
+        renderAlign();
+        seekAudio(S.track.cues[hit.i].start);
+        return;
+      }
+      S.alignSel = null;
       alignDragging = true;
       scrubAlign(e);
     });
+
     window.addEventListener('mousemove', function (e) {
+      if (cueDrag) {
+        var cue = S.track.cues[cueDrag.i];
+        if (cueDrag.edge === 'start') cue.start = canvasTime(e); else cue.end = canvasTime(e);
+        clampCue(cueDrag.i);
+        renderAlign();
+        return;
+      }
       if (alignDragging) scrubAlign(e);
     });
+
     window.addEventListener('mouseup', function () {
+      if (cueDrag) {
+        cueDrag = null;
+        commitCueEdit('alignCueMoved');
+        return;
+      }
       alignDragging = false;
     });
+
+    // arrow keys nudge the selected bar (Shift = 0.05s, otherwise 0.2s)
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      if (S.alignSel == null || !S.track || !S.track.cues || !S.track.cues[S.alignSel]) return;
+      var tag = (e.target && e.target.tagName) || '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      var cue = S.track.cues[S.alignSel];
+      var step = (e.shiftKey ? 0.05 : 0.2) * (e.key === 'ArrowRight' ? 1 : -1);
+      cue.start += step;
+      cue.end += step;
+      clampCue(S.alignSel);
+      e.preventDefault();
+      e.stopPropagation();
+      renderAlign();
+      commitCueEdit();
+    }, true);
 
     // script wizard templates
     var TEMPLATES = {
@@ -8523,6 +8740,18 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
       if (e.code === 'Space') { e.preventDefault(); S.playing ? pause() : play(); }
       if (e.key === 'r' || e.key === 'R') { e.preventDefault(); renderWith('fast', false); }
     });
+
+    // ?debug=1 publishes the workbench state so tests (and the console) can look inside
+    if (/[?&]debug=1/.test(location.search)) {
+      window.__cfxStudio = {
+        state: S,
+        plan: function () { return S.track; },
+        spec: function () { return S.spec; },
+        cues: function () { return (S.spec && S.spec.captions) || null; },
+        trackCues: function () { return (S.track && S.track.cues) || null; },
+        rebuild: function () { return buildCurrentPlan(); }
+      };
+    }
 
     // first paint
     renderThemePicker();

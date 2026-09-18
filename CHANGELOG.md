@@ -3,6 +3,39 @@
 All notable changes to CutFree are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/).
 
+## [2.4.0] — 2026-09-18
+
+Your captions, on your timeline — plus two real bugs the caption work dug up.
+
+### Added
+- **Caption editing on the timeline (Pro Studio)** — the caption strip under the waveform is now
+  interactive: drag a cue's **end edge** to retime it, or select a cue and nudge it with
+  **← / →** (0.2 s; hold **Shift** for 0.05 s). Every edit flows through the whole chain —
+  the on-screen typography, the scene plan, the burned-in bars and the exported **SRT** move
+  together, and the readout (`Caption 00:12 → 00:15 (2.9s)`) names the cue you are holding.
+- **Caption bars are opt-in** — the plan only burns subtitle bars when you ask for them
+  (or when you import a caption file); story mode still leaves the spoken line alone so the
+  same words never appear twice.
+
+### Fixed
+- **The renderer threw `ReferenceError: ctx is not defined`** while drawing a voice-tracked
+  word with the typewriter caret (`caretPosFor` referenced a free `ctx`). The frame was never
+  painted — the canvas silently kept the previous one, so bars/text could freeze mid-preview
+  and a render could lose that frame. `caretPosFor` now takes the drawing context.
+- **Plan rebuilds raced** — Shorts + Build (or any two quick changes) each spend ~4 s in music
+  synthesis; whichever finished last won, so the preview could settle on the *older* plan
+  (e.g. a landscape canvas after enabling 9:16). Rebuilds are now serialised: the newest
+  request always paints last.
+- **The timeline scrubber only reached the first 10 % of the video** — `#scrub` was
+  `max="100"` while the handler maps `value / 1000 → seconds`. Now `min=0 max=1000 step=1`.
+
+### Tests
+- Studio suite **121/121** (was 110), including 11 new checks for §4m: story-aware baselining,
+  the cue drag, the SRT round-trip, the ← / → nudge, the opt-in burn-in pixels, and a guard
+  that the renderer actually *draws* the caption frame without throwing.
+- Editor **30/30**, factory **15/15** — and the same studio suite also passes against the
+  bundled single-file build (`PAGE=cutfree-studio-pro.html`).
+
 ## [2.3.0] — 2026-09-18
 
 Two studios, one repo — and the deployment actually deploys.

@@ -244,7 +244,7 @@
 
     // typewriter caret sitting right after the word being spoken
     if (o.hard && times && now >= 0 && activeIdx > -1) {
-      var caret = caretPosFor(o, times, activeIdx, size, maxWidth);
+      var caret = caretPosFor(ctx, o, times, activeIdx, size, maxWidth);
       if (caret) {
         ctx.save();
         ctx.globalAlpha = (0.55 + 0.45 * Math.abs(Math.sin(now * 6))) * (o.alpha == null ? 1 : o.alpha);
@@ -307,7 +307,7 @@
   }
 
   // Where does the caret go for the word currently being spoken?
-  function caretPosFor(o, times, activeIdx, size, maxWidth) {
+  function caretPosFor(ctx, o, times, activeIdx, size, maxWidth) {
     var family = o.family || CFX.FONTS.display;
     var weight = o.weight || 700;
     var lineHeight = size * (o.lineHeight || 1.24);

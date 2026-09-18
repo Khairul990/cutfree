@@ -262,9 +262,10 @@
     }
     plan2.forEach(function (item) {
       var packed = packScene(item.scene, item.start, item.end, item.index, lang, input, shift);
-      // the story line on screen already is the caption — unless the user brought
-      // their own cues (imported/edited SRT), which always win
-      if (!input.captionCues) packed.caption = false;
+      // the story line on screen already is the caption: burn-in bars are only
+      // drawn when asked for (or when the user brought their own cues)
+      var wantBars = input.captionBars == null ? !!input.captionCues : !!input.captionBars;
+      if (!wantBars) packed.caption = false;
       scenes.push(packed);
       if (item.beat) {
         scenes.push({
@@ -319,6 +320,7 @@
         perf: input.perf || 'high',
         shorts: !!input.shorts,
         safe: input.shorts ? { top: 0.11, bottom: 0.19 } : { top: 0.05, bottom: 0.08 },
+        textOffset: clamp(numOf(input.textOffset, 0), -1, 1.5),
         captions: {
           enabled: input.captions !== false, style: captionStyle,
           scale: input.shorts ? 1.1 : 1
@@ -356,12 +358,20 @@
 
   // A body scene with scene-relative word timings (that is what the renderer
   // needs to pop each word exactly when it is spoken).
+  function numOf(v, dflt) {
+    var n = typeof v === 'number' ? v : parseFloat(v);
+    return (isFinite(n)) ? n : dflt;
+  }
+
   function packScene(scene, videoStart, videoEnd, index, lang, input, voiceShift) {
-    var shift = voiceShift || 0;
+    var shift = (voiceShift || 0);
+    // "text shift": nudge the typography against the voice without touching the
+    // audio — negative means the words rise a moment *before* they are spoken
+    var off = clamp(numOf(input && input.textOffset, 0), -1, 1.5);
     var dur = Math.max(1.15, round2(videoEnd - videoStart));
     var words = scene.words.map(function (wd) {
-      var s = round2(clamp(wd.start + shift - videoStart, 0, Math.max(0, dur - 0.05)));
-      var e = round2(clamp(wd.end + shift - videoStart, s + 0.05, dur));
+      var s = round2(clamp(wd.start + shift - videoStart + off, 0, Math.max(0, dur - 0.05)));
+      var e = round2(clamp(wd.end + shift - videoStart + off, s + 0.05, dur));
       return { w: wd.word, core: wd.core, s: s, e: e };
     });
     var text = scene.parts.join(scene.kind === 'list' ? '\n' : ' ').trim();

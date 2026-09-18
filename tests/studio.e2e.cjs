@@ -572,6 +572,30 @@ const SCRIPT = [
     const importedKeepsBar = withImported.scenes.filter(s => /^story/.test(s.type))
       .every(s => s.caption !== false);
 
+    // text shift nudges the typography against the voice without touching audio
+    const shifted = CFX.story.plan({
+      title: 'শিফট', script, track, language: 'bn', quality: '480p', textOffset: 0.3
+    });
+    const plain = CFX.story.plan({ title: 'শিফট', script, track, language: 'bn', quality: '480p' });
+    const firstWords = (spec) => spec.scenes.filter(x => x.type === 'story')[0].words;
+    const dOffset = firstWords(shifted).slice(1).map((wd, i) => +(wd.s - firstWords(plain)[i + 1].s).toFixed(2));
+    const shiftOk = dOffset.every(d => Math.abs(d - 0.3) < 0.06) &&
+      shifted.meta.textOffset === 0.3 &&
+      shifted.scenes.filter(x => x.type === 'story').every(x => x.words.every(wd => wd.s >= -0.01 && wd.e <= x.dur + 0.01));
+    const earlyShift = CFX.story.plan({ title: 'শিফট', script, track, language: 'bn', quality: '480p', textOffset: -0.4 });
+    const earlyOk = firstWords(earlyShift).every((wd, i) => wd.s <= firstWords(plain)[i].s + 0.01);
+
+    // burn-in bars: off by default (the line IS the caption), on when asked
+    const bars = CFX.story.plan({
+      title: 'বার', script, track, language: 'bn', quality: '480p',
+      captionBars: true, captionCues: track.cues
+    });
+    const barsRule = {
+      off: spec.scenes.filter(x => x.type === 'story').every(x => x.caption === false),
+      on: bars.scenes.filter(x => x.type === 'story').every(x => x.caption !== false),
+      cues: bars.captions.length
+    };
+
     // a short promo build of the same story (shorts) must stay portrait
     const shortsSpec = CFX.story.plan({ title: 'ছোট গল্প', script, track, language: 'bn', quality: '720p', shorts: true });
 
@@ -581,7 +605,7 @@ const SCRIPT = [
       revealChangesFrame: early !== later, cues: spec.captions.length, shiftedCues, cueShiftExact,
       wordsInsideScene: body.every(s => s.words.every(w => w.s >= -0.01 && w.e <= s.dur + 0.01 && w.e > w.s)),
       emphasis: body.filter(s => (s.emphasis || []).length).length,
-      captionRule, importedKeepsBar,
+      captionRule, importedKeepsBar, shiftOk, dOffset, earlyOk, barsRule,
       portrait: shortsSpec.height > shortsSpec.width, shortsSafe: shortsSpec.meta.safe,
       estimatedFallback: CFX.story.plan({ title: 'নামহীন', script, language: 'bn', quality: '720p' }).scenes.length > 2
     };
@@ -598,6 +622,9 @@ const SCRIPT = [
   check('story lines carry no duplicate caption bar', story.captionRule.silenced === story.captionRule.storyScenes &&
     story.captionRule.storyScenes > 0 && story.captionRule.titleHasBar, story.captionRule);
   check('imported captions are never suppressed', story.importedKeepsBar === true);
+  check('text shift moves the typography and nothing else', story.shiftOk === true, story.dOffset);
+  check('an early shift pulls the words ahead of the voice', story.earlyOk === true);
+  check('caption bars are opt-in and track the cues', story.barsRule.off && story.barsRule.on && story.barsRule.cues >= 3, story.barsRule);
   check('word times stay inside their scene', story.wordsInsideScene);
   check('emphasis picker finds accent words', story.emphasis >= 1, story.emphasis);
   check('story mode supports 9:16 Shorts', story.portrait && story.shortsSafe.bottom === 0.19, story.shortsSafe);
@@ -735,6 +762,175 @@ const SCRIPT = [
   const backToClassic = await page.evaluate(() => document.querySelectorAll('.scene-chip').length);
   await page.check('#fStory');
   check('the classic director still works after story mode', backToClassic >= 2, backToClassic);
+
+  console.log('\n== 4m. caption bars are editable on the timeline ==');
+  // wait for the *story* plan (the tracked lines carry the strip under test)
+  const specJson = () => page.evaluate(() => JSON.stringify(window.__cfxStudio.spec().meta.story) +
+    JSON.stringify(window.__cfxStudio.cues()));
+  const beforeBuild = await specJson();
+  await page.click('#btnBuild');
+  await page.waitForFunction((prev) => {
+    const spec = window.__cfxStudio && window.__cfxStudio.spec();
+    if (!spec || !spec.meta || spec.meta.story !== true) return false;
+    const now = JSON.stringify(spec.meta.story) + JSON.stringify(window.__cfxStudio.cues());
+    return now !== prev;
+  }, beforeBuild, { timeout: 60000 }).catch(() => { });
+  await page.waitForTimeout(500);
+
+  const specCues = () => page.evaluate(() => window.__cfxStudio.cues().map(c => [+c.start.toFixed(2), +c.end.toFixed(2)]));
+  const parseSrt = (txt) => String(txt).trim().split(/\n\s*\n/).map((blk) => {
+    const m = blk.match(/(\d+):(\d\d):(\d\d),(\d+)\s*-->\s*(\d+):(\d\d):(\d\d),(\d+)/);
+    if (!m) return null;
+    const sec = (h, mm, ss, ms) => (+h) * 3600 + (+mm) * 60 + (+ss) + (+ms) / 1000;
+    return { start: sec(m[1], m[2], m[3], m[4]), end: sec(m[5], m[6], m[7], m[8]) };
+  }).filter(Boolean);
+  const waitSpec = async (before, timeout = 30000) => {
+    const t0 = Date.now();
+    let now = before;
+    while (Date.now() - t0 < timeout) {
+      now = await specCues();
+      if (JSON.stringify(now) !== JSON.stringify(before)) return now;
+      await page.waitForTimeout(300);
+    }
+    return now;
+  };
+
+  const specBefore = await specCues();
+  const srtBefore = parseSrt((await grab('#btnSrtExport')).text);
+  const last = specBefore.length - 1;
+  console.log('  cues before edit:', JSON.stringify(specBefore));
+
+  const bars = await page.evaluate(() => {
+    const c = document.querySelector('#alignCanvas');
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let teal = 0;
+    for (let y = Math.floor(c.height * 0.74); y <= Math.floor(c.height * 0.88); y++) {
+      for (let x = 0; x < c.width; x++) {
+        const i = (y * c.width + x) * 4;
+        if (d[i + 1] > 105 && d[i + 1] > d[i] + 35 && d[i + 2] > 80) teal++;
+      }
+    }
+    return teal;
+  });
+  check('the timeline paints caption bars to grab', bars > 400, bars);
+
+  // grab the END edge of the LAST caption (nothing to the right of it to clamp it)
+  await page.locator('#alignCanvas').scrollIntoViewIfNeeded();
+  await page.waitForTimeout(400);
+  const geom = await page.evaluate((idx) => {
+    const r = document.querySelector('#alignCanvas').getBoundingClientRect();
+    const cues = window.__cfxStudio.trackCues();
+    return {
+      left: r.left, top: r.top, width: r.width, height: r.height,
+      end: cues[idx].end, dur: window.__cfxStudio.state.track.duration
+    };
+  }, last);
+  check('the timeline is on screen for editing', geom.top > 0 && geom.top < 900, { top: Math.round(geom.top) });
+  const edgeX = geom.left + Math.min(0.99, geom.end / geom.dur) * geom.width;
+  const bandY = geom.top + geom.height * 0.81;
+  await page.mouse.move(edgeX, bandY);
+  const cursor = await page.evaluate(() => document.querySelector('#alignCanvas').style.cursor);
+  check('the edge shows a resize cursor', cursor === 'ew-resize', cursor);
+
+  await page.mouse.down();
+  await page.mouse.move(Math.min(geom.left + geom.width - 4, edgeX + 46), bandY, { steps: 8 });
+  await page.mouse.up();
+  const specDragged = await waitSpec(specBefore);
+  console.log('  drag:', JSON.stringify({ index: last, before: specBefore[last], after: specDragged[last] }));
+  check('dragging an edge retimes that caption',
+    specDragged[last][1] > specBefore[last][1] + 0.2 && Math.abs(specDragged[last][0] - specBefore[last][0]) < 0.06,
+    { before: specBefore[last], after: specDragged[last] });
+  const srtDragged = parseSrt((await grab('#btnSrtExport')).text);
+  check('the exported SRT follows the edit',
+    srtDragged[last] && srtBefore[last] && srtDragged[last].end - srtBefore[last].end > 0.2 &&
+    Math.abs(srtDragged[last].start - srtBefore[last].start) < 0.06,
+    { before: srtBefore[last], after: srtDragged[last] });
+
+  const sel = await page.evaluate(() => ({
+    hidden: document.querySelector('#alignSel').hidden,
+    text: document.querySelector('#alignSel').textContent.trim().slice(0, 44)
+  }));
+  check('the selection readout names the caption', sel.hidden === false && /\d\d:\d\d/.test(sel.text), sel);
+
+  await page.keyboard.press('ArrowRight');                    // +0.2s
+  const specNudged = await waitSpec(specDragged);
+  console.log('  nudge:', JSON.stringify({ before: specDragged[last], after: specNudged[last] }));
+  check('arrow keys nudge the selected caption', Math.abs((specNudged[last][0] - specDragged[last][0]) - 0.2) < 0.07,
+    { before: specDragged[last], after: specNudged[last] });
+
+  await page.click('#fTitle');
+  const specTyping = await specCues();
+  await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(600);
+  check('typing in a field keeps the arrows', JSON.stringify(await specCues()) === JSON.stringify(specTyping));
+  await page.click('#preview');
+
+  const stillScene = await page.evaluate(() => document.querySelectorAll('.scene-chip').length);
+  check('editing captions leaves the plan intact', stillScene >= 5, stillScene);
+
+  // burn-in: the same moment has to look different once the toggle is on
+  const seekTo = async (sec) => {
+    await page.evaluate((s2) => {
+      const el = document.querySelector('#scrub');
+      el.value = String(Math.min(1000, (s2 / window.__cfxStudio.state.renderer.duration) * 1000));
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    }, sec);
+    await page.waitForTimeout(320);
+  };
+  const storeBand = (key) => page.evaluate((k) => {
+    const c = document.querySelector('#preview');
+    const x = c.getContext('2d');
+    const y0 = Math.floor(c.height * 0.6);
+    const d = x.getImageData(0, y0, c.width, c.height - y0).data;
+    const arr = [];
+    for (let i = 0; i < d.length; i += 24) arr.push(Math.round((d[i] + d[i + 1] + d[i + 2]) / 3));
+    window[k] = arr;
+    return arr.length;
+  }, key);
+  const diffBand = (key) => page.evaluate((k) => {
+    const c = document.querySelector('#preview');
+    const x = c.getContext('2d');
+    const y0 = Math.floor(c.height * 0.6);
+    const d = x.getImageData(0, y0, c.width, c.height - y0).data;
+    const base = window[k] || [];
+    let diff = 0, i2 = 0;
+    for (let i = 0; i < d.length; i += 24) {
+      const v = Math.round((d[i] + d[i + 1] + d[i + 2]) / 3);
+      if (Math.abs(v - base[i2]) > 8) diff++;
+      i2++;
+    }
+    return diff;
+  }, key);
+
+  const probe = specNudged[last][0] + 0.4;       // inside the caption we just edited
+  await seekTo(probe);
+  const bandLen = await storeBand('bandOff');
+  await seekTo(probe);
+  const noise = await diffBand('bandOff');       // the very same frame again: ~0
+  await page.check('#fCaptionBars');
+  await page.waitForFunction(() => window.__cfxStudio.spec().scenes.filter(s => s.type === 'story').every(s => s.caption !== false),
+    null, { timeout: 30000 }).catch(() => { });
+  await page.waitForTimeout(600);
+  const barsInSpec = await page.evaluate(() => window.__cfxStudio.spec().scenes.filter(s => s.type === 'story').every(s => s.caption !== false));
+  await seekTo(probe);
+  const onDiff = await diffBand('bandOff');
+  // the live renderer must actually draw this frame — a throw inside the engine
+  // (seen once: caretPosFor using a free `ctx`) leaves the canvas stale and bars
+  // silently vanish, so assert the draw instead of trusting the pixels alone
+  const liveDrawn = await page.evaluate((t2) => {
+    const r = window.__cfxStudio.state.renderer;
+    const cue = r.captionAt(t2);
+    let drawn = true;
+    try { r.renderAt(t2); } catch (e) { drawn = String(e.message).slice(0, 70); }
+    return { cue: cue ? +(cue.end - cue.start).toFixed(2) : null, drawn };
+  }, probe);
+  console.log('  caption plate pixels:', JSON.stringify({ bandLen, noise, onDiff, barsInSpec, liveDrawn }));
+  check('the burn-in toggle paints caption bars', barsInSpec === true && noise < 40 && onDiff > 400,
+    { noise, onDiff, barsInSpec });
+  check('the renderer draws the caption frame without throwing',
+    liveDrawn.cue !== null && liveDrawn.drawn === true, liveDrawn);
+  await page.uncheck('#fCaptionBars');
+  await page.waitForTimeout(600);
 
   console.log('\n== 5. WebCodecs render -> WebM muxer ==');
   const renderResult = await page.evaluate(async (script) => {

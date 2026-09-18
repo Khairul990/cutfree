@@ -3,7 +3,7 @@
    The studio performs zero network requests, so caching the shell is enough to
    make the whole workbench work offline. Bump CACHE when files change.
    ========================================================================== */
-const CACHE = 'cutfree-studio-v5';
+const CACHE = 'cutfree-studio-v6';
 const SHELL = [
   './', './index.html', './editor.html', './studio.html', './studio-pro.html',
   './css/style.css', './css/studio.css',

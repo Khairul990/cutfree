@@ -7,6 +7,7 @@
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
   var t = function (k, v) { return window.cfT(k, v); };
 
   function store(key, val) {
@@ -64,6 +65,7 @@
     cancelRequested: false,
     thumbTime: null,
     rendererKey: 0,
+    buildChain: null,     // serialises plan rebuilds (newest request paints last)
     timings: null,        // measured / estimated narration timing
     voiceBuffer: null,    // captured or uploaded narration audio
     track: null,          // voice-tracked alignment (CFX.align.track)
@@ -123,8 +125,10 @@
         shorts: $('#fShorts').checked,
         story: $('#fStory').checked,
         multi: multi,
+        textOffset: (parseFloat(($('#fTextShift') || {}).value) || 0) / 100,
+        captionBars: !!($('#fCaptionBars') && $('#fCaptionBars').checked),
         captionStyle: $('#fCaptionStyle').value,
-        captionCues: S.srtCues || null,
+        captionCues: S.srtCues || ((S.track && (S.cuesEdited || ($('#fCaptionBars') && $('#fCaptionBars').checked))) ? S.track.cues : null),
         fitCaptions: true
       }
     };
@@ -157,7 +161,12 @@
       }
       if (!track) track = window.CFX.align.proportional(scriptForStory, { wps: 2.45 });
       var typedTitle = ($('#fTitle').value || '').trim();
+      var barsOn = !!($('#fCaptionBars') && $('#fCaptionBars').checked);
+      var shiftEl = $('#fTextShift');
       var spec2 = window.CFX.story.plan({
+        textOffset: shiftEl ? (parseFloat(shiftEl.value) || 0) / 100 : 0,
+        captionBars: barsOn || !!S.srtCues,
+        captionCues: S.srtCues || (barsOn && track.cues ? track.cues : null),
         title: typedTitle || item.title, script: scriptForStory, track: track,
         kicker: $('#fKicker').value.trim(), endCard: $('#fEndCard').value.trim(),
         style: $('#fStoryStyle').value, language: opts.language,
@@ -577,11 +586,20 @@
     }
     var spec = buildSpec(form.items[0], form.options);
     toast(t('stMusicRendering'));
-    return prepareSpec(spec, $('#fMusic').checked).then(function (prepared) {
-      setPlan(prepared.spec, prepared.audioBuffer);
-      toast(t('stPlanReady'));
-      return { form: form, spec: prepared.spec, audioBuffer: prepared.audioBuffer };
-    });
+    var run = function () {
+      return prepareSpec(spec, $('#fMusic').checked).then(function (prepared) {
+        setPlan(prepared.spec, prepared.audioBuffer);
+        toast(t('stPlanReady'));
+        return { form: form, spec: prepared.spec, audioBuffer: prepared.audioBuffer };
+      });
+    };
+    // Rebuilds are serialised: two quick changes (Shorts then Build) each spend
+    // ~4 s in music synthesis, and without a queue the older one could land last
+    // and leave a stale plan (wrong aspect) in the preview.
+    var prev = S.buildChain || Promise.resolve();
+    var next = prev.then(run, run);
+    S.buildChain = next.then(function () { return null; }, function () { return null; });
+    return next;
   }
 
   function renderWith(mode, preferMp4) {
@@ -733,6 +751,8 @@
         S.track = track;
         S.track.voiceStart = 0;                       // the story planner sets the real shift
         S.trackScript = script;
+        S.alignSel = null;                            // a fresh track, fresh selection
+        S.cuesEdited = false;
         renderAlign();
         toast((track.estimated ? t('stTrackEstimated') : t('stTracked')) + ' · ' + fmtTime(track.duration));
         showVoiceNote(track.estimated ? t('stTrackEstimated')
@@ -804,13 +824,19 @@
       c.stroke();
     }
 
-    // caption / line bars
-    (track.cues || []).forEach(function (cue) {
+    // caption / line bars — the selected one gets handles so it can be dragged
+    (track.cues || []).forEach(function (cue, ci) {
       var x = xOf(cue.start), w = Math.max(2, xOf(cue.end) - xOf(cue.start));
-      c.fillStyle = 'rgba(90,225,205,.20)';
+      var sel = (S.alignSel === ci);
+      c.fillStyle = sel ? 'rgba(255,140,190,.34)' : 'rgba(90,225,205,.20)';
       c.fillRect(x, cssH * 0.76, w, 10);
-      c.fillStyle = 'rgba(90,225,205,.65)';
+      c.fillStyle = sel ? '#ff5c8a' : 'rgba(90,225,205,.65)';
       c.fillRect(x, cssH * 0.76, w, 2);
+      if (sel) {
+        c.fillStyle = '#ff9ec4';
+        c.fillRect(x - 1.5, cssH * 0.72, 3, 18);
+        c.fillRect(x + w - 1.5, cssH * 0.72, 3, 18);
+      }
     });
 
     // paragraph boundaries (where a line starts)
@@ -855,6 +881,49 @@
       });
       list.appendChild(chip);
     });
+
+    // what (if anything) is selected, and how to move it
+    var selEl = $('#alignSel');
+    var selCue = (S.alignSel != null && track.cues) ? track.cues[S.alignSel] : null;
+    if (selEl) {
+      if (selCue) {
+        selEl.hidden = false;
+        selEl.textContent = t('alignSelCue', {
+          a: fmtTime(selCue.start), b: fmtTime(selCue.end),
+          dur: (selCue.end - selCue.start).toFixed(1)
+        });
+      } else {
+        selEl.hidden = true;
+        selEl.textContent = '';
+      }
+    }
+  }
+
+  // ---------- editing the caption bars straight on the timeline
+  function clampCue(idx) {
+    var r2 = function (x) { return Math.round(x * 100) / 100; };
+    var track = S.track;
+    if (!track || !track.cues || !track.cues[idx]) return;
+    var cues = track.cues, cue = cues[idx], prev = cues[idx - 1], next = cues[idx + 1];
+    var minDur = 0.12, dur = track.duration || 10;
+    cue.start = r2(Math.max(prev ? prev.end : 0, Math.min(cue.start, cue.end - minDur)));
+    cue.end = r2(Math.max(cue.start + minDur, Math.min(cue.end, next ? next.start : dur, dur)));
+    // the karaoke words must stay inside their own cue
+    (cue.words || []).forEach(function (wd) {
+      wd.s = r2(Math.max(cue.start, Math.min(wd.s, cue.end - 0.05)));
+      wd.e = r2(Math.max(wd.s + 0.05, Math.min(wd.e, cue.end)));
+    });
+  }
+
+  function commitCueEdit(msg) {
+    S.cuesEdited = true;
+    // the plan is rebuilt from the very same track, so the spec captions (video
+    // time, i.e. voiceStart already added) carry the edit; the SRT export reads
+    // those. Do NOT copy the raw audio-time cues into S.srtCues — that would
+    // shift the subtitles back by the title card's length.
+    if (S.spec) buildCurrentPlan();
+    renderAlign();
+    if (msg) toast(t(msg));
   }
 
   // Jump the preview to a moment in the *audio* time (the story shifts it).
@@ -1029,6 +1098,8 @@
         shorts: $('#fShorts').checked,
         story: $('#fStory').checked,
         storyStyle: $('#fStoryStyle').value,
+        textShift: $('#fTextShift') ? parseFloat($('#fTextShift').value) : 0,
+        captionBars: !!($('#fCaptionBars') && $('#fCaptionBars').checked),
         kicker: $('#fKicker').value,
         endCard: $('#fEndCard').value,
         voiceId: $('#fVoicePick').value,
@@ -1085,6 +1156,12 @@
       $('#fNarrFit').checked = f.narrationFit !== false;
       $('#fStory').checked = !!f.story;
       if (f.storyStyle) $('#fStoryStyle').value = f.storyStyle;
+      if (f.textShift != null) {
+        $('#fTextShift').value = f.textShift;
+        var tv = $('#textShiftVal');
+        if (tv) tv.textContent = (parseFloat(f.textShift) / 100).toFixed(2) + 's';
+      }
+      $('#fCaptionBars').checked = !!f.captionBars;
       if (f.kicker != null) $('#fKicker').value = f.kicker;
       if (f.endCard != null) $('#fEndCard').value = f.endCard;
       if (f.privacy) $('#fPrivacy').value = f.privacy;
@@ -1222,26 +1299,120 @@
     $('#fStoryStyle').addEventListener('change', function () {
       if (S.spec && S.spec.meta && S.spec.meta.story) buildCurrentPlan();
     });
+    // text shift: the label tracks the slider, the plan follows on release
+    var shiftInput = $('#fTextShift');
+    if (shiftInput) {
+      shiftInput.addEventListener('input', function () {
+        $('#textShiftVal').textContent = ((parseFloat(this.value) || 0) / 100).toFixed(2) + 's';
+      });
+      shiftInput.addEventListener('change', function () {
+        if (S.spec && S.spec.meta && S.spec.meta.story) buildCurrentPlan();
+      });
+    }
+    var barsBox = $('#fCaptionBars');
+    if (barsBox) {
+      barsBox.addEventListener('change', function () {
+        if (S.spec) buildCurrentPlan();
+        if (this.checked) toast(t('alignBarsOn'));
+      });
+    }
 
-    // align canvas: drag & click live audio/video scrubbing
+    // align canvas: the caption bars are editable, the rest of the strip scrubs
     var alignDragging = false;
+    var cueDrag = null;                 // { i, edge }
+    var EDGE = 7;                       // grab radius in css px
+
+    function canvasTime(e) {
+      var rect = $('#alignCanvas').getBoundingClientRect();
+      var frac = clamp((e.clientX - rect.left) / Math.max(1, rect.width), 0, 1);
+      return frac * (S.track ? (S.track.duration || 0) : 0);
+    }
+
+    function cueAt(clientX, clientY) {
+      var track = S.track;
+      if (!track || !track.cues || !track.cues.length) return null;
+      var rect = $('#alignCanvas').getBoundingClientRect();
+      var px = clientX - rect.left, py = clientY - rect.top;
+      var dur = Math.max(0.1, track.duration || 1);
+      var xOf = function (t2) { return (t2 / dur) * rect.width; };
+      var inBand = py >= rect.height * 0.70 && py <= rect.height * 0.92;
+      for (var i = 0; i < track.cues.length; i++) {
+        var cue = track.cues[i];
+        var xs = xOf(cue.start), xe = xOf(cue.end);
+        if (py >= rect.height * 0.55 && (Math.abs(px - xs) <= EDGE || Math.abs(px - xe) <= EDGE)) {
+          return { i: i, edge: Math.abs(px - xs) <= Math.abs(px - xe) ? 'start' : 'end' };
+        }
+        if (inBand && px >= xs && px <= xe) return { i: i, edge: null };
+      }
+      return null;
+    }
+
     function scrubAlign(e) {
       if (!S.track) return;
-      var canvas = $('#alignCanvas');
-      var rect = canvas.getBoundingClientRect();
-      var frac = clamp((e.clientX - rect.left) / Math.max(1, rect.width), 0, 1);
-      seekAudio(frac * (S.track.duration || 0));
+      seekAudio(canvasTime(e));
     }
+
+    $('#alignCanvas').addEventListener('mousemove', function (e) {
+      var hit = cueAt(e.clientX, e.clientY);
+      this.style.cursor = (hit && hit.edge) ? 'ew-resize' : (hit ? 'pointer' : 'crosshair');
+    });
+
     $('#alignCanvas').addEventListener('mousedown', function (e) {
+      var hit = cueAt(e.clientX, e.clientY);
+      if (hit && hit.edge) {
+        e.preventDefault();
+        cueDrag = hit;
+        S.alignSel = hit.i;
+        renderAlign();
+        return;
+      }
+      if (hit) {
+        S.alignSel = (S.alignSel === hit.i) ? null : hit.i;    // click it again to deselect
+        renderAlign();
+        seekAudio(S.track.cues[hit.i].start);
+        return;
+      }
+      S.alignSel = null;
       alignDragging = true;
       scrubAlign(e);
     });
+
     window.addEventListener('mousemove', function (e) {
+      if (cueDrag) {
+        var cue = S.track.cues[cueDrag.i];
+        if (cueDrag.edge === 'start') cue.start = canvasTime(e); else cue.end = canvasTime(e);
+        clampCue(cueDrag.i);
+        renderAlign();
+        return;
+      }
       if (alignDragging) scrubAlign(e);
     });
+
     window.addEventListener('mouseup', function () {
+      if (cueDrag) {
+        cueDrag = null;
+        commitCueEdit('alignCueMoved');
+        return;
+      }
       alignDragging = false;
     });
+
+    // arrow keys nudge the selected bar (Shift = 0.05s, otherwise 0.2s)
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      if (S.alignSel == null || !S.track || !S.track.cues || !S.track.cues[S.alignSel]) return;
+      var tag = (e.target && e.target.tagName) || '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      var cue = S.track.cues[S.alignSel];
+      var step = (e.shiftKey ? 0.05 : 0.2) * (e.key === 'ArrowRight' ? 1 : -1);
+      cue.start += step;
+      cue.end += step;
+      clampCue(S.alignSel);
+      e.preventDefault();
+      e.stopPropagation();
+      renderAlign();
+      commitCueEdit();
+    }, true);
 
     // script wizard templates
     var TEMPLATES = {
@@ -1613,6 +1784,18 @@
       if (e.code === 'Space') { e.preventDefault(); S.playing ? pause() : play(); }
       if (e.key === 'r' || e.key === 'R') { e.preventDefault(); renderWith('fast', false); }
     });
+
+    // ?debug=1 publishes the workbench state so tests (and the console) can look inside
+    if (/[?&]debug=1/.test(location.search)) {
+      window.__cfxStudio = {
+        state: S,
+        plan: function () { return S.track; },
+        spec: function () { return S.spec; },
+        cues: function () { return (S.spec && S.spec.captions) || null; },
+        trackCues: function () { return (S.track && S.track.cues) || null; },
+        rebuild: function () { return buildCurrentPlan(); }
+      };
+    }
 
     // first paint
     renderThemePicker();
