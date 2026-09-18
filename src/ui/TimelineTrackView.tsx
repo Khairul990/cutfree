@@ -107,23 +107,23 @@ export const TimelineTrackView: React.FC<TimelineTrackViewProps> = ({
   const progressPct = Math.min(100, Math.max(0, (currentTime / safeDuration) * 100));
 
   return (
-    <div className="bg-[#0b0f1a] border-t border-[#1e2740] flex flex-col select-none text-[12px] h-[220px] shrink-0">
+    <div className="bg-[#0b1119] border-t border-[#202c3d] flex flex-col select-none text-[12px] h-[272px] shrink-0">
       {/* Timeline Controls Header */}
-      <div className="h-10 border-b border-[#1e2740] px-4 flex items-center justify-between bg-[#080c16]">
+      <div className="h-10 border-b border-[#1e2740] px-4 flex items-center justify-between bg-[#0d141e]">
         <div className="flex items-center gap-3">
           <button
             onClick={onTogglePlay}
-            className="w-8 h-8 rounded-lg bg-[#5b8dff] hover:bg-[#4a7cee] text-white flex items-center justify-center transition shadow-md shadow-[#5b8dff]/20 cursor-pointer"
+            className="w-8 h-8 rounded-lg bg-[#5b8dff] hover:bg-[#4a7cee] text-white flex items-center justify-center transition shadow-none cursor-pointer"
             title={isPlaying ? "Pause (Space)" : "Play (Space)"}
           >
             {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 ml-0.5 fill-current" />}
           </button>
 
-          <div className="font-mono text-[13px] font-bold text-white bg-[#121829] px-3 py-1 rounded-md border border-[#232d47]">
+          <div className="font-mono text-[13px] font-bold text-white bg-[#111925] px-3 py-1 rounded-md border border-[#29374b]">
             {formatTimecode(currentTime, fps)} / {formatTimecode(safeDuration, fps, false)}
           </div>
 
-          <span className="text-[11px] text-[#8d9cc2] font-semibold hidden sm:inline">
+          <span className="text-[11px] text-[#8d9bb0] font-semibold hidden sm:inline">
             Frame: {timeToFrame(currentTime, fps)} • {fps} FPS
           </span>
         </div>
@@ -132,7 +132,7 @@ export const TimelineTrackView: React.FC<TimelineTrackViewProps> = ({
           <button
             onClick={() => setIsSnapping(!isSnapping)}
             className={`px-2.5 py-1 rounded-md border font-semibold text-[11px] flex items-center gap-1 transition ${
-              isSnapping ? "bg-[#1e293b] border-[#38bdf8] text-[#38bdf8]" : "bg-transparent border-[#232d47] text-[#64748b]"
+              isSnapping ? "bg-[#1e293b] border-[#38bdf8] text-[#38bdf8]" : "bg-transparent border-[#232d47] text-[#5f6d82]"
             }`}
             title="Toggle Snapping"
           >
@@ -163,7 +163,7 @@ export const TimelineTrackView: React.FC<TimelineTrackViewProps> = ({
       {/* Main Track Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Track Headers (Left column) */}
-        <div className="w-36 shrink-0 bg-[#0d1222] border-r border-[#1e2740] flex flex-col justify-between py-1 text-[11px] font-bold text-[#8d9cc2]">
+        <div className="w-36 shrink-0 bg-[#0d141e] border-r border-[#1e2740] flex flex-col justify-between py-1 text-[11px] font-bold text-[#8d9cc2]">
           <div className="h-9 px-3 flex items-center gap-2 border-b border-[#171f34]">
             <Layers className="w-3.5 h-3.5 text-[#5b8dff]" /> <span>Scenes</span>
           </div>
@@ -187,7 +187,7 @@ export const TimelineTrackView: React.FC<TimelineTrackViewProps> = ({
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          className="flex-1 relative overflow-x-auto overflow-y-hidden bg-[#070a14] cursor-crosshair"
+          className="flex-1 relative overflow-x-auto overflow-y-hidden bg-[#080e16] cursor-crosshair"
         >
           {/* Zoom Wrapper */}
           <div style={{ width: `${100 * zoomLevel}%`, minWidth: "100%", height: "100%" }} className="relative">
@@ -201,7 +201,7 @@ export const TimelineTrackView: React.FC<TimelineTrackViewProps> = ({
             </div>
 
             {/* TRACK 1: SCENES */}
-            <div className="h-9 border-b border-[#171f34] relative bg-[#090d1c]">
+            <div className="h-9 border-b border-[#171f34] relative bg-[#0b1119]">
               {blueprint.scenes.map((scene, idx) => {
                 const left = (scene.start / safeDuration) * 100;
                 const width = ((scene.end - scene.start) / safeDuration) * 100;
