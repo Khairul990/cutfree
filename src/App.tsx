@@ -2370,13 +2370,12 @@ export default function App() {
             </a>
             <button
               onClick={() => {
-                /* single-page: no tab switch */
-                handleAutoVideo();
-                window.scrollTo({ top: 0, behavior: "smooth" });
+                setActiveTab("export");
+                handleExport();
               }}
-              className="hidden md:inline-flex items-center gap-1.5 text-xs font-black px-4 py-2 rounded-full bg-gradient-to-br from-[#5b8dff] to-[#22d3ee] text-white shadow-lg shadow-[#5b8dff]/20 hover:brightness-110 transition"
+              className="hidden md:inline-flex items-center gap-1.5 text-xs font-black px-4 py-2 rounded-full bg-gradient-to-br from-[#22d3ee] to-[#0ea5e9] text-[#051018] shadow-lg shadow-[#22d3ee]/20 hover:brightness-110 transition cursor-pointer"
             >
-              <Film className="w-3.5 h-3.5" /> {isBn ? "ভিডিও তৈরি করুন" : "Create Video"}
+              <Download className="w-3.5 h-3.5" /> {isBn ? "ভিডিও ডাউনলোড" : "Download Video"}
             </button>
             <button
               onClick={() => setLang((v) => (v === "bn" ? "en" : "bn"))}
@@ -2392,744 +2391,346 @@ export default function App() {
       <div className="flex-1 mx-auto max-w-[1600px] w-full flex flex-col lg:flex-row min-h-0">
         {/* Sidebar */}
         <aside className="w-full lg:w-[380px] xl:w-[400px] lg:shrink-0 bg-[#0d1120] lg:border-r border-[#232d47] flex flex-col lg:h-[calc(100vh-56px)] lg:sticky lg:top-[56px] lg:overflow-hidden">
-          {/* Single-page header — no tabs, everything on one page */}
-          <div className="px-4 py-3 border-b border-[#232d47] bg-gradient-to-br from-[#0f1124] to-[#1a1540] sticky top-0 z-10">
-            <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-[#8d9cc2]">
-              <Layers3 className="w-3.5 h-3.5 text-[#5b8dff]" /> {isBn ? "এক পেজে সবকিছু — স্ক্রিপ্ট + ভয়েস + ডিজাইন + এক্সপোর্ট" : "All in one page — script + voice + design + export"}
-              <span className="ml-auto px-2 py-1 rounded-full bg-[#5b8dff] text-white text-[10px]">SINGLE PAGE</span>
-            </div>
-            <div className="mt-1 text-[11px] leading-relaxed text-[#a3b4dc]">{isBn ? "আপনি শুধু স্পিচ + ভয়েস + টাইমলাইন দেবেন, বাকি সব এখানেই হবে — নিচে স্ক্রল করুন।" : "You provide speech + voice + timeline, we do the rest — scroll down."}</div>
+          {/* Clean 4-Tab Navigation */}
+          <div className="grid grid-cols-4 p-1.5 gap-1 bg-[#0b0f1a] border-b border-[#1e2740] shrink-0">
+            <button
+              onClick={() => setActiveTab("script")}
+              className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2.5 rounded-xl font-bold text-[12px] transition ${
+                activeTab === "script" ? "bg-[#5b8dff] text-white shadow-md shadow-[#5b8dff]/25" : "text-[#8d9cc2] hover:bg-[#151b2e] hover:text-white"
+              }`}
+            >
+              <Type className="w-4 h-4" /> <span>{isBn ? "স্ক্রিপ্ট" : "Script"}</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("audio")}
+              className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2.5 rounded-xl font-bold text-[12px] transition relative ${
+                activeTab === "audio" ? "bg-[#5b8dff] text-white shadow-md shadow-[#5b8dff]/25" : "text-[#8d9cc2] hover:bg-[#151b2e] hover:text-white"
+              }`}
+            >
+              <Mic2 className="w-4 h-4" /> <span>{isBn ? "ভয়েস" : "Audio"}</span>
+              {(voiceFile || customTimeline || customSegments) && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-400" />}
+            </button>
+            <button
+              onClick={() => setActiveTab("design")}
+              className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2.5 rounded-xl font-bold text-[12px] transition relative ${
+                activeTab === "design" ? "bg-[#5b8dff] text-white shadow-md shadow-[#5b8dff]/25" : "text-[#8d9cc2] hover:bg-[#151b2e] hover:text-white"
+              }`}
+            >
+              <Palette className="w-4 h-4" /> <span>{isBn ? "ডিজাইন" : "Design"}</span>
+              {bgImage && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-400" />}
+            </button>
+            <button
+              onClick={() => setActiveTab("export")}
+              className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2.5 rounded-xl font-bold text-[12px] transition relative ${
+                activeTab === "export" ? "bg-[#22d3ee] text-[#051018] font-black shadow-md shadow-[#22d3ee]/25" : "text-[#8d9cc2] hover:bg-[#151b2e] hover:text-white"
+              }`}
+            >
+              <Download className="w-4 h-4" /> <span>{isBn ? "ডাউনলোড" : "Export"}</span>
+              {exportedVideo && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-400" />}
+            </button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[#26314e] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full">
-            {/* SCRIPT TAB */}
-            {/* single-page: script */}
-              <>
-                {/* AI Box */}
-                <div className="rounded-2xl bg-gradient-to-br from-[#16192b] to-[#1a1540] border border-[#3c2a68] p-4 shadow-xl">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2 text-[#c4b5fd] font-extrabold text-[12px] tracking-wide">
-                      <Sparkles className="w-4 h-4" /> {isBn ? "AI স্ক্রিপ্ট জেনারেটর (Gemini)" : "AI Script Generator (Gemini)"}
-                    </div>
-                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-[#2e1065] border border-[#5b21b6] text-[#e9d5ff]">AUT0 SCENE</span>
-                  </div>
+            {/* TAB 1: SCRIPT */}
+            {activeTab === "script" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] font-black text-white flex items-center gap-1.5">
+                    <Type className="w-4 h-4 text-[#5b8dff]" /> {isBn ? "ভিডিওর স্ক্রিপ্ট লিখুন" : "Video Script"}
+                  </span>
+                  <span className="font-semibold text-[#5b8dff] bg-[#1a2440] px-2.5 py-1 rounded-full border border-[#2a365c] text-[11px]">
+                    {totalStats.words} {isBn ? "শব্দ" : "words"} • ~{totalStats.estMin} {isBn ? "মিনিট" : "min"}
+                  </span>
+                </div>
 
-                  <div className="flex gap-2 mb-3">
-                    <div className="flex-1 relative">
-                      <input
-                        id="aiTopic"
-                        value={topic}
-                        onChange={(e) => setTopic(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleAiGenerate()}
-                        placeholder={isBn ? "ভিডিওর বিষয় লিখুন (যেমন: ৫টি অভ্যাস, AI টুলস...)" : "Enter video topic (e.g. 5 habits, AI tools...)"}
-                        className="w-full bg-[#0f1124] border border-[#2e1065] focus:border-[#7c5cff] focus:ring-2 focus:ring-[#7c5cff]/20 rounded-xl px-3 py-2.5 text-[13px] placeholder:text-[#6b7bb0] outline-none transition"
-                      />
-                    </div>
+                <div className="text-[11px] text-[#8d9cc2] bg-[#0b0f1e] p-2.5 rounded-xl border border-[#1e2740] leading-relaxed">
+                  💡 {isBn ? "প্রতি লাইন বা প্যারাগ্রাফ = ১টি দৃশ্য। আপনার গল্প বা স্ক্রিপ্ট এখানে পেস্ট করুন।" : "Each line or paragraph = 1 scene. Paste your story or script here."}
+                </div>
+
+                <textarea
+                  value={script}
+                  onChange={(e) => setScript(e.target.value)}
+                  spellCheck={false}
+                  placeholder={isBn ? "এখানে আপনার স্ক্রিপ্ট লিখুন বা পেস্ট করুন...\n\nযেমন:\nবন্ধ দরজার ওপাশে কী ছিল?\nএকটি ছোট্ট শহর।\nসেখানে থাকত এক যুবক..." : "Write or paste your script here..."}
+                  className="w-full min-h-[300px] bg-[#151b2e] border border-[#232d47] focus:border-[#5b8dff] focus:ring-2 focus:ring-[#5b8dff]/20 rounded-xl p-3.5 text-[13.5px] leading-relaxed placeholder:text-[#5a6a9a] outline-none resize-y"
+                />
+
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    onClick={() => setScript(DEMO_SCRIPT_BN)}
+                    className="flex-1 py-2 rounded-xl bg-[#151b2e] border border-[#232d47] text-[#cbd5e1] font-bold text-[11.5px] hover:border-[#5b8dff] transition"
+                  >
+                    📝 {isBn ? "নমুনা গল্প লোড করুন" : "Load sample script"}
+                  </button>
+                  <button
+                    onClick={() => setScript("")}
+                    className="py-2 px-3 rounded-xl bg-[#151b2e] border border-[#232d47] text-[#fca5a5] font-bold text-[11.5px] hover:border-[#ef4444] transition"
+                  >
+                    🗑️ {isBn ? "মুছে ফেলুন" : "Clear"}
+                  </button>
+                </div>
+
+                {/* Optional AI helper */}
+                <div className="p-3 rounded-xl bg-[#0f1124] border border-[#232d47] space-y-2">
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#c4b5fd]">
+                    <Sparkles className="w-3.5 h-3.5" /> {isBn ? "AI দিয়ে স্ক্রিপ্ট বানাতে চান?" : "Want AI to write script?"}
+                  </div>
+                  <div className="flex gap-1.5">
+                    <input
+                      value={topic}
+                      onChange={(e) => setTopic(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleAiGenerate()}
+                      placeholder={isBn ? "বিষয় লিখুন (যেমন: সততার গল্প...)" : "Topic..."}
+                      className="flex-1 bg-[#151b2e] border border-[#2e1065] rounded-lg px-2.5 py-1.5 text-[12px] outline-none"
+                    />
                     <button
                       onClick={handleAiGenerate}
                       disabled={isGenerating}
-                      className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-br from-[#7c5cff] to-[#5b8dff] text-white font-extrabold text-[13px] shadow-lg shadow-[#7c5cff]/25 disabled:opacity-60 hover:brightness-110 transition"
+                      className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#7c5cff] to-[#5b8dff] text-white font-bold text-[11.5px] disabled:opacity-50"
                     >
-                      {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-                      {isGenerating ? (isBn ? "তৈরি হচ্ছে..." : "Generating...") : isBn ? "তৈরি করো" : "Generate"}
+                      {isGenerating ? "..." : isBn ? "বানাও" : "Generate"}
                     </button>
                   </div>
-
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    {[
-                      { l: "💡 " + (isBn ? "সকালের অভ্যাস" : "Morning habits"), v: "৫টি শক্তিশালী সকালের অভ্যাস" },
-                      { l: "🚀 " + (isBn ? "AI ও ক্যারিয়ার" : "AI & Career"), v: "কৃত্রিম বুদ্ধিমত্তা ও ভবিষ্যতের চাকরি" },
-                      { l: "💰 " + (isBn ? "অর্থ ব্যবস্থাপনা" : "Money"), v: "টাকা জমানোর সেরা ৩টি কৌশল" },
-                      { l: "🌌 " + (isBn ? "মহাকাশ" : "Space"), v: "মহাকাশের রহস্যময় ৫টি ঘটনা" },
-                      { l: "⚡ " + (isBn ? "টেক হ্যাকস" : "Tech hacks"), v: "সময় বাঁচানোর ৫টি টেক হ্যাকস" },
-                    ].map((c) => (
-                      <button
-                        key={c.v}
-                        onClick={() => handleChip(c.v)}
-                        className="px-2.5 py-1.5 rounded-full bg-[#241b3d] border border-[#433170] text-[#c4b5fd] text-[11px] font-semibold hover:bg-[#35255a] hover:border-[#7c5cff] hover:text-white transition"
-                      >
-                        {c.l}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="flex items-start gap-2 text-[11px] leading-relaxed text-[#a3b4dc] bg-[#0f1124]/60 rounded-xl px-3 py-2 border border-[#2e1065]/50">
-                    <Zap className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[#c4b5fd]" />
-                    <span>{aiStatus}</span>
-                  </div>
                 </div>
 
-                {/* HERO — সবচেয়ে বড় ভিডিও তৈরি বাটন (বাংলা) */}
-                <div className="rounded-2xl bg-gradient-to-br from-[#5b8dff] via-[#7c5cff] to-[#22d3ee] p-[1.5px] shadow-xl">
-                  <div className="rounded-[15px] bg-gradient-to-br from-[#0f1124] to-[#1a1540] p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#5b8dff] to-[#b06cff] grid place-items-center text-white font-black shadow-lg">▶</span>
-                      <div className="leading-tight">
-                        <div className="text-[15px] font-black text-white leading-none">{isBn ? "ভিডিও তৈরি করুন — লাইন বাই লাইন" : "Create Video — line by line"}</div>
-                        <div className="text-[11px] text-[#a3b4dc]">{isBn ? "প্রতি লাইন = এক সিন • ছবি যোগ করুন • এক ক্লিকে ভিডিও" : "Each line = one scene • add image • one-click video"}</div>
-                      </div>
-                      <span className="ml-auto hidden sm:flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-black">100% FREE</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      <button onClick={() => bgInputRef.current?.click()} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#1e2a4a] border border-[#2a365c] text-white font-bold text-[12px] hover:border-[#5b8dff] hover:bg-[#23325a] transition">
-                        <ImageIcon className="w-4 h-4" /> {isBn ? "ছবি যোগ করুন" : "Add image"}
-                      </button>
-                      <button onClick={() => voiceInputRef.current?.click()} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#1e2a4a] border border-[#2a365c] text-white font-bold text-[12px] hover:border-[#2dd4bf] hover:bg-[#1a3a3a] transition">
-                        <FileAudio className="w-4 h-4" /> {isBn ? "ভয়েস যোগ করুন" : "Add voice"}
-                      </button>
-                    </div>
-                    <button onClick={handleAutoVideo} className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-gradient-to-br from-[#5b8dff] to-[#22d3ee] text-white font-black text-[16px] shadow-lg shadow-[#5b8dff]/30 hover:brightness-110 active:scale-[0.99] transition">
-                      <Film className="w-6 h-6" /> {isBn ? "▶ ভিডিও তৈরি করুন" : "▶ Create Video"} <ArrowRight className="w-5 h-5" />
-                    </button>
-                    <div className="mt-2 text-center text-[11px] text-[#8d9cc2]">{isBn ? "স্ক্রিপ্ট লিখুন → ছবি/ভয়েস (ঐচ্ছিক) → তৈরি → এক্সপোর্ট" : "Write script → add image/voice (optional) → create → export"}</div>
-                    {(bgImage || voiceFile) && (
-                      <div className="mt-2 flex flex-wrap gap-1.5 justify-center">
-                        {bgImage && <span className="px-2 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-black flex items-center gap-1"><ImageIcon className="w-3 h-3" /> {bgName.slice(0,18)}</span>}
-                        {voiceFile && <span className="px-2 py-1 rounded-full bg-[#2dd4bf] text-[#021018] text-[10px] font-black flex items-center gap-1"><FileAudio className="w-3 h-3" /> {voiceName.slice(0,18)}</span>}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <button
+                  onClick={() => {
+                    handleAutoVideo();
+                    toast(isBn ? "প্রিভিউ রিফ্রেশ করা হয়েছে" : "Preview refreshed");
+                  }}
+                  className="w-full py-3 rounded-xl bg-gradient-to-br from-[#5b8dff] to-[#22d3ee] text-white font-black text-[13px] shadow-lg shadow-[#5b8dff]/25 hover:brightness-110 transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Film className="w-4 h-4" /> {isBn ? "ভিডিও প্রিভিউ আপডেট করুন" : "Update Video Preview"}
+                </button>
 
-                {/* Line-by-line builder — প্রতিটি লাইন আলাদা কার্ড */}
-                <div className="rounded-2xl bg-[#0f1124] border border-[#232d47] p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-[11px] font-extrabold tracking-widest uppercase text-[#8d9cc2] flex items-center gap-1.5"><Type className="w-3.5 h-3.5" /> {isBn ? "লাইন বাই লাইন এডিটর" : "Line-by-line editor"} • {script.split("\n").filter(s=>s.trim()).length} {isBn ? "লাইন" : "lines"}</div>
-                    <button onClick={() => setScript(s => s + "\nনতুন লাইন এখানে লিখুন")} className="px-3 py-1.5 rounded-full bg-[#5b8dff] text-white text-[11px] font-black hover:brightness-110 active:scale-95 transition">+ {isBn ? "লাইন যোগ" : "Add line"}</button>
-                  </div>
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-[#2a365c]">
-                    {script.split("\n").map((line, idx) => (
-                      <div key={idx} className="flex gap-2 items-start p-2 rounded-xl bg-[#151b2e] border border-[#232d47] group focus-within:border-[#5b8dff]/50 transition">
-                        <span className="w-7 h-7 rounded-lg bg-[#1a2440] border border-[#2a365c] grid place-items-center text-[11px] font-black text-[#8cb4ff] shrink-0 mt-0.5">{idx+1}</span>
-                        <textarea
-                          value={line}
-                          onChange={(e) => {
-                            const parts = script.split("\n");
-                            parts[idx] = e.target.value;
-                            setScript(parts.join("\n"));
-                          }}
-                          rows={1}
-                          placeholder={isBn ? `লাইন ${idx+1} — এখানে লিখুন (ফাঁকা লাইন = নতুন সিন)` : `Line ${idx+1} — write here (blank = new scene)`}
-                          className="flex-1 min-h-[36px] bg-transparent outline-none text-[13px] leading-relaxed placeholder:text-[#5a6a9a] resize-none py-1"
-                        />
-                        <button
-                          onClick={() => {
-                            const parts = script.split("\n");
-                            parts.splice(idx, 1);
-                            setScript(parts.join("\n") || " ");
-                          }}
-                          className="w-7 h-7 rounded-lg bg-[#1a233e] border border-[#2a365c] grid place-items-center text-[#8d9cc2] hover:border-[#ef4444] hover:text-[#fecaca] transition shrink-0"
-                          title="Delete"
-                        >×</button>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    <button onClick={() => bgInputRef.current?.click()} className={`py-2.5 rounded-xl border font-bold text-[12px] flex items-center justify-center gap-1.5 transition ${bgImage ? "bg-emerald-500 border-emerald-500 text-white" : "bg-[#151b2e] border-[#232d47] text-white hover:border-[#5b8dff]"}`}>
-                      <ImageIcon className="w-4 h-4" /> {bgImage ? (isBn ? `ছবি: ${bgName.slice(0,12)}` : `Image: ${bgName.slice(0,12)}`) : isBn ? "ব্যাকগ্রাউন্ড ছবি" : "Background image"}
-                    </button>
-                    <button onClick={handleAutoVideo} className="py-2.5 rounded-xl bg-gradient-to-br from-[#5b8dff] to-[#22d3ee] text-white font-black text-[12px] flex items-center justify-center gap-1.5 hover:brightness-110 transition">
-                      <Film className="w-4 h-4" /> {isBn ? "প্রিভিউ আপডেট" : "Update preview"}
-                    </button>
-                  </div>
-                  <div className="mt-2 text-[11px] leading-relaxed text-[#6b7bb0] bg-[#0b0f1e] rounded-xl px-3 py-2 border border-[#232d47]">
-                    {isBn ? '💡 টিপস: প্রতি লাইন = এক সিন। ফাঁকা লাইন দিয়ে সিন ভাগ করুন। - দিয়ে বুলেট, ৯৫% দিয়ে স্ট্যাট, "উক্তি" — নাম দিয়ে কোট। ছবি দিলে সব সিনে কভার + থিম ওভারলে হবে।' : '💡 Tip: each line = scene. Blank line splits scenes. - for bullets, 95% for stat, "quote" — name for quote. Image becomes cover + theme wash.'}
-                  </div>
-                </div>
-
-                {/* Template quick actions */}
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { id: "demo", label: isBn ? "ডেমো" : "Demo", icon: MonitorPlay, action: () => setScript(DEMO_SCRIPT_BN) },
-                    { id: "shorts", label: "Shorts", icon: Smartphone, action: () => setScript(SHORTS_SCRIPT) },
-                    { id: "edu", label: isBn ? "শিক্ষা" : "Education", icon: SquareStack, action: () => setScript(EDU_SCRIPT) },
-                  ].map((b) => (
-                    <button
-                      key={b.id}
-                      onClick={b.action}
-                      className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-[#151b2e] border border-[#232d47] hover:border-[#5b8dff] hover:bg-[#1d2642] transition group"
-                    >
-                      <b.icon className="w-5 h-5 text-[#8d9cc2] group-hover:text-white" />
-                      <span className="text-[11px] font-bold text-[#cbd5e1]">{b.label}</span>
-                    </button>
-                  ))}
-                </div>
-
-                <div>
-                  <label className="flex items-center justify-between text-[11px] font-extrabold tracking-widest text-[#8d9cc2] uppercase mb-2">
-                    <span className="flex items-center gap-1.5">
-                      <Type className="w-3.5 h-3.5" /> {isBn ? "স্ক্রিপ্ট" : "Script"}
-                    </span>
-                    <span className="normal-case tracking-normal font-semibold text-[#5b8dff] bg-[#1a2440] px-2 py-1 rounded-full border border-[#2a365c] text-[10px]">
-                      {totalStats.words} শব্দ • {totalStats.scenes} সিন • ~{totalStats.estMin} মিনিট
-                    </span>
-                  </label>
-                  <textarea
-                    value={script}
-                    onChange={(e) => setScript(e.target.value)}
-                    spellCheck={false}
-                    placeholder={
-                      isBn
-                        ? "প্রথম লাইন = টাইটেল\n\nপ্রতিটি প্যারাগ্রাফ = একটি সিন\n- বুলেট লাইন\n৯৫% পরিসংখ্যান\n\"উক্তি\" — লেখক\n--- দিয়ে আলাদা ভিডিও"
-                        : "First line = Title\n\nEach paragraph = scene\n- bullet line\n95% stat\n\"Quote\" — Author\n--- for next video"
-                    }
-                    className="w-full min-h-[280px] bg-[#151b2e] border border-[#232d47] focus:border-[#5b8dff] focus:ring-2 focus:ring-[#5b8dff]/15 rounded-xl p-3 text-[13px] leading-relaxed placeholder:text-[#5a6a9a] outline-none resize-y"
-                  />
-                  <div className="mt-2 text-[11px] leading-relaxed text-[#6b7bb0] bg-[#0f1124] border border-[#232d47] rounded-xl px-3 py-2">
-                    <span className="font-bold text-[#8d9cc2]">{isBn ? "নিয়ম:" : "Rules:"}</span>{" "}
-                    {isBn ? (
-                      <>
-                        ফাঁকা লাইন = নতুন সিন • প্রথম লাইন = টাইটেল • <code className="bg-[#1a2440] px-1 py-0.5 rounded text-[#cbd5e1]">- লাইন</code> = বুলেট •{" "}
-                        <code className="bg-[#1a2440] px-1 py-0.5 rounded text-[#cbd5e1]">৯৫%</code> = স্ট্যাট •{" "}
-                        <code className="bg-[#1a2440] px-1 py-0.5 rounded text-[#cbd5e1]">"উক্তি" — নাম</code> = কোট
-                      </>
-                    ) : (
-                      <>
-                        Blank line = new scene • First line = title • <code className="bg-[#1a2440] px-1 py-0.5 rounded">- line</code> = bullet •{" "}
-                        <code className="bg-[#1a2440] px-1 py-0.5 rounded">95%</code> = stat • <code className="bg-[#1a2440] px-1 py-0.5 rounded">"Quote" — Name</code> = quote
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-extrabold tracking-widest uppercase text-[#8d9cc2] flex items-center gap-1.5">
-                      <Timer className="w-3.5 h-3.5" /> {isBn ? "ন্যারেশন গতি" : "Narration speed"} • {wpm}{" "}
-                      {isBn ? "শব্দ/মিনিট" : "wpm"}
-                    </label>
-                    <span className="text-[11px] font-bold text-[#5b8dff]">{Math.round((wordCount(script) / wpm) * 60)}s</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={90}
-                    max={220}
-                    value={wpm}
-                    onChange={(e) => setWpm(parseInt(e.target.value))}
-                    className="w-full accent-[#5b8dff] h-2"
-                  />
-                  <div className="flex items-center justify-between text-[11px] text-[#6b7bb0]">
-                    <span>{isBn ? "ধীর" : "Slow"}</span>
-                    <span>{isBn ? "স্বাভাবিক" : "Natural"}</span>
-                    <span>{isBn ? "দ্রুত" : "Fast"}</span>
-                  </div>
-                </div>
-
-                {/* Auto video — one click, zero cost */}
-                <div className="rounded-2xl bg-gradient-to-br from-[#0b1220] via-[#0f1f3a] to-[#0b1a28] border border-[#1e3a5e] p-3">
-                  <div className="flex items-center gap-2 mb-2.5 text-[11px] font-extrabold tracking-widest uppercase text-[#8d9cc2]">
-                    <Cpu className="w-3.5 h-3.5 text-[#22d3ee]" /> {isBn ? "অটো ভিডিও — ওয়ান ক্লিক" : "Auto video — one click"}
-                    {voiceSpec && <span className="ml-auto px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-black">VOICE-SYNCED</span>}
-                    {!voiceSpec && vadResult?.usable && <span className="ml-auto px-2 py-0.5 rounded-full bg-[#2dd4bf] text-[#021018] text-[10px] font-black">VAD READY</span>}
-                  </div>
-                  <button
-                    onClick={handleAutoVideo}
-                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-br from-[#5b8dff] via-[#7c5cff] to-[#22d3ee] text-white font-black text-[13px] shadow-xl shadow-[#5b8dff]/25 hover:brightness-110 transition"
-                  >
-                    <Film className="w-5 h-5" /> {voiceSpec ? (isBn ? "🎬 ভয়েস-সিঙ্কড প্রিভিউ" : "🎬 Voice-synced preview") : isBn ? "🎬 অটো ভিডিও বানাও" : "🎬 Build auto video"} <ArrowRight className="w-4 h-4" />
-                  </button>
-                  <div className="grid grid-cols-2 gap-2 mt-2.5">
-                    <button
-                      onClick={() => {
-                        const base = builtSpec;
-                        if (base) {
-                          if (voiceSpec) setVoiceSpec(null);
-                          setCurrentTime(0);
-                          toast(isBn ? "প্ল্যান রিফ্রেশ — ভয়েস ছাড়া" : "Plan refreshed — without voice");
-                        }
-                      }}
-                      className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#151b2e] border border-[#232d47] text-white font-bold text-[12px] hover:border-[#5b8dff] transition"
-                    >
-                      <RotateCcw className="w-4 h-4" /> {isBn ? "রিসেট (VAD ছাড়া)" : "Reset (no VAD)"}
-                    </button>
-                    <button
-                      onClick={() => /* single-page */ (document.getElementById("export-section")?.scrollIntoView({behavior:"smooth"}))}
-                      className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#0f172a] border border-[#1e3a5e] text-[#22d3ee] font-bold text-[12px] hover:bg-[#1e293b] transition"
-                    >
-                      <Download className="w-4 h-4" /> {isBn ? "এক্সপোর্ট" : "Export"}
-                    </button>
-                  </div>
-                  <div className="mt-2.5 flex flex-wrap gap-1.5 text-[10px] font-bold">
-                    <span className="px-2 py-1 rounded-full bg-[#1a2440] border border-[#2a365c] text-[#8cb4ff] flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3" /> {isBn ? "১০০% ফ্রি" : "100% free"}
-                    </span>
-                    <span className="px-2 py-1 rounded-full bg-[#1a2440] border border-[#2a365c] text-[#8cb4ff] flex items-center gap-1">
-                      <Youtube className="w-3 h-3" /> {isBn ? "YouTube রেডি" : "YouTube ready"}
-                    </span>
-                    <span className="px-2 py-1 rounded-full bg-[#1a2440] border border-[#2a365c] text-[#8cb4ff] flex items-center gap-1">
-                      <Captions className="w-3 h-3" /> {isBn ? "অটো ক্যাপশন" : "Auto captions"}
-                    </span>
-                  </div>
-                  <div className="mt-2 text-[11px] leading-relaxed text-[#6b7bb0]">
-                    {voiceSpec
-                      ? isBn
-                        ? `✅ ${vadResult?.phrases.length || 0} VAD স্লটে সিঙ্কড — টেক্সট ভয়েসের সাথে ফুটবে। Export এ WebM (VP9/Opus) + SRT।`
-                        : `✅ Synced to ${vadResult?.phrases.length || 0} VAD slots — text pops with voice. Export is WebM (VP9/Opus) + SRT.`
-                      : isBn
-                        ? "স্ক্রিপ্ট একাই ভিডিও বানাবে — ভয়েস দিলে শব্দ-স্তরে সিঙ্ক হবে।"
-                        : "Script alone builds video — add voice for word-level sync."}
-                  </div>
-                </div>
-              </>
-
-            {/* single-page: design */}
-              <div className="space-y-5">
-                <div className="rounded-xl bg-gradient-to-br from-[#0f1124] to-[#15152b] border border-[#232d47] p-3">
-                  <div className="text-[11px] font-extrabold tracking-widest uppercase text-[#8d9cc2] mb-3 flex items-center gap-1.5">
-                    <Palette className="w-3.5 h-3.5" /> {isBn ? "ভিজ্যুয়াল ডিজাইন" : "Visual Design"}
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-[11px] font-bold text-[#8d9cc2] uppercase tracking-wide mb-1.5 block">
-                        {isBn ? "থিম (১৩টি)" : "Theme (13)"}
-                      </label>
-                      <div className="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1">
-                        {(Object.keys(THEMES) as ThemeKey[]).map((k) => {
-                          const th = THEMES[k];
-                          const active = theme === k;
-                          return (
-                            <button
-                              key={k}
-                              onClick={() => setTheme(k)}
-                              className={`relative text-left p-2.5 rounded-xl border-2 transition overflow-hidden ${active ? "border-[#5b8dff] shadow-lg" : "border-[#232d47] hover:border-[#334155] bg-[#151b2e]"}`}
-                              style={{ background: active ? `linear-gradient(135deg, ${th.bg}, #1a1f3a)` : undefined }}
-                            >
-                              <div className="flex items-center gap-2 mb-1.5">
-                                <span className="w-6 h-6 rounded-full border-2 border-white/20 shadow-inner" style={{ background: `linear-gradient(135deg, ${th.blobs[0]}, ${th.blobs[1]})` }} />
-                                <span className="text-[11px] font-extrabold truncate text-white">{isBn ? th.name.bn : th.name.en}</span>
-                              </div>
-                              <div className="flex gap-1">
-                                {th.blobs.slice(0, 3).map((c) => (
-                                  <span key={c} className="w-3 h-3 rounded-full border border-white/10" style={{ background: c }} />
-                                ))}
-                              </div>
-                              {active && (
-                                <span className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#5b8dff] grid place-items-center">
-                                  <Check className="w-3 h-3 text-white" />
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-[#8d9cc2] uppercase tracking-wide mb-1.5 block">
-                        {isBn ? "মুড / মিউজিক" : "Mood / Music"}
-                      </label>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {(Object.keys(MOODS) as MoodKey[]).map((m) => (
-                          <button
-                            key={m}
-                            onClick={() => setMood(m)}
-                            className={`px-2 py-2 rounded-xl text-[11px] font-bold border transition text-center leading-tight ${
-                              mood === m ? "bg-[#5b8dff] text-white border-[#5b8dff]" : "bg-[#151b2e] text-[#8d9cc2] border-[#232d47] hover:text-white"
-                            }`}
-                          >
-                            <div>{isBn ? MOODS[m].bn : MOODS[m].en}</div>
-                            <div className="text-[10px] opacity-70">{MOODS[m].bpm} BPM</div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[11px] font-bold text-[#8d9cc2] uppercase tracking-wide mb-1.5 block flex items-center gap-1">
-                          <Monitor className="w-3 h-3" /> {isBn ? "ফরম্যাট" : "Aspect"}
-                        </label>
-                        <select
-                          value={shortsMode ? "9:16" : aspect}
-                          onChange={(e) => {
-                            const v = e.target.value as Aspect;
-                            if (v === "9:16") setShortsMode(true);
-                            else {
-                              setShortsMode(false);
-                              setAspect(v);
-                            }
-                          }}
-                          className="w-full bg-[#151b2e] border border-[#232d47] rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-[#5b8dff]"
-                        >
-                          <option value="16:9">16:9 — YouTube</option>
-                          <option value="9:16">9:16 — Shorts / Reels</option>
-                          <option value="1:1">1:1 — Square</option>
-                          <option value="4:5">4:5 — Portrait</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-[11px] font-bold text-[#8d9cc2] uppercase tracking-wide mb-1.5 block">
-                          {isBn ? "কোয়ালিটি" : "Quality"}
-                        </label>
-                        <select
-                          value={quality}
-                          onChange={(e) => setQuality(e.target.value as Quality)}
-                          className="w-full bg-[#151b2e] border border-[#232d47] rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-[#5b8dff]"
-                        >
-                          <option value="480p">480p — Fast</option>
-                          <option value="720p">720p — Balanced</option>
-                          <option value="1080p">1080p — Full HD</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[11px] font-bold text-[#8d9cc2] uppercase tracking-wide mb-1.5 block">
-                          {isBn ? "পারফরম্যান্স" : "Performance"}
-                        </label>
-                        <select
-                          value={perf}
-                          onChange={(e) => setPerf(e.target.value as Perf)}
-                          className="w-full bg-[#151b2e] border border-[#232d47] rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-[#5b8dff]"
-                        >
-                          <option value="high">High — Desktop</option>
-                          <option value="balanced">Balanced — Tablet</option>
-                          <option value="fast">Fast — Mobile</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-[11px] font-bold text-[#8d9cc2] uppercase tracking-wide mb-1.5 block">
-                          {isBn ? "ওয়াটারমার্ক" : "Watermark"}
-                        </label>
-                        <input
-                          value={watermark}
-                          onChange={(e) => setWatermark(e.target.value)}
-                          placeholder={isBn ? "ঐচ্ছিক" : "Optional"}
-                          className="w-full bg-[#151b2e] border border-[#232d47] rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-[#5b8dff] placeholder:text-[#5a6a9a]"
-                        />
-                      </div>
-                    </div>
-
-                    <label className="flex items-center gap-2.5 p-3 rounded-xl bg-[#151b2e] border border-[#232d47] cursor-pointer hover:border-[#5b8dff]/50 transition">
-                      <input
-                        type="checkbox"
-                        checked={shortsMode}
-                        onChange={(e) => setShortsMode(e.target.checked)}
-                        className="w-4 h-4 accent-[#5b8dff]"
-                      />
-                      <div className="flex-1">
-                        <div className="text-[13px] font-bold text-white flex items-center gap-1.5">
-                          <Smartphone className="w-3.5 h-3.5" /> {isBn ? "Shorts মোড (৯:১৬, ≤৫৮s)" : "Shorts Mode (9:16, ≤58s)"}
-                        </div>
-                        <div className="text-[11px] text-[#8d9cc2]">{isBn ? "সেফ-জোন + কারাওকে + #Shorts" : "Safe zone + karaoke + #Shorts"}</div>
-                      </div>
-                    </label>
-
-                    {/* Background image — free, local, overlay for text */}
-                    <div className="rounded-xl bg-[#0f1124] border border-[#232d47] p-3">
-                      <div className="text-[11px] font-extrabold tracking-widest uppercase text-[#8d9cc2] mb-2 flex items-center gap-1.5">
-                        <ImageIcon className="w-3.5 h-3.5" /> {isBn ? "ব্যাকগ্রাউন্ড ছবি (ঐচ্ছিক)" : "Background image (optional)"}
-                        {bgImage && <span className="ml-auto px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-black">ON</span>}
-                      </div>
-                      <input ref={bgInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleBgSelect(e.target.files?.[0] || null)} />
-                      {!bgImage ? (
-                        <button
-                          onClick={() => bgInputRef.current?.click()}
-                          className="w-full flex flex-col items-center gap-2 py-5 rounded-xl border-2 border-dashed border-[#2a365c] bg-[#151b2e] hover:border-[#5b8dff] hover:bg-[#1d2642] transition group"
-                        >
-                          <span className="w-10 h-10 rounded-xl bg-[#1e2a4a] border border-[#2a365c] grid place-items-center group-hover:border-[#5b8dff]/50 transition">
-                            <Upload className="w-5 h-5 text-[#8d9cc2] group-hover:text-white" />
-                          </span>
-                          <span className="text-[13px] font-bold text-white">{isBn ? "ছবি বাছাই করুন" : "Choose image"}</span>
-                          <span className="text-[11px] text-[#8d9cc2]">JPG / PNG / WebP • {isBn ? "কভার + থিম ওভারলে" : "cover + theme overlay"}</span>
-                        </button>
-                      ) : (
-                        <div className="space-y-2">
-                          <div className="relative rounded-xl overflow-hidden border border-[#2a365c] bg-black">
-                            <img src={bgImage.src} alt="bg" className="w-full h-[140px] object-cover" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                            <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-                              <span className="text-[11px] font-bold text-white truncate bg-black/50 backdrop-blur px-2 py-1 rounded-full border border-white/20 max-w-[150px]">{bgName}</span>
-                              <span className="text-[10px] font-black px-2 py-1 rounded-full bg-[#5b8dff] text-white">COVER</span>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <button onClick={() => bgInputRef.current?.click()} className="py-2.5 rounded-xl bg-white text-[#0d1120] font-bold text-[12px] flex items-center justify-center gap-1.5 hover:bg-[#e9eefb] transition">
-                              <ImageIcon className="w-4 h-4" /> {isBn ? "বদলান" : "Change"}
-                            </button>
-                            <button onClick={clearBg} className="py-2.5 rounded-xl bg-[#1a233e] border border-[#2a365c] text-white font-bold text-[12px] hover:border-[#ef4444] hover:text-[#fecaca] transition">
-                              {isBn ? "সরান" : "Remove"}
-                            </button>
-                          </div>
-                          <div className="text-[11px] leading-relaxed text-[#6b7bb0] bg-[#151b2e] rounded-xl px-3 py-2 border border-[#232d47]">
-                            {isBn ? "টেক্সট যাতে পড়া যায় তাই গ্রেডিয়েন্ট + থিম wash অটো প্রয়োগ হবে।" : "Gradient + theme wash auto-applied for text legibility."}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-xl bg-[#0f1124] border border-[#232d47] p-3">
-                  <div className="text-[11px] font-extrabold tracking-widest uppercase text-[#8d9cc2] mb-2 flex items-center gap-1.5">
-                    <Settings2 className="w-3.5 h-3.5" /> {isBn ? "প্রিভিউ" : "Preview"} • {spec?.width}×{spec?.height}
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="bg-[#151b2e] rounded-xl p-2.5 border border-[#232d47]">
-                      <div className="text-[11px] text-[#8d9cc2] uppercase tracking-wide font-bold">FPS</div>
-                      <div className="text-[16px] font-black text-white">{spec?.fps || 30}</div>
-                    </div>
-                    <div className="bg-[#151b2e] rounded-xl p-2.5 border border-[#232d47]">
-                      <div className="text-[11px] text-[#8d9cc2] uppercase tracking-wide font-bold">{isBn ? "সময়" : "Duration"}</div>
-                      <div className="text-[16px] font-black text-white">{fmtTime(duration)}</div>
-                    </div>
-                    <div className="bg-[#151b2e] rounded-xl p-2.5 border border-[#232d47]">
-                      <div className="text-[11px] text-[#8d9cc2] uppercase tracking-wide font-bold">{isBn ? "বিটরেট" : "Bitrate"}</div>
-                      <div className="text-[16px] font-black text-white">2.5M</div>
-                    </div>
-                  </div>
-                </div>
+                <button
+                  onClick={() => setActiveTab("audio")}
+                  className="w-full py-2.5 rounded-xl bg-[#151b2e] border border-[#2a365c] text-[#cbd5e1] hover:border-[#5b8dff] hover:text-white font-bold text-[12px] transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>{isBn ? "পরবর্তী ধাপ: ভয়েস / অডিও যুক্ত করুন" : "Next: Add Voice Audio"}</span> ➔
+                </button>
               </div>
+            )}
 
-            {/* single-page: audio */}
+            {/* TAB 2: AUDIO */}
+            {activeTab === "audio" && (
               <div className="space-y-4">
-                {/* Voice-tracked kinetic typography — free VAD */}
-                <div className="rounded-2xl bg-gradient-to-br from-[#0f172a] via-[#1a1440] to-[#0f1f2e] border border-[#2a365c] p-4 shadow-xl">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="text-[12px] font-extrabold tracking-wide text-white flex items-center gap-2">
-                      <Waves className="w-4 h-4 text-[#2dd4bf]" /> {isBn ? "ভয়েস-ট্র্যাকড টেক্সট — ১০০% ফ্রি" : "Voice-tracked text — 100% free"}
+                <input ref={voiceInputRef} type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a" className="hidden" onChange={(e) => handleVoiceSelect(e.target.files?.[0] || null)} />
+                <input ref={timelineInputRef} type="file" accept=".json,application/json" className="hidden" onChange={(e) => handleTimelineSelect(e.target.files?.[0] || null)} />
+
+                {/* Voice Upload */}
+                <div className="p-4 rounded-xl bg-[#0f1124] border border-[#232d47] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] font-extrabold text-white flex items-center gap-1.5">
+                      <Mic2 className="w-4 h-4 text-[#2dd4bf]" /> {isBn ? "১ · ভয়েস রেকর্ড / অডিও ফাইল" : "1 · Voice Audio File"}
+                    </span>
+                    {voiceFile && <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-500 text-white">READY</span>}
+                  </div>
+
+                  {voiceFile ? (
+                    <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-bold text-white text-[12px] truncate">🎙️ {voiceName}</div>
+                        <div className="text-[10px] text-[#86efac]">
+                          {vadResult ? `${vadResult.speechTime.toFixed(1)}s speech • ${vadResult.phrases.length} slots` : isBn ? "ভয়েস লোড হয়েছে" : "Audio loaded"}
+                        </div>
+                      </div>
+                      <button onClick={clearVoice} className="px-2.5 py-1 rounded-lg bg-[#ef4444]/20 text-[#fca5a5] text-[11px] font-bold hover:bg-[#ef4444]/30">
+                        {isBn ? "মুছুন" : "Remove"}
+                      </button>
                     </div>
-                    {voiceSpec ? <span className="text-[10px] font-black px-2 py-1 rounded-full bg-emerald-500 text-white">SYNCED ✓</span> : vadResult?.usable ? <span className="text-[10px] font-black px-2 py-1 rounded-full bg-[#2dd4bf] text-[#06111a]">VAD ✓</span> : null}
-                  </div>
-                  <div className="text-[11px] leading-relaxed text-[#a3b4dc] mb-3 bg-[#0f1124]/60 rounded-xl px-3 py-2 border border-[#2a365c]/60">
-                    {isBn ? "আপনার ভয়েস ফাইল + স্ক্রিপ্ট দিলে প্রতিটি শব্দ ঠিক যখন বলবেন তখনই পর্দায় ফুটবে — কোনো সার্ভার নেই, সব ব্রাউজারেই।" : "Drop voice file + script — each word reveals exactly when you speak it. Zero server, 100% in browser."}
-                  </div>
-                  <input ref={voiceInputRef} type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.webm,.aac,.flac" className="hidden" onChange={(e) => handleVoiceSelect(e.target.files?.[0] || null)} />
-                  {!voiceFile ? (
+                  ) : (
                     <button
                       onClick={() => voiceInputRef.current?.click()}
-                      className="w-full flex flex-col items-center gap-2 py-6 rounded-xl border-2 border-dashed border-[#2a365c] bg-[#0f1124] hover:border-[#2dd4bf] hover:bg-[#102a2a] transition group"
+                      className="w-full py-5 rounded-xl border-2 border-dashed border-[#2a365c] bg-[#151b2e]/50 hover:border-[#2dd4bf] hover:bg-[#151b2e] transition flex flex-col items-center gap-2 cursor-pointer group"
                     >
-                      <span className="w-12 h-12 rounded-2xl bg-[#1a3340] border border-[#2a5a5a] grid place-items-center group-hover:border-[#2dd4bf]/50 transition">
-                        <FileAudio className="w-6 h-6 text-[#5eead4] group-hover:text-white" />
-                      </span>
-                      <span className="text-[13px] font-black text-white flex items-center gap-1.5">
-                        {isTracking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} {isBn ? "ভয়েস ফাইল বাছাই করুন" : "Choose voice file"}
-                      </span>
-                      <span className="text-[11px] text-[#8d9cc2]">MP3 / WAV / M4A / OGG • {isBn ? "VAD অটো-ট্র্যাক" : "VAD auto-track"}</span>
+                      <Upload className="w-6 h-6 text-[#2dd4bf] group-hover:scale-110 transition" />
+                      <div className="font-bold text-[12px] text-white">{isBn ? "ভয়েস ফাইল বাছাই করুন (MP3 / WAV)" : "Upload Voice File (MP3 / WAV)"}</div>
+                      <div className="text-[10px] text-[#8d9cc2]">{isBn ? "আপনার কণ্ঠের অডিও দিলে কথা অনুযায়ী টেক্সট সিঙ্ক হবে" : "Voice syncs kinetic typography"}</div>
                     </button>
+                  )}
+                </div>
+
+                {/* Timeline JSON Upload */}
+                <div className="p-4 rounded-xl bg-[#0f1124] border border-[#232d47] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] font-extrabold text-white flex items-center gap-1.5">
+                      <FileAudio className="w-4 h-4 text-[#fbbf24]" /> {isBn ? "২ · টাইমলাইন JSON (ঐচ্ছিক)" : "2 · Timeline JSON (Optional)"}
+                    </span>
+                    {(customTimeline || customSegments) && <span className="text-[10px] font-black px-2 py-0.5 rounded bg-[#fbbf24] text-[#1a1300]">LOADED</span>}
+                  </div>
+
+                  {(customTimeline || customSegments) ? (
+                    <div className="p-3 rounded-xl bg-[#fbbf24]/15 border border-[#fbbf24]/40 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-bold text-white text-[12px] truncate">📋 {timelineFileName || "timeline.json"}</div>
+                        <div className="text-[10px] text-[#fde68a]">
+                          {customSegments ? `${customSegments.length} ${isBn ? "সেগমেন্ট সিঙ্কড" : "segments synced"}` : `${customTimeline?.length} ${isBn ? "শব্দ সিঙ্কড" : "words synced"}`}
+                        </div>
+                      </div>
+                      <button onClick={clearTimeline} className="px-2.5 py-1 rounded-lg bg-[#ef4444]/20 text-[#fca5a5] text-[11px] font-bold hover:bg-[#ef4444]/30">
+                        {isBn ? "মুছুন" : "Remove"}
+                      </button>
+                    </div>
                   ) : (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#0f1124] border border-[#2a365c]">
-                        <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#2dd4bf] to-[#0ea5e9] grid place-items-center text-white shrink-0">
-                          <FileAudio className="w-5 h-5" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-[12px] font-bold text-white truncate">{voiceName}</div>
-                          <div className="text-[11px] text-[#8d9cc2]">{vadResult ? `${vadResult.phrases.length} slots • ${vadResult.speechTime.toFixed(1)}s speech` : isTracking ? (isBn ? "VAD চলছে..." : "VAD running...") : ""}</div>
-                        </div>
-                        <button onClick={clearVoice} className="px-3 py-1.5 rounded-full bg-[#1e2a4a] border border-[#2a365c] text-[#cbd5e1] text-[11px] font-bold hover:border-[#ef4444] hover:text-[#fecaca] transition">
-                          {isBn ? "সরান" : "Remove"}
-                        </button>
-                      </div>
-                      {/* waveform */}
-                      <div className="rounded-xl overflow-hidden border border-[#1e3a5e] bg-[#020610]">
-                        <canvas ref={waveformRef} className="w-full block" />
-                        <div className="flex items-center gap-1.5 px-2 py-1.5 bg-[#0b1220] border-t border-[#1e3a5e] text-[10px] font-bold text-[#8d9cc2]">
-                          <Waves className="w-3 h-3 text-[#2dd4bf]" /> {isBn ? "স্পিচ স্লট (টিল = থ্রেশহোল্ড)" : "Speech slots (teal), threshold dashed"} • {vadResult?.usable ? <span className="text-emerald-400">{isBn ? "ব্যবহারযোগ্য" : "usable"}</span> : <span className="text-amber-400">{isBn ? "চেক করুন" : "check"}</span>}
-                        </div>
-                      </div>
-                      {audioUrl && <audio ref={audioRef} src={audioUrl} controls className="w-full h-9 rounded-xl" />}
-                      {voiceError && <div className="rounded-xl bg-[#450a0a] border border-[#7f1d1d] text-[#fecaca] px-3 py-2.5 text-[11px] leading-relaxed">{voiceError}</div>}
-                      <div className="grid grid-cols-2 gap-2">
-                        <button onClick={() => voiceInputRef.current?.click()} className="py-2.5 rounded-xl bg-[#1e2a4a] border border-[#2a365c] text-white font-bold text-[12px] flex items-center justify-center gap-1.5 hover:border-[#2dd4bf] transition">
-                          <Upload className="w-4 h-4" /> {isBn ? "অন্য ফাইল" : "Change"}
-                        </button>
-                        <button
-                          onClick={applyVoiceSync}
-                          disabled={!vadResult?.usable}
-                          className="py-2.5 rounded-xl bg-gradient-to-br from-[#2dd4bf] to-[#0ea5e9] text-[#021018] font-black text-[12px] flex items-center justify-center gap-1.5 shadow-lg shadow-[#2dd4bf]/20 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 transition"
-                        >
-                          <Highlighter className="w-4 h-4" /> {isBn ? "সিঙ্ক প্রয়োগ" : "Apply sync"}
-                        </button>
-                      </div>
-                      <div className="rounded-xl bg-[#2dd4bf]/10 border border-[#2dd4bf]/25 px-3 py-2.5 text-[11px] leading-relaxed text-[#99f6e4]">
-                        <span className="font-black">✨ {isBn ? "কী হয়?" : "What happens?"}</span> {isBn ? "প্রতিটি প্যারাগ্রাফ নিজস্ব সিন পাবে, শব্দগুলো VAD স্লটে ওজন অনুযায়ী সিঙ্ক হবে — বাংলা মাত্রা-সচেতন।" : "Each paragraph gets its own scene, words sync weight-wise into VAD slots — Bengali matra-aware."}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Timeline JSON — user provides word timings (you said you will provide) */}
-                <div className="rounded-2xl bg-gradient-to-br from-[#0f1420] via-[#1a1525] to-[#0f1a20] border border-[#2a365c] p-4 shadow-xl">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-[12px] font-extrabold text-white flex items-center gap-2"><FileAudio className="w-4 h-4 text-[#fbbf24]" /> {isBn ? "টাইমলাইন JSON (আপনি দেবেন)" : "Timeline JSON (you provide)"}</div>
-                    {(customTimeline || customSegments) && <span className="text-[10px] font-black px-2 py-1 rounded-full bg-[#fbbf24] text-[#1a1300]">{customSegments ? `${customSegments.length} SEGS` : `${customTimeline?.length} WORDS`}</span>}
-                  </div>
-                  <div className="text-[11px] leading-relaxed text-[#a3b4dc] mb-3 bg-[#0f1124]/60 rounded-xl px-3 py-2 border border-[#2a365c]/60">
-                    {isBn ? "আপনার [{time,text}] ফরম্যাট সরাসরি চলবে — যেমন {time:0.0, text:\"বন্ধ দরজার ওপাশে কী ছিল?\"} — আমরা মিলিসেকেন্ডে সিঙ্ক করব। [{w,s,e,para}] ও চলবে।" : "Your [{time,text}] format works directly — e.g. {time:0.0, text:\"...\"} — we sync millisecond-accurate. [{w,s,e,para}] also works."}
-                  </div>
-                  <input ref={timelineInputRef} type="file" accept=".json,application/json" className="hidden" onChange={(e)=>handleTimelineSelect(e.target.files?.[0]||null)} />
-                  <div className="grid grid-cols-2 gap-2">
-                    <button onClick={()=>timelineInputRef.current?.click()} className="flex flex-col items-center gap-1.5 py-4 rounded-xl border-2 border-dashed border-[#2a365c] bg-[#0f1124] hover:border-[#fbbf24] hover:bg-[#1a180f] transition group">
-                      <Upload className="w-5 h-5 text-[#fbbf24] group-hover:text-white" />
-                      <span className="text-[12px] font-black text-white">{timelineFileName ? timelineFileName.slice(0,22) : (isBn ? "টাইমলাইন JSON বাছাই" : "Choose timeline JSON")}</span>
-                      <span className="text-[10px] text-[#8d9cc2]">JSON • time/text বা w/s/e</span>
+                    <button
+                      onClick={() => timelineInputRef.current?.click()}
+                      className="w-full py-4 rounded-xl border-2 border-dashed border-[#2a365c] bg-[#151b2e]/50 hover:border-[#fbbf24] hover:bg-[#151b2e] transition flex flex-col items-center gap-1.5 cursor-pointer group"
+                    >
+                      <FileAudio className="w-5 h-5 text-[#fbbf24] group-hover:scale-110 transition" />
+                      <div className="font-bold text-[12px] text-white">{isBn ? "টাইমলাইন JSON ফাইল আপলোড" : "Upload Timeline JSON"}</div>
+                      <div className="text-[10px] text-[#8d9cc2]">{isBn ? "সেকেন্ড অনুযায়ী হুবহু প্রতিটি লাইন সিঙ্ক করতে" : "For millisecond-exact word sync"}</div>
                     </button>
-                    <div className="flex flex-col gap-2">
-                      <button onClick={applyTimelineSync} disabled={!customTimeline && !customSegments} className="flex-1 py-2.5 rounded-xl bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] text-[#1a1300] font-black text-[12px] flex items-center justify-center gap-1.5 disabled:opacity-50 hover:brightness-110 transition">
-                        <Highlighter className="w-4 h-4" /> {isBn ? "টাইমলাইন প্রয়োগ" : "Apply timeline"}
-                      </button>
-                      <button onClick={clearTimeline} className="py-2 rounded-xl bg-[#1a233e] border border-[#2a365c] text-white font-bold text-[11px] hover:border-[#ef4444] transition">{isBn ? "সরান" : "Clear"}</button>
-                      <div className="text-[10px] text-[#6b7bb0] leading-tight">{isBn ? "ফরম্যাট: [{\"time\":0.0, \"text\":\"বিসমিল্লাহ...\"}] ✓" : "Format: [{\"time\":0.0, \"text\":\"hello\"}] ✓"}</div>
-                    </div>
-                  </div>
-                  {customTimeline && (
-                    <div className="mt-3 rounded-xl bg-[#1a1505] border border-[#fbbf24]/20 p-2 max-h-[120px] overflow-y-auto">
-                      <div className="text-[10px] font-bold text-[#fbbf24] mb-1">Preview (first 12 words)</div>
-                      <div className="flex flex-wrap gap-1">
-                        {customTimeline.slice(0,12).map((w,i)=>(<span key={i} className="px-1.5 py-0.5 rounded bg-[#2a1f0a] border border-[#fbbf24]/20 text-[10px] text-[#fde68a]">{w.w} {w.s.toFixed(2)}→{w.e.toFixed(2)}</span>))}
-                        {customTimeline.length>12 && <span className="text-[10px] text-[#8d9cc2]">+{customTimeline.length-12} more</span>}
-                      </div>
-                    </div>
-                  )}
-                  {customSegments && (
-                    <div className="mt-3 rounded-xl bg-[#1a1505] border border-[#fbbf24]/20 p-2 max-h-[140px] overflow-y-auto">
-                      <div className="text-[10px] font-bold text-[#fbbf24] mb-1">Preview — {customSegments.length} segments (first 8)</div>
-                      <div className="flex flex-col gap-1">
-                        {customSegments.slice(0,8).map((s,i)=>(<span key={i} className="px-2 py-1 rounded bg-[#2a1f0a] border border-[#fbbf24]/20 text-[11px] text-[#fde68a] flex justify-between"><span className="font-mono text-[#fbbf24]">{s.time.toFixed(2)}s</span> <span className="truncate ml-2">{s.text.slice(0,48)}</span></span>))}
-                        {customSegments.length>8 && <span className="text-[10px] text-[#8d9cc2]">+{customSegments.length-8} more segments</span>}
-                      </div>
-                    </div>
                   )}
                 </div>
 
-                <div className="rounded-2xl bg-gradient-to-br from-[#0f172a] to-[#1e1b3a] border border-[#2a365c] p-4">
-                  <div className="text-[12px] font-extrabold tracking-wide text-white mb-3 flex items-center gap-2">
-                    <Mic2 className="w-4 h-4 text-[#7c5cff]" /> {isBn ? "ভয়েসওভার (TTS) — ব্রাউজারেই" : "Voice-over (TTS) — in browser"}
-
+                {/* Narration Speed */}
+                <div className="p-3.5 rounded-xl bg-[#0f1124] border border-[#232d47] space-y-2">
+                  <div className="flex items-center justify-between text-[11.5px] font-bold text-white">
+                    <span className="flex items-center gap-1.5"><Timer className="w-3.5 h-3.5 text-[#5b8dff]" /> {isBn ? "কথার গতি" : "Speech Speed"}</span>
+                    <span className="text-[#5b8dff]">{wpm} WPM</span>
                   </div>
+                  <input type="range" min={90} max={220} value={wpm} onChange={(e) => setWpm(parseInt(e.target.value))} className="w-full accent-[#5b8dff] h-1.5 cursor-pointer" />
+                </div>
 
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-[11px] font-bold text-[#8d9cc2] uppercase tracking-wide mb-1.5 block">
-                        {isBn ? "ভয়েস" : "Voice"} • {voices.length} {isBn ? "টি" : "available"}
-                      </label>
-                      <select
-                        value={ttsVoice}
-                        onChange={(e) => setTtsVoice(e.target.value)}
-                        className="w-full bg-[#151b2e] border border-[#232d47] rounded-xl px-3 py-2.5 text-[12px] outline-none focus:border-[#5b8dff]"
-                      >
-                        {voices.length === 0 ? (
-                          <option>{isBn ? "লোড হচ্ছে..." : "Loading..."}</option>
-                        ) : (
-                          voices.map((v) => (
-                            <option key={v.name} value={v.name}>
-                              {v.name} — {v.lang} {v.default ? "• default" : ""}
-                            </option>
-                          ))
-                        )}
-                      </select>
-                      <div className="text-[11px] text-[#6b7bb0] mt-1">
-                        {isBn ? "L: Linux/headless-এ ভয়েস কম থাকে, Windows/macOS/Android-এ বেশি।" : "Linux/headless has fewer voices; Windows/macOS/Android has more."}
-                      </div>
-                    </div>
+                <button
+                  onClick={() => setActiveTab("design")}
+                  className="w-full py-2.5 rounded-xl bg-[#151b2e] border border-[#2a365c] text-[#cbd5e1] hover:border-[#5b8dff] hover:text-white font-bold text-[12px] transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>{isBn ? "পরবর্তী ধাপ: ফরম্যাট ও ব্যাকগ্রাউন্ড ডিজাইন" : "Next: Design & Format"}</span> ➔
+                </button>
+              </div>
+            )}
 
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-[11px] font-bold text-[#8d9cc2] uppercase tracking-wide">
-                          {isBn ? "গতি" : "Rate"} • {ttsRate.toFixed(2)}x
-                        </label>
-                        <span className="text-[11px] text-[#5b8dff] font-bold">{ttsRate < 1 ? (isBn ? "ধীর" : "Slow") : ttsRate > 1.2 ? (isBn ? "দ্রুত" : "Fast") : isBn ? "স্বাভাবিক" : "Normal"}</span>
-                      </div>
-                      <input type="range" min={0.6} max={1.6} step={0.05} value={ttsRate} onChange={(e) => setTtsRate(parseFloat(e.target.value))} className="w-full accent-[#7c5cff] h-2" />
-                    </div>
+            {/* TAB 3: DESIGN */}
+            {activeTab === "design" && (
+              <div className="space-y-4">
+                <input ref={bgInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleBgSelect(e.target.files?.[0] || null)} />
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={handleTtsTest}
-                        className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white text-[#0d1120] font-extrabold text-[13px] hover:bg-[#e9eefb] transition"
-                      >
-                        <AudioLines className="w-4 h-4" /> {isBn ? "ভয়েস টেস্ট" : "Test voice"}
-                      </button>
-                      <button
-                        onClick={() => {
-                          speechSynthesis.cancel();
-                          toast(isBn ? "বন্ধ করা হলো" : "Stopped");
-                        }}
-                        className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#151b2e] border border-[#232d47] text-white font-bold text-[13px] hover:border-[#5b8dff] transition"
-                      >
-                        <Pause className="w-4 h-4" /> {isBn ? "থামাও" : "Stop"}
-                      </button>
-                    </div>
-
-                    <div className="rounded-xl bg-[#ffb020]/10 border border-[#ffb020]/30 p-3 text-[11px] leading-relaxed text-[#ffd88a]">
-                      <span className="font-extrabold">💡 Pro:</span>{" "}
-                      {isBn
-                        ? "Chrome/Edge-এ 'এই ট্যাব শেয়ার + tab audio' দিয়ে TTS রেকর্ড করে ভিডিওতে অটো-ডাকিং সহ মিক্স করা যায়। iOS-এ mp3/wav আপলোড করুন।"
-                        : "On Chrome/Edge, use 'Share this tab + tab audio' to capture TTS into the video with auto-ducking. On iOS upload mp3/wav."}
-                    </div>
+                {/* Aspect Ratio */}
+                <div className="p-3.5 rounded-xl bg-[#0f1124] border border-[#232d47] space-y-2.5">
+                  <label className="text-[11px] font-extrabold uppercase tracking-wider text-[#8d9cc2] block">
+                    {isBn ? "ভিডিও ফরম্যাট / রেশিও" : "Format / Aspect Ratio"}
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => { setShortsMode(false); setAspect("16:9"); }}
+                      className={`py-3 px-3 rounded-xl border font-bold text-[12px] flex items-center justify-center gap-2 transition ${
+                        !shortsMode ? "bg-[#5b8dff] text-white border-[#5b8dff] shadow-md shadow-[#5b8dff]/25" : "bg-[#151b2e] border-[#232d47] text-[#8d9cc2] hover:text-white"
+                      }`}
+                    >
+                      <Monitor className="w-4 h-4" /> <span>YouTube (16:9)</span>
+                    </button>
+                    <button
+                      onClick={() => { setShortsMode(true); setAspect("9:16"); }}
+                      className={`py-3 px-3 rounded-xl border font-bold text-[12px] flex items-center justify-center gap-2 transition ${
+                        shortsMode ? "bg-[#5b8dff] text-white border-[#5b8dff] shadow-md shadow-[#5b8dff]/25" : "bg-[#151b2e] border-[#232d47] text-[#8d9cc2] hover:text-white"
+                      }`}
+                    >
+                      <Smartphone className="w-4 h-4" /> <span>Shorts / Reels (9:16)</span>
+                    </button>
                   </div>
                 </div>
 
-                <div className="rounded-xl bg-[#0f1124] border border-[#232d47] p-4">
-                  <div className="text-[11px] font-extrabold tracking-widest uppercase text-[#8d9cc2] mb-3 flex items-center gap-1.5">
-                    <Music4 className="w-3.5 h-3.5" /> {isBn ? "মিউজিক & SFX" : "Music & SFX"}
+                {/* Background Image */}
+                <div className="p-3.5 rounded-xl bg-[#0f1124] border border-[#232d47] space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-extrabold uppercase tracking-wider text-[#8d9cc2] flex items-center gap-1.5">
+                      <ImageIcon className="w-3.5 h-3.5" /> {isBn ? "ব্যাকগ্রাউন্ড ছবি" : "Background Image"}
+                    </label>
+                    {bgImage && <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-500 text-white">ACTIVE</span>}
                   </div>
-                  <div className="grid grid-cols-2 gap-2 mb-3">
+
+                  {bgImage ? (
+                    <div className="p-3 rounded-xl bg-[#151b2e] border border-[#232d47] flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <img src={bgImage.src} alt="" className="w-10 h-10 rounded-lg object-cover border border-white/20 shrink-0" />
+                        <span className="text-[12px] font-bold text-white truncate">{bgName}</span>
+                      </div>
+                      <button onClick={clearBg} className="px-2.5 py-1 rounded-lg bg-[#ef4444]/20 text-[#fca5a5] text-[11px] font-bold hover:bg-[#ef4444]/30">
+                        {isBn ? "মুছুন" : "Remove"}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => bgInputRef.current?.click()}
+                      className="w-full py-4 rounded-xl border-2 border-dashed border-[#2a365c] bg-[#151b2e]/50 hover:border-[#5b8dff] hover:bg-[#151b2e] transition flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Upload className="w-4 h-4 text-[#5b8dff]" />
+                      <span className="text-[12px] font-bold text-white">{isBn ? "🖼️ নিজের ছবি যুক্ত করুন" : "Upload Image"}</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Theme presets */}
+                <div className="p-3.5 rounded-xl bg-[#0f1124] border border-[#232d47] space-y-2.5">
+                  <label className="text-[11px] font-extrabold uppercase tracking-wider text-[#8d9cc2] block">
+                    {isBn ? "থিম ও কালার" : "Color Theme"}
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
                     {[
-                      { k: "uplifting", label: "Uplifting", bpm: 112 },
-                      { k: "cinematic", label: "Cinematic", bpm: 84 },
-                      { k: "chill", label: "Chill", bpm: 92 },
-                      { k: "tech", label: "Tech", bpm: 124 },
-                    ].map((m) => (
-                      <div
-                        key={m.k}
-                        className={`p-3 rounded-xl border text-center ${mood === m.k ? "bg-[#7c5cff] border-[#7c5cff] text-white" : "bg-[#151b2e] border-[#232d47] text-[#8d9cc2]"}`}
+                      { k: "aurora", name: isBn ? "🌌 অরোরা (ডার্ক ব্লু)" : "Aurora", color: "from-[#0a1530] to-[#1a103c]" },
+                      { k: "sunset", name: isBn ? "🌆 সানসেট (ওয়ার্ম)" : "Sunset", color: "from-[#2a1020] to-[#120a20]" },
+                      { k: "cyber", name: isBn ? "⚡ সাইবার (নিওন)" : "Cyber", color: "from-[#081f20] to-[#041018]" },
+                      { k: "midnight", name: isBn ? "🌑 মিডনাইট (ব্ল্যাক)" : "Midnight", color: "from-[#05060a] to-[#0d0f18]" }
+                    ].map((th) => (
+                      <button
+                        key={th.k}
+                        onClick={() => setTheme(th.k as ThemeKey)}
+                        className={`p-2.5 rounded-xl border-2 transition text-left bg-gradient-to-br ${th.color} ${
+                          theme === th.k ? "border-[#5b8dff] shadow-md shadow-[#5b8dff]/20" : "border-[#232d47] hover:border-[#3a4a75]"
+                        }`}
                       >
-                        <div className="text-[12px] font-black">{m.label}</div>
-                        <div className="text-[10px] opacity-80">{m.bpm} BPM • {m.k}</div>
-                      </div>
+                        <div className="text-[11.5px] font-black text-white">{th.name}</div>
+                      </button>
                     ))}
                   </div>
-                  <div className="flex items-center gap-2 text-[11px] text-[#8d9cc2] bg-[#151b2e] rounded-xl px-3 py-2.5 border border-[#232d47]">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    {isBn ? "প্রসিডিউরাল মিউজিক: প্যাড + বেস + আর্প + ড্রাম — ১০০% কপিরাইট-ফ্রি" : "Procedural music: pad + bass + arp + drums — 100% copyright-free"}
-                  </div>
                 </div>
 
-                <div className="rounded-xl bg-[#0f1124] border border-[#232d47] p-3">
-                  <label className="flex items-center gap-2.5 cursor-pointer">
-                    <input type="checkbox" checked={isRecording} onChange={(e) => setIsRecording(e.target.checked)} className="w-4 h-4 accent-[#e11d48]" />
-                    <span className="text-[13px] font-bold text-white flex items-center gap-1.5">
-                      <span className={`w-2.5 h-2.5 rounded-full ${isRecording ? "bg-[#e11d48] animate-pulse" : "bg-[#475569]"}`} />{" "}
-                      {isBn ? "ট্যাব অডিও রেকর্ড (getDisplayMedia)" : "Record tab audio (getDisplayMedia)"}
-                    </span>
+                {/* Watermark */}
+                <div className="p-3.5 rounded-xl bg-[#0f1124] border border-[#232d47] space-y-2">
+                  <label className="text-[11px] font-extrabold uppercase tracking-wider text-[#8d9cc2] block">
+                    {isBn ? "চ্যানেল নাম / ওয়াটারমার্ক (ঐচ্ছিক)" : "Channel / Watermark (Optional)"}
                   </label>
-                  <div className="text-[11px] text-[#6b7bb0] mt-2 leading-relaxed">
-                    {isBn
-                      ? "ডেস্কটপ Chrome/Edge-এ কাজ করে। রেকর্ড শুরু → TTS চালান → স্টপ → অটো মিক্স।"
-                      : "Works on desktop Chrome/Edge. Start record → play TTS → stop → auto-mixed."}
-                  </div>
+                  <input
+                    type="text"
+                    value={watermark}
+                    onChange={(e) => setWatermark(e.target.value)}
+                    placeholder="@IslamicVoiceBengali"
+                    className="w-full bg-[#151b2e] border border-[#232d47] rounded-xl px-3 py-2 text-[12.5px] text-white outline-none focus:border-[#5b8dff]"
+                  />
                 </div>
-              </div>
 
-            {/* single-page: export */}
+                <button
+                  onClick={() => setActiveTab("export")}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#22d3ee] to-[#0ea5e9] text-[#051018] font-black text-[13px] shadow-lg shadow-[#22d3ee]/25 hover:brightness-110 transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>{isBn ? "ভিডিও ডাউনলোড পেজে যান" : "Proceed to Download Video"}</span> ➔
+                </button>
+              </div>
+            )}
+
+            {/* TAB 4: EXPORT & DOWNLOAD */}
+            {activeTab === "export" && (
               <div id="export-section" className="space-y-4">
-                <div className="rounded-2xl bg-gradient-to-br from-[#0f172a] to-[#0f1a2e] border border-[#1e3a5e] p-4">
-                  <div className="text-[12px] font-extrabold text-white mb-3 flex items-center gap-2">
-                    <Video className="w-4 h-4 text-[#22d3ee]" /> {isBn ? "এক্সপোর্ট — ১০০% ব্রাউজারে" : "Export — 100% in browser"}
+                <div className="rounded-2xl bg-gradient-to-br from-[#0f172a] to-[#0f1a2e] border border-[#1e3a5e] p-4 space-y-3.5">
+                  <div className="text-[12px] font-extrabold text-white flex items-center gap-2">
+                    <Video className="w-4 h-4 text-[#22d3ee]" /> {isBn ? "ভিডিও ডাউনলোড ও পাবলিশ" : "Export & Publish"}
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 mb-4 text-center">
-                    <div className="bg-[#0b1220] rounded-xl p-3 border border-[#1e3a5e]">
-                      <div className="text-[10px] font-bold tracking-widest uppercase text-[#8d9cc2]">Codec</div>
-                      <div className="text-[12px] font-black text-white mt-1">VP9 + Opus</div>
-                      <div className="text-[10px] text-[#6b7bb0]">WebM</div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="bg-[#0b1220] rounded-xl p-2.5 border border-[#1e3a5e]">
+                      <div className="text-[10px] font-bold text-[#8d9cc2]">{isBn ? "ফরম্যাট" : "Ratio"}</div>
+                      <div className="text-[12px] font-black text-white mt-0.5">{shortsMode ? "9:16" : "16:9"}</div>
                     </div>
-                    <div className="bg-[#0b1220] rounded-xl p-3 border border-[#1e3a5e]">
-                      <div className="text-[10px] font-bold tracking-widest uppercase text-[#8d9cc2]">{isBn ? "সময়" : "Duration"}</div>
-                      <div className="text-[12px] font-black text-white mt-1">{fmtTime(duration)}</div>
-                      <div className="text-[10px] text-[#6b7bb0]">{spec?.fps} fps</div>
+                    <div className="bg-[#0b1220] rounded-xl p-2.5 border border-[#1e3a5e]">
+                      <div className="text-[10px] font-bold text-[#8d9cc2]">{isBn ? "দৈর্ঘ্য" : "Duration"}</div>
+                      <div className="text-[12px] font-black text-white mt-0.5">{fmtTime(duration)}</div>
                     </div>
-                    <div className="bg-[#0b1220] rounded-xl p-3 border border-[#1e3a5e]">
-                      <div className="text-[10px] font-bold tracking-widest uppercase text-[#8d9cc2]">{isBn ? "রেজোলিউশন" : "Resolution"}</div>
-                      <div className="text-[12px] font-black text-white mt-1">
-                        {spec?.width}×{spec?.height}
-                      </div>
-                      <div className="text-[10px] text-[#6b7bb0]">{quality}</div>
+                    <div className="bg-[#0b1220] rounded-xl p-2.5 border border-[#1e3a5e]">
+                      <div className="text-[10px] font-bold text-[#8d9cc2]">{isBn ? "রেজোলিউশন" : "Resolution"}</div>
+                      <div className="text-[12px] font-black text-white mt-0.5">{spec?.width}×{spec?.height}</div>
                     </div>
                   </div>
 
@@ -3163,9 +2764,9 @@ export default function App() {
                   ) : (
                     <button
                       onClick={handleExport}
-                      className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-br from-[#22d3ee] to-[#0ea5e9] text-[#051018] font-black text-[14px] shadow-lg shadow-[#22d3ee]/20 hover:brightness-110 transition cursor-pointer"
+                      className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-gradient-to-br from-[#22d3ee] to-[#0ea5e9] text-[#051018] font-black text-[14.5px] shadow-lg shadow-[#22d3ee]/25 hover:brightness-110 active:scale-[0.99] transition cursor-pointer"
                     >
-                      <Download className="w-5 h-5" /> {isBn ? "⚡ ফাস্ট রেন্ডার & ডাউনলোড" : "⚡ Fast Render & Download"}
+                      <Download className="w-5 h-5" /> {isBn ? "⚡ ভিডিও রেন্ডার & ডাউনলোড করুন" : "⚡ Fast Render & Download"}
                     </button>
                   )}
 
@@ -3310,6 +2911,7 @@ export default function App() {
                   </div>
                 </div>
               </div>
+            )}
           </div>
         </aside>
 
