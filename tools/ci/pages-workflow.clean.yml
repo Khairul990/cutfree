@@ -41,7 +41,7 @@ jobs:
         run: |
           set -e
           mkdir -p _site
-          for f in index.html studio.html studio-pro.html \
+          for f in index.html editor.html studio.html studio-pro.html \
                    cutfree.html cutfree-studio.html cutfree-studio-pro.html \
                    manifest.webmanifest sw.js robots.txt LICENSE README.md; do
             if [ -f "$f" ]; then cp "$f" _site/; fi

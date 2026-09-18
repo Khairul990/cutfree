@@ -3,253 +3,250 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>কাটফ্রি — ফ্রি অনলাইন ভিডিও কাটার ও এডিটর</title>
-<meta name="description" content="CutFree — ১০০% ফ্রি ব্রাউজার-ভিত্তিক ভিডিও কাটার, ট্রিমার ও এডিটর। ভিডিও ক্লিপ করুন, জোড়া লাগান, এক্সপোর্ট করুন — কোনো আপলোড নেই, কোনো ওয়াটারমার্ক নেই, কোনো সাইন-আপ নেই।" />
-<meta name="theme-color" content="#0b0f17" />
-<meta property="og:title" content="কাটফ্রি — ফ্রি অনলাইন ভিডিও কাটার" />
-<meta property="og:description" content="ভিডিও কাটুন, ট্রিম করুন, জোড়া লাগান — সবকিছু আপনার ব্রাউজারেই। ফ্রি, প্রাইভেট, ওয়াটারমার্ক-ফ্রি।" />
+<title>CutFree — ব্রাউজারেই পুরো ভিডিও ফ্যাক্টরি</title>
+<meta name="description" content="CutFree — শূন্য খরচে ভিডিও বানান ব্রাউজারেই। স্টোরি মোড (নিজের ভয়েস ট্র্যাক), ফ্যাক্টরি স্টুডিও (এক ক্লিকে ভিডিও), আর ভিডিও কাটার — সব এক জায়গায়, কোনো সার্ভার বা সাইন-আপ ছাড়া।" />
+<meta name="theme-color" content="#06080e" />
+<meta property="og:title" content="CutFree — ব্রাউজারেই পুরো ভিডিও ফ্যাক্টরি" />
+<meta property="og:description" content="লেখা দিন, ভিডিও নিন — স্টোরি মোড, অটো অ্যানিমেশন, মিউজিক আর YouTube কিট সহ। ফ্রি, প্রাইভেট, অফলাইনেও চলে।" />
 <link rel="icon" href="assets/logo.svg" type="image/svg+xml" />
 <link rel="manifest" href="manifest.webmanifest" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<link rel="stylesheet" href="css/style.css" />
+<style>
+  :root{
+    --bg:#06080e; --pn:#0b0f1b; --pn2:#111726; --ln:#1e2740;
+    --tx:#e9eefb; --dm:#93a1c4; --ac:#5b8dff; --ac2:#b06cff; --ok:#37d67a;
+    --pro:linear-gradient(135deg,#5b8dff,#b06cff 55%,#ff7ac6);
+    --fac:linear-gradient(135deg,#22d3ee,#37d67a 60%,#a3e635);
+    --ed:linear-gradient(135deg,#ff9a5b,#ff5c8a 60%,#c084fc);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(1100px 620px at 12% -8%, rgba(91,141,255,.20), transparent 62%),
+      radial-gradient(940px 560px at 92% 4%, rgba(176,108,255,.18), transparent 60%),
+      radial-gradient(760px 620px at 60% 108%, rgba(34,211,238,.12), transparent 62%),
+      var(--bg);
+    color:var(--tx);
+    font:15px/1.6 "Noto Sans Bengali","Hind Siliguri","Nirmala UI",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  .grain{position:fixed;inset:0;pointer-events:none;opacity:.32;mix-blend-mode:soft-light;z-index:0;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='.5'/></svg>")}
+  .wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:22px 18px 60px}
+
+  /* ---------- header ---------- */
+  header.top{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:11px;text-decoration:none;color:inherit}
+  .brand img{width:38px;height:38px;filter:drop-shadow(0 6px 16px rgba(91,141,255,.45))}
+  .brand b{display:block;font-size:17px;letter-spacing:.2px}
+  .brand small{display:block;color:var(--dm);font-size:11.5px}
+  .top-links{display:flex;gap:8px;flex-wrap:wrap}
+  .tlink{color:var(--tx);text-decoration:none;font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:9px;
+    background:rgba(21,27,46,.75);border:1px solid var(--ln);transition:.18s}
+  .tlink:hover{background:#1a2240}
+
+  /* ---------- hero ---------- */
+  .hero{text-align:center;margin:46px 0 34px}
+  .kicker{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;letter-spacing:.4px;
+    color:#cbd7ff;background:rgba(91,141,255,.12);border:1px solid rgba(91,141,255,.35);padding:6px 13px;border-radius:99px}
+  .kicker i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px rgba(55,214,122,.18);display:inline-block}
+  h1{font-size:clamp(28px,5.4vw,46px);line-height:1.16;margin:18px 0 12px;letter-spacing:-.4px;
+    background:linear-gradient(115deg,#fff 15%,#bcd0ff 45%,#e3b8ff 78%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{max-width:660px;margin:0 auto;color:var(--dm);font-size:clamp(14px,2.1vw,16.5px)}
+  .pills{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin:22px 0 0}
+  .pill{font-size:12.5px;color:#dbe4ff;background:rgba(17,23,38,.85);border:1px solid var(--ln);padding:7px 13px;border-radius:99px}
+
+  /* ---------- cards ---------- */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:34px}
+  @media (max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{position:relative;display:flex;flex-direction:column;gap:13px;padding:20px 19px 18px;border-radius:18px;
+    background:linear-gradient(180deg,rgba(17,23,38,.92),rgba(9,12,22,.92));border:1px solid var(--ln);overflow:hidden;
+    transition:transform .2s,border-color .2s,box-shadow .2s}
+  .card::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--line,var(--pro))}
+  .card::after{content:"";position:absolute;width:280px;height:280px;right:-110px;top:-130px;border-radius:50%;
+    background:var(--line,var(--pro));opacity:.13;filter:blur(38px);pointer-events:none}
+  .card:hover{transform:translateY(-4px);border-color:#31406b;box-shadow:0 22px 50px -22px rgba(91,141,255,.55)}
+  .card .ic{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;font-size:23px;background:var(--line,var(--pro));position:relative;z-index:1}
+  .card h2{margin:0;font-size:19.5px;letter-spacing:-.2px}
+  .card .en{display:block;color:var(--dm);font-size:11px;font-weight:600;letter-spacing:.9px;text-transform:uppercase;margin-top:3px}
+  .card p{margin:0;color:var(--dm);font-size:13.6px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font-size:11.5px;color:#cfd9f7;background:rgba(91,141,255,.10);border:1px solid rgba(91,141,255,.22);padding:4px 9px;border-radius:8px}
+  .card .spacer{flex:1}
+  .cta{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{flex:1;min-width:120px;text-align:center;text-decoration:none;font-size:13.5px;font-weight:700;padding:11px 14px;border-radius:11px;
+    background:var(--line,var(--pro));color:#08101f;transition:.16s;white-space:nowrap}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.ghost{background:rgba(17,23,38,.9);color:var(--tx);border:1px solid var(--ln);font-weight:600}
+  .btn.ghost:hover{border-color:var(--ac)}
+  .badge{position:absolute;top:14px;right:14px;z-index:1;font-size:10.5px;font-weight:700;letter-spacing:.5px;
+    padding:4px 9px;border-radius:99px;background:rgba(6,8,14,.72);border:1px solid var(--ln);color:#e6ecff}
+
+  /* ---------- guide + footer ---------- */
+  .guide{margin-top:38px;padding:20px 20px 6px;border-radius:18px;background:rgba(11,15,27,.7);border:1px solid var(--ln)}
+  .guide h3{margin:0 0 14px;font-size:15.5px}
+  .rows{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media (max-width:900px){.rows{grid-template-columns:1fr}}
+  .row{display:flex;gap:11px;align-items:flex-start;padding:12px;border-radius:13px;background:rgba(17,23,38,.6);border:1px solid var(--ln)}
+  .row .em{font-size:20px}
+  .row b{display:block;font-size:13.6px}
+  .row span{color:var(--dm);font-size:12.6px}
+  .row a{color:var(--ac);text-decoration:none}
+  .row a:hover{text-decoration:underline}
+  footer{margin-top:40px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:center;
+    color:var(--dm);font-size:12.6px;border-top:1px solid var(--ln);padding-top:18px}
+  footer a{color:#c9d6ff;text-decoration:none}
+  footer a:hover{text-decoration:underline}
+  .note{margin-top:14px;color:#7d8aad;font-size:11.8px;text-align:center}
+</style>
 </head>
 <body>
+<div class="grain"></div>
+<div class="wrap">
 
-<!-- ============ HEADER ============ -->
-<header class="site-head">
-  <div class="wrap head-inner">
-    <a class="brand" href="#top">
-      <img src="assets/logo.svg" alt="" width="34" height="34" />
-      <span class="brand-text">
-        <strong data-i18n="appName">কাটফ্রি</strong>
-        <small data-i18n="taglineShort">ফ্রি ভিডিও কাটার ও এডিটর</small>
+  <header class="top">
+    <a class="brand" href="index.html">
+      <img src="assets/logo.svg" alt="" />
+      <span>
+        <b>CutFree</b>
+        <small>ব্রাউজারেই পুরো ভিডিও ফ্যাক্টরি · ০ খরচ</small>
       </span>
     </a>
-
-    <nav class="nav">
-      <a href="studio.html" class="studio-link">⚡ অটো স্টুডিও</a>
-      <a href="studio-pro.html" class="studio-link">📖 প্রো স্টুডিও</a>
-      <a href="#tool" data-i18n="navEditor">এডিটর</a>
-      <a href="#features" data-i18n="navFeatures">ফিচার</a>
-      <a href="#how" data-i18n="navHow">কীভাবে কাজ করে</a>
-      <a href="#faq" data-i18n="navFaq">প্রশ্ন-উত্তর</a>
+    <nav class="top-links">
+      <a class="tlink" href="studio-pro.html">📖 প্রো স্টুডিও</a>
+      <a class="tlink" href="studio.html">⚡ ফ্যাক্টরি</a>
+      <a class="tlink" href="editor.html">✂️ এডিটর</a>
+      <a class="tlink" href="https://github.com/Khairul990/cutfree" rel="noopener">GitHub</a>
     </nav>
+  </header>
 
-    <div class="head-actions">
-      <span class="pill" data-i18n="badgeFree">১০০% ফ্রি</span>
-      <button class="btn ghost small" id="langBtn" type="button" title="Change language">বাংলা / EN</button>
-    </div>
-  </div>
-</header>
-
-<main id="top">
-
-  <!-- ============ HERO ============ -->
   <section class="hero">
-    <div class="wrap hero-inner">
-      <p class="kicker" data-i18n="heroKicker">ভিডিও এডিটিং, কোনো ঝামেলা ছাড়াই</p>
-      <h1 data-i18n="heroTitle">ব্রাউজারেই ভিডিও কাটুন — ফ্রি, প্রাইভেট, ওয়াটারমার্ক ছাড়া</h1>
-      <p class="lead" data-i18n="heroLead">
-        ভিডিও ফাইল যোগ করুন, টাইমলাইনে টেনে শুরু-শেষ ঠিক করুন, ক্লিপ ভাগ করুন,
-        একাধিক ভিডিও জোড়া লাগান — আর এক্সপোর্ট করে ডাউনলোড করুন। আপনার ফাইল
-        কখনও কম্পিউটার ছেড়ে কোথাও যায় না, সব কাজ হয় আপনার ব্রাউজারেই।
+    <span class="kicker"><i></i> সব কাজ আপনার ব্রাউজারেই — কিছুই কোথাও আপলোড হয় না</span>
+    <h1>লেখা দিন, ভিডিও নিন —<br />সাইন-আপ ছাড়াই, এক টাকাও না খরচ করে</h1>
+    <p class="sub">
+      তিনটে টুল, একই শূন্য-খরচ নিয়মে: নিজের গল্প আর নিজের ভয়েস দিয়ে <b>স্টোরি ভিডিও</b>,
+      হাতে লেখা স্ক্রিপ্ট থেকে <b>এক ক্লিকে অ্যানিমেটেড ভিডিও</b>, আর নিজের শুট করা ফুটেজ <b>কাটা-ট্রিম</b>।
+      মিউজিক, টাইপোগ্রাফি, ক্যাপশন, থাম্বনেইল আর YouTube পাবলিশ কিট — সব ভেতরেই তৈরি হয়।
+    </p>
+    <div class="pills">
+      <span class="pill">⚡ WebCodecs ফাস্ট রেন্ডার</span>
+      <span class="pill">🎙 ভয়েস ট্র্যাকিং (VAD)</span>
+      <span class="pill">🎵 প্রসিডিউরাল মিউজিক</span>
+      <span class="pill">📴 অফলাইনেও চলে</span>
+      <span class="pill">🆓 MIT, কোনো লিমিট নেই</span>
+    </div>
+  </section>
+
+  <section class="grid">
+
+    <article class="card" style="--line:var(--pro)">
+      <span class="badge">স্টোরি মোড</span>
+      <div class="ic">📖</div>
+      <h2>প্রো স্টুডিও <span class="en">Pro studio · story mode</span></h2>
+      <p>
+        গল্প লিখুন, নিজের ভয়েসটা দিন — ভয়েস থেকে প্রতিটা শব্দ কখন বলা হচ্ছে বের করে
+        ঠিক সেই মুহূর্তে টাইপোগ্রাফি ফুটিয়ে তোলে। কারাওকে ক্যাপশন, মিউজিক ডাকিং,
+        Shorts সেফ-জোন, থাম্বনেইল আর পূর্ণ YouTube কিট সহ।
       </p>
-
-      <div class="hero-cta">
-        <button class="btn primary big" id="heroAdd" type="button" data-i18n="ctaStart">ভিডিও যোগ করে শুরু করুন</button>
-        <a class="btn ghost big" href="#how" data-i18n="ctaHow">কীভাবে কাজ করে?</a>
+      <div class="chips">
+        <span class="chip">ভয়েস-সিঙ্ক টাইমলাইন</span>
+        <span class="chip">বিরতি + শেষ কার্ড</span>
+        <span class="chip">SRT / VTT</span>
+        <span class="chip">১৩টা থিম</span>
+        <span class="chip">প্রজেক্ট সেভ</span>
       </div>
+      <div class="spacer"></div>
+      <div class="cta">
+        <a class="btn" href="studio-pro.html">খুলে ফেলুন</a>
+        <a class="btn ghost" href="cutfree-studio-pro.html">অফলাইন কপি</a>
+      </div>
+    </article>
 
-      <ul class="badges">
-        <li data-i18n="badgeNoUpload">কোনো আপলোড নেই</li>
-        <li data-i18n="badgeNoWatermark">কোনো ওয়াটারমার্ক নেই</li>
-        <li data-i18n="badgeNoSignup">সাইন-আপ লাগে না</li>
-        <li data-i18n="badgeNoLimit">আনলিমিটেড ব্যবহার, ফ্রি</li>
-      </ul>
-    </div>
+    <article class="card" style="--line:var(--fac)">
+      <span class="badge">সবচেয়ে সহজ</span>
+      <div class="ic">⚡</div>
+      <h2>ফ্যাক্টরি স্টুডিও <span class="en">Factory studio · one click</span></h2>
+      <p>
+        লাইন ধরে ধরে লিখুন — প্রতিটা লাইন একটা সিন। এক ক্লিকে প্ল্যান, প্রিভিউ আর
+        স্ক্রিনে রেকর্ড করে ভিডিও। মাইকে সরাসরি ভয়েস, TTS রিডার, থাম্বনেইল,
+        ক্যাপশন .SRT আর প্রজেক্ট JSON — হালকা আর দ্রুত।
+      </p>
+      <div class="chips">
+        <span class="chip">লাইন = সিন</span>
+        <span class="chip">🎙 মাইক রেকর্ড</span>
+        <span class="chip">🗣 TTS রিডার</span>
+        <span class="chip">🖼 থাম্বনেইল</span>
+      </div>
+      <div class="spacer"></div>
+      <div class="cta">
+        <a class="btn" href="studio.html">খুলে ফেলুন</a>
+        <a class="btn ghost" href="cutfree-studio.html">অফলাইন কপি</a>
+      </div>
+    </article>
+
+    <article class="card" style="--line:var(--ed)">
+      <span class="badge">আপলোড-মুক্ত</span>
+      <div class="ic">✂️</div>
+      <h2>ভিডিও এডিটর <span class="en">Cutter · trim · join</span></h2>
+      <p>
+        নিজের ভিডিও টেনে ছাড়ুন, টাইমলাইনে ট্রিম করুন, প্লেহেডে ভাগ করুন, একাধিক
+        ক্লিপ জোড়া লাগান — তারপর ৪৮০p থেকে ১০৮০p পর্যন্ত এক্সপোর্ট। ফাইল আপনার
+        ডিভাইস ছেড়ে কোথাও যায় না।
+      </p>
+      <div class="chips">
+        <span class="chip">ট্রিম / স্প্লিট</span>
+        <span class="chip">একাধিক ক্লিপ</span>
+        <span class="chip">MP4 / WebM আউট</span>
+        <span class="chip">মোবাইল-ফ্রেন্ডলি</span>
+      </div>
+      <div class="spacer"></div>
+      <div class="cta">
+        <a class="btn" href="editor.html">খুলে ফেলুন</a>
+        <a class="btn ghost" href="cutfree.html">অফলাইন কপি</a>
+      </div>
+    </article>
+
   </section>
 
-  <!-- ============ THE TOOL ============ -->
-  <section class="wrap" id="tool">
-    <div class="card app" id="app">
-
-      <div class="dropzone" id="dropzone">
-        <div class="dz-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
-          </svg>
-        </div>
-        <h2 class="dz-title" data-i18n="dropHere">ভিডিও ফাইল এখানে ড্রপ করুন</h2>
-        <p class="dz-hint" data-i18n="dropHint">অথবা কম্পিউটার থেকে বেছে নিন — MP4, WebM, MOV, MKV, M4V সাপোর্টেড</p>
-        <div class="dz-cta">
-          <button class="btn primary" id="btnAdd" type="button" data-i18n="addVideos">ভিডিও যোগ করুন</button>
-          <button class="btn ghost" id="btnSample" type="button" data-i18n="sampleBtn">🎬 স্যাম্পল ক্লিপ বানান</button>
-        </div>
-        <input type="file" id="fileInput" accept="video/*,.mkv,.mov,.m4v,.mp4,.webm,.ogv" multiple hidden />
-        <p class="dz-note" data-i18n="privacyNote">🔒 ফাইল শুধু আপনার ডিভাইসে প্রসেস হয় — কিছুই সার্ভারে যায় না।</p>
+  <section class="guide">
+    <h3>কোনটা দিয়ে শুরু করব?</h3>
+    <div class="rows">
+      <div class="row">
+        <span class="em">🎙</span>
+        <span><b>গল্প বলা, নিজের ভয়েসে</b>
+          স্ক্রিপ্ট লিখে ভয়েস ফাইল ড্রপ করুন → <a href="studio-pro.html">প্রো স্টুডিও</a> →
+          প্যানেল ২ · স্টোরি → “ট্র্যাক” → প্ল্যান → রেন্ডার।</span>
       </div>
-
-      <div class="editor" id="editor" hidden>
-
-        <!-- preview -->
-        <div class="stage">
-          <div class="preview" id="previewWrap">
-            <video id="preview" playsinline preload="auto"></video>
-            <div class="badge-clip"><span id="activeLabel">—</span></div>
-          </div>
-
-          <div class="transport">
-            <button class="btn icon" id="btnPrev" type="button" title="Previous clip">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg>
-            </button>
-            <button class="btn primary icon-round" id="btnPlay" type="button" title="Play / Pause">
-              <svg id="iconPlay" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-              <svg id="iconPause" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" hidden><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
-            </button>
-            <button class="btn icon" id="btnNext" type="button" title="Next clip">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M16 5h2v14h-2zM4 5l11 7L4 19z"/></svg>
-            </button>
-
-            <span class="time" id="timeLabel">00:00.0 / 00:00.0</span>
-
-            <span class="spacer"></span>
-
-            <button class="btn ghost small" id="btnSplit" type="button" data-i18n="splitBtn">✂️ প্লেহেডে স্প্লিট (S)</button>
-            <button class="btn ghost small" id="btnAddMore" type="button" data-i18n="addMore">+ ভিডিও যোগ</button>
-          </div>
-        </div>
-
-        <!-- side panel -->
-        <aside class="panel">
-          <div class="panel-block">
-            <h3 data-i18n="projectTitle">প্রজেক্ট</h3>
-            <div class="stats">
-              <div><span class="stat-k" data-i18n="statClips">ক্লিপ</span><b id="statClips">0</b></div>
-              <div><span class="stat-k" data-i18n="statLength">দৈর্ঘ্য</span><b id="statLength">00:00</b></div>
-              <div><span class="stat-k" data-i18n="statSize">আউটপুট (আনুমানিক)</span><b id="statSize">—</b></div>
-            </div>
-          </div>
-
-          <div class="panel-block">
-            <h3 data-i18n="exportTitle">এক্সপোর্ট সেটিংস</h3>
-
-            <label class="field">
-              <span data-i18n="labelRes">রেজোলিউশন</span>
-              <select id="selRes">
-                <option value="source" data-i18n="optSource">সোর্স (যেমন আছে)</option>
-                <option value="1080">1080p (Full HD)</option>
-                <option value="720">720p (HD)</option>
-                <option value="480">480p (ছোট ফাইল)</option>
-              </select>
-            </label>
-
-            <label class="field">
-              <span data-i18n="labelQuality">কোয়ালিটি</span>
-              <select id="selQuality">
-                <option value="high" data-i18n="optHigh">হাই (বড় ফাইল)</option>
-                <option value="medium" selected data-i18n="optMedium">ব্যালেন্সড</option>
-                <option value="low" data-i18n="optLow">ছোট ফাইল</option>
-              </select>
-            </label>
-
-            <label class="field">
-              <span data-i18n="labelFormat">ফরম্যাট</span>
-              <select id="selFormat">
-                <option value="auto" data-i18n="optAuto">অটো (সবচেয়ে ভালো)</option>
-                <option value="mp4">MP4</option>
-                <option value="webm">WebM</option>
-              </select>
-            </label>
-
-            <button class="btn primary wide" id="btnExport" type="button" data-i18n="exportBtn">🎬 ভিডিও এক্সপোর্ট করুন</button>
-            <button class="btn danger wide" id="btnCancel" type="button" hidden data-i18n="cancelBtn">বাতিল করুন</button>
-
-            <div class="progress" id="progressWrap" hidden>
-              <div class="bar"><i id="progressBar"></i></div>
-              <div class="progress-row">
-                <span id="progressText">0%</span>
-                <span id="progressNote"></span>
-              </div>
-            </div>
-
-            <p class="hint" data-i18n="exportHint">
-              এক্সপোর্ট ব্রাউজারেই রিয়েল-টাইমে তৈরি হয় — ২ মিনিটের ভিডিওতে প্রায় ২ মিনিট সময় লাগে।
-            </p>
-
-            <div class="done" id="doneBox" hidden>
-              <p data-i18n="doneMsg">✅ এক্সপোর্ট শেষ! ডাউনলোড শুরু হয়েছে।</p>
-              <a class="btn ok wide" id="downloadLink" download="cutfree-video.webm" data-i18n="downloadAgain">আবার ডাউনলোড করুন</a>
-            </div>
-          </div>
-
-          <div class="panel-block">
-            <button class="btn ghost wide" id="btnClear" type="button" data-i18n="clearAll">সব ক্লিপ মুছে প্রজেক্ট খালি করুন</button>
-          </div>
-        </aside>
+      <div class="row">
+        <span class="em">✨</span>
+        <span><b>হাতে লেখা স্ক্রিপ্ট, দ্রুত রেজাল্ট</b>
+          Script খুলে <a href="studio.html">ফ্যাক্টরি স্টুডিও</a>-তে লাইন লিখুন → ডেমো
+          দেখে নিন → প্ল্যান → রেকর্ড করে সেভ।</span>
       </div>
-
-      <!-- timeline -->
-      <div class="timeline" id="timelineWrap" hidden>
-        <div class="timeline-head">
-          <h3 data-i18n="timelineTitle">টাইমলাইন</h3>
-          <span class="hint" data-i18n="timelineHint">হ্যান্ডেল টেনে শুরু/শেষ ঠিক করুন · ক্লিপ কার্ডে ক্লিক করে সিলেক্ট করুন</span>
-        </div>
-        <div class="clips" id="clips"></div>
-      </div>
-
-      <div class="empty-line" id="emptyLine" hidden>
-        <span data-i18n="noClips">এখনো কোনো ভিডিও যোগ করা হয়নি।</span>
+      <div class="row">
+        <span class="em">🎬</span>
+        <span><b>নিজের শুট করা ফুটেজ</b>
+          <a href="editor.html">এডিটর</a>-এ ফাইল ড্রপ → ট্রিম/স্প্লিট → এক্সপোর্ট।
+          ইন্টারনেট ছাড়াও চলে।</span>
       </div>
     </div>
+    <p class="note">
+      অফলাইন কপি = একটা HTML ফাইল, ডাবল-ক্লিক করলেই চলে (কোনো ইন্টারনেট, সার্ভার বা ইনস্টল লাগে না)।
+    </p>
   </section>
 
-  <!-- ============ FEATURES ============ -->
-  <section class="wrap section" id="features">
-    <h2 class="section-title" data-i18n="featuresTitle">কেন কাটফ্রি?</h2>
-    <p class="section-sub" data-i18n="featuresSub">যা দরকার, ঠিক তাই — কোনো লুকানো খরচ, কোনো লিমিট, কোনো ওয়াটারমার্ক নেই।</p>
-    <div class="grid" id="featuresGrid"></div>
-  </section>
-
-  <!-- ============ HOW ============ -->
-  <section class="wrap section" id="how">
-    <h2 class="section-title" data-i18n="howTitle">মাত্র ৩ ধাপে</h2>
-    <p class="section-sub" data-i18n="howSub">সফটওয়্যার ইনস্টল করতে হবে না, অ্যাকাউন্ট বানাতে হবে না।</p>
-    <ol class="steps" id="stepsList"></ol>
-  </section>
-
-  <!-- ============ FAQ ============ -->
-  <section class="wrap section" id="faq">
-    <h2 class="section-title" data-i18n="faqTitle">সাধারণ প্রশ্ন</h2>
-    <div class="faq" id="faqList"></div>
-  </section>
-
-  <section class="wrap section">
-    <div class="cta-band">
-      <h2 data-i18n="ctaBandTitle">আজই ভিডিও কাটা শুরু করুন</h2>
-      <p data-i18n="ctaBandSub">ফ্রি, ওপেন সোর্স, আর আপনার ভিডিও সম্পূর্ণ প্রাইভেট।</p>
-      <button class="btn primary big" id="ctaAdd" type="button" data-i18n="ctaStart">ভিডিও যোগ করে শুরু করুন</button>
-    </div>
-  </section>
-
-</main>
-
-<footer class="site-foot">
-  <div class="wrap foot-inner">
+  <footer>
+    <div><strong>CutFree</strong> · MIT লাইসেন্স · সব প্রসেসিং আপনার ডিভাইসেই</div>
     <div>
-      <strong>CutFree</strong> · <span data-i18n="footLicense">MIT লাইসেন্স, ওপেন সোর্স</span>
+      <a href="https://github.com/Khairul990/cutfree" rel="noopener">GitHub</a> ·
+      <a href="https://khairul990.github.io/cutfree/" rel="noopener">Pages</a> ·
+      <a href="https://cutfree.vercel.app" rel="noopener">Vercel</a> ·
+      <a href="README.md">ডকস</a>
     </div>
-    <div class="foot-links">
-      <a href="#tool" data-i18n="navEditor">এডিটর</a>
-      <a href="#features" data-i18n="navFeatures">ফিচার</a>
-      <a href="#faq" data-i18n="navFaq">প্রশ্ন-উত্তর</a>
-    </div>
-    <div class="hint" data-i18n="footMade">ব্রাউজারে তৈরি — আপনার ফাইল আপনার কাছেই থাকে।</div>
-  </div>
-</footer>
+  </footer>
 
-<div class="toast" id="toast" hidden></div>
-
-<script src="js/i18n.js"></script>
-<script src="js/app.js"></script>
+</div>
 </body>
 </html>

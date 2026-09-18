@@ -8,6 +8,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 Two studios, one repo — and the deployment actually deploys.
 
 ### Added
+- **Hub landing page** — the root `index.html` is now a small, dependency-free hub: hero,
+  three tool cards (Pro Studio · Factory Studio · Editor), each with a live link and an
+  "offline copy" link, a "which one do I use?" guide and the deploy links. The cutter moved
+  to `editor.html` (single-file build unchanged: `cutfree.html`).
 - **`studio-pro.html`** — the story-mode / WebCodecs studio (v2.2.0 work) restored as a
   first-class page and linked from the landing page, the factory page and the footer.
   Single-file build: `cutfree-studio-pro.html` (395 KB). `studio.html` stays the compact

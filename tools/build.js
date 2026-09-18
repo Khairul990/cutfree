@@ -33,7 +33,9 @@ function copyRecursive(src, dst) {
 // 3. Copy frontend assets to dist
 const itemsToCopy = [
   'index.html',
+  'editor.html',
   'studio.html',
+  'studio-pro.html',
   'cutfree.html',
   'cutfree-studio.html',
   'assets',

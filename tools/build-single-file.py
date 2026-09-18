@@ -6,7 +6,7 @@ Inlines every local stylesheet, script and image reference into one standalone
 HTML file, so the app runs from anywhere: a USB stick, an email attachment, a
 `file://` double-click, or any static host. No build tooling, no network.
 
-  index.html   -> cutfree.html           (video cutter / editor)
+  editor.html  -> cutfree.html           (video cutter / editor)
   studio.html  -> cutfree-studio.html    (auto video engine)
 
 The studio keeps `data-module="<name>"` on the inlined engine scripts, which is
@@ -22,7 +22,7 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 PAGES = [
-    ("index.html", "cutfree.html"),
+    ("editor.html", "cutfree.html"),
     ("studio.html", "cutfree-studio.html"),
     ("studio-pro.html", "cutfree-studio-pro.html"),
 ]

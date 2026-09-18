@@ -13,14 +13,14 @@ const { chromium } = require('playwright');
 
 const ROOT = path.join(__dirname, '..');
 const PORT = Number(process.env.PORT) || 8123;
-const PAGE = process.env.PAGE || 'index.html';   // set PAGE=cutfree.html to test the single-file build
+const PAGE = process.env.PAGE || 'editor.html';   // set PAGE=cutfree.html to test the single-file build
 const PAGE_URL = 'http://127.0.0.1:' + PORT + '/' + PAGE + '?debug=1';
 const MIME = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.txt': 'text/plain' };
 
 function serve() {
   const server = http.createServer(function (req, res) {
     var file = decodeURIComponent(req.url.split('?')[0]);
-    if (file === '/') file = '/index.html';
+    if (file === '/') file = '/' + PAGE;
     var full = path.join(ROOT, file);
     if (!full.startsWith(ROOT) || !fs.existsSync(full) || fs.statSync(full).isDirectory()) {
       res.writeHead(404).end('not found');

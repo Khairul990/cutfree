@@ -3,7 +3,7 @@
  * CutFree single-file build (Node.js version).
  * Inlines every local stylesheet, script, and image reference into standalone HTML files.
  *
- *   index.html   -> cutfree.html        (video cutter / editor)
+ *   editor.html  -> cutfree.html        (video cutter / editor)
  *   studio.html  -> cutfree-studio.html (auto video engine)
  */
 import fs from 'fs';
@@ -16,7 +16,7 @@ const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, '..');
 
 const PAGES = [
-  ['index.html', 'cutfree.html'],
+  ['editor.html', 'cutfree.html'],
   ['studio.html', 'cutfree-studio.html'],
   ['studio-pro.html', 'cutfree-studio-pro.html']
 ];

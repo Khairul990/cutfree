@@ -6,7 +6,12 @@
 হয় — আর পুরো চ্যানেল অটোমেটিক চলতে পারে, এমনকি আপনি ঘুমিয়ে থাকলেও।
 
 <p align="center">
-  <img src="docs/studio-workbench.png" alt="CutFree Studio workbench — ব্রিফ, লাইভ প্রিভিউ, রেন্ডার ও পাবলিশ প্যানেল" width="880">
+  <img src="docs/hub.png" alt="CutFree হোম — প্রো স্টুডিও, ফ্যাক্টরি স্টুডিও আর এডিটর" width="880">
+  <br><em>হোম পেজ (<code>index.html</code>) — তিনটে টুল, এক জায়গা থেকে</em>
+</p>
+
+<p align="center">
+  <img src="docs/studio-workbench.png" alt="CutFree Pro Studio workbench — ব্রিফ, লাইভ প্রিভিউ, রেন্ডার ও পাবলিশ প্যানেল" width="880">
 </p>
 
 <p align="center">
@@ -31,6 +36,7 @@
 
 | | কী | ফাইল | সিঙ্গেল ফাইল |
 | --- | --- | --- | --- |
+| 🏠 **Hub** | তিনটে টুলের হোম — কার্ড থেকে যেকোনো একটায় | `index.html` | — |
 | 📖 **Pro Studio** | স্টোরি মোড (নিজের ভয়েস ট্র্যাক), WebCodecs ফাস্ট রেন্ডার, SRT/VTT, Shorts, YouTube কিট, প্রজেক্ট সেভ/লোড, অফলাইন PWA | `studio-pro.html` | `cutfree-studio-pro.html` |
 | ⚡ **Factory Studio** | হালকা এক-পেজ ফ্যাক্টরি: লাইন-বাই-লাইন সিন, এক ক্লিকে ভিডিও, mic/TTS, থাম্বনেইল, SRT, প্রজেক্ট JSON | `studio.html` | `cutfree-studio.html` |
 | ✂️ **Editor** | হাতে করা ভিডিও কাটা/ট্রিম/জোড়া লাগানো (আপলোড ছাড়াই) | `index.html` | `cutfree.html` |
@@ -56,11 +62,15 @@
 
 ## 🚀 ৬০ সেকেন্ডে প্রথম ভিডিও
 
-1. `studio.html` খুলুন (বা `cutfree-studio.html` ডাবল-ক্লিক করুন)।
+1. `index.html` (হোম) খুলুন, কার্ড থেকে **প্রো স্টুডিও** বেছে নিন।
 2. **“ডেমো স্ক্রিপ্ট বসাও”** চাপুন।
 3. **“প্ল্যান বানাও”** → প্রিভিউ চালান (`Space`)।
 4. **“⚡ ফাস্ট রেন্ডার (WebCodecs)”** → ভিডিও রেডি।
 5. **“ভিডিও + থাম্ব + মেটাডেটা + HTML”** → পুরো পাবলিশ প্যাক এক ফোল্ডারে।
+
+> কোনো সার্ভার ছাড়াই চালাতে? হোমের কার্ডে **“অফলাইন কপি”** বাটন আছে —
+> `cutfree-studio-pro.html` / `cutfree-studio.html` / `cutfree.html`
+> ডাবল-ক্লিক করলেই পুরো টুল চলে (ফাইল:// থেকেও)।
 
 ### স্ক্রিপ্ট লেখার নিয়ম (অটো-ডিরেক্টর এভাবেই পড়ে)
 
@@ -275,9 +285,10 @@ PAGE=cutfree-studio.html npm run test:factory
 
 ```
 cutfree/
+├── index.html                                  # 🏠 হোম (তিনটে টুলের কার্ড)
 ├── studio-pro.html  / cutfree-studio-pro.html   # 📖 প্রো স্টুডিও (স্টোরি মোড + WebCodecs + কিট)
 ├── studio.html      / cutfree-studio.html       # ⚡ ফ্যাক্টরি স্টুডিও (এক-পেজ, লাইন-বাই-লাইন)
-├── index.html       / cutfree.html              # ✂️ কাটার/এডিটর
+├── editor.html      / cutfree.html              # ✂️ কাটার/এডিটর
 ├── app.html · src/ · server.ts · vite.config.ts # React এডিশন (Node সার্ভার দরকার)
 ├── css/style.css · css/studio.css
 ├── js/
@@ -315,9 +326,15 @@ python3 -m http.server 8080          # লোকালি
 docker build -t cutfree . && docker run -p 8080:80 cutfree   # নিজের সার্ভার
 ```
 
-GitHub-এ পুশ করলে `.github/workflows/pages.yml` নিজে থেকেই Pages-এ ডিপ্লয় করবে
-(Settings → Pages → Source: **GitHub Actions**)। Netlify/Vercel/Cloudflare-এ
+GitHub-এ পুশ করলেই `.github/workflows/pages.yml` Pages-এ ডিপ্লয় করে
+(<https://khairul990.github.io/cutfree/>) — শর্ত একটাই: Settings → Pages →
+Source: **GitHub Actions** চালু থাকতে হবে। Vercel-এর সাথে রিপোটা আগেই জোড়া
+(<https://cutfree.vercel.app>), পুশ করলেই ডিপ্লয় হয়। Netlify/Cloudflare-এ
 ফোল্ডার ড্রপ করলেও চলবে।
+
+> **নোট:** `.github/workflows/` ফাইল বদলাতে `workflow` স্কোপ সহ টোকেন লাগে।
+> `tools/ci/pages-workflow.clean.yml` ফাইলে একটা পরিষ্কার ওয়ার্কফ্লো রাখা আছে
+> (পুরো রিপোর বদলে শুধু স্ট্যাটিক ফাইল আপলোড করে) — ইচ্ছে হলে হাতে কপি করে দিলেই হয়।
 
 ---
 
