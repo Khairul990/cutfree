@@ -1,4 +1,10 @@
 {
   "outputDirectory": ".",
-  "cleanUrls": true
+  "cleanUrls": false,
+  "rewrites": [
+    { "source": "/studio-pro", "destination": "/studio-pro.html" },
+    { "source": "/studio", "destination": "/studio.html" },
+    { "source": "/editor", "destination": "/editor.html" },
+    { "source": "/app", "destination": "/app.html" }
+  ]
 }
