@@ -1630,7 +1630,7 @@ export default function App() {
   const [blueprint, setBlueprint] = useState<VideoBlueprint>(DEFAULT_BLUEPRINT);
   const [selectedSceneId, setSelectedSceneId] = useState<string | null>(DEFAULT_BLUEPRINT.scenes[0]?.id || null);
   const [isBlueprintModalOpen, setIsBlueprintModalOpen] = useState<boolean>(false);
-  const [isAssetPanelOpen, setIsAssetPanelOpen] = useState<boolean>(false);
+  const [isAssetPanelOpen, setIsAssetPanelOpen] = useState<boolean>(true);
   const [editorMode, setEditorMode] = useState<"timeline" | "wizard">("timeline");
   const [actualAudioDuration, setActualAudioDuration] = useState<number | undefined>(undefined);
   const historyRef = useRef(createHistory<VideoBlueprint>());
@@ -2481,28 +2481,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Mode Switcher */}
-          <div className="hidden md:flex items-center bg-[#121829] p-1 rounded-xl border border-[#232d47]">
-            <button
-              onClick={() => setEditorMode("timeline")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                editorMode === "timeline" ? "bg-[#5b8dff] text-white shadow-md shadow-[#5b8dff]/20" : "text-[#8d9cc2] hover:text-white"
-              }`}
-            >
-              <Film className="w-3.5 h-3.5" />
-              <span>{isBn ? "টাইমলাইন স্টুডিও" : "Timeline Studio"}</span>
-            </button>
-            <button
-              onClick={() => setEditorMode("wizard")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                editorMode === "wizard" ? "bg-[#5b8dff] text-white shadow-md shadow-[#5b8dff]/20" : "text-[#8d9cc2] hover:text-white"
-              }`}
-            >
-              <SquareStack className="w-3.5 h-3.5" />
-              <span>{isBn ? "কুইক উইজার্ড" : "Quick Wizard"}</span>
-            </button>
-          </div>
-
+          {/* Single production workspace — no editor mode switching */}
           <div className="flex items-center gap-2">
             {/* Undo / Redo */}
             <div className="flex items-center gap-1">
