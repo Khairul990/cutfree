@@ -25,8 +25,8 @@ export default function App() {
   // ---------------------------------------------------------------------------
   // Core Authoritative Blueprint State
   // ---------------------------------------------------------------------------
-  const [blueprint, setBlueprint] = useState<VideoBlueprint>(DEFAULT_BLUEPRINT);
-  const [duration, setDuration] = useState<number>(DEFAULT_BLUEPRINT.timeline.duration || 341.89);
+  const [blueprint, setBlueprint] = useState<VideoBlueprint>(() => {\n    try {\n      const saved = localStorage.getItem("cutfree_blueprint_saved");\n      if (saved) {\n        const parsed = JSON.parse(saved) as VideoBlueprint;\n        const result = validateBlueprint(parsed);\n        if (result.valid) return parsed;\n      }\n    } catch {}\n    return DEFAULT_BLUEPRINT;\n  });
+  const [duration, setDuration] = useState<number>(() => {\n    try {\n      const saved = localStorage.getItem("cutfree_blueprint_saved");\n      if (saved) return (JSON.parse(saved) as VideoBlueprint).timeline.duration || 341.89;\n    } catch {}\n    return DEFAULT_BLUEPRINT.timeline.duration || 341.89;\n  });
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [selectedSceneId, setSelectedSceneId] = useState<string | null>(
