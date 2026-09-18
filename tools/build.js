@@ -51,21 +51,17 @@ itemsToCopy.forEach(item => {
 });
 console.log('✅ Static assets copied to dist/');
 
-// 4. Build React app with Vite (if available)
-try {
-  console.log('⚛️  Building React app with Vite...');
-  execSync('npx vite build', { stdio: 'inherit', cwd: ROOT });
-  console.log('✅ React app built with Vite');
-  // Keep hub at root (index.html) and React Studio at app.html — single-page is at /app.html
-  const viteApp = path.join(distDir, 'app.html');
-  if (fs.existsSync(viteApp)) {
-    console.log('✅ app.html ready in dist/');
-  }
-} catch (err) {
-  console.warn('⚠️  Vite build skipped or failed (non-critical):', err.message);
+// 5. Ensure the fully interactive CutFree Studio is the canonical app across all entry points
+const masterStudio = path.join(ROOT, 'studio.html');
+if (fs.existsSync(masterStudio)) {
+  fs.copyFileSync(masterStudio, path.join(distDir, 'index.html'));
+  fs.copyFileSync(masterStudio, path.join(distDir, 'app.html'));
+  fs.copyFileSync(masterStudio, path.join(distDir, 'studio.html'));
+  fs.copyFileSync(masterStudio, path.join(distDir, 'cutfree-studio.html'));
+  console.log('✅ Master CutFree Studio deployed to dist/index.html, dist/app.html, dist/studio.html, dist/cutfree-studio.html');
 }
 
-// 5. Bundle server.ts with esbuild
+// 6. Bundle server.ts with esbuild
 try {
   execSync('npx esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs', {
     stdio: 'inherit',
