@@ -283,9 +283,9 @@ export const Inspector: React.FC<InspectorProps> = ({
                   className="w-full bg-[#07101A] border border-[#213248] rounded-lg px-2 py-1.5 text-white outline-none text-[11px]"
                 >
                   <option value="fade">Fade</option>
-                  <option value="cut">Cut</option>
+                  <option value="none">Cut</option>
                   <option value="slide">Slide</option>
-                  <option value="dissolve">Dissolve</option>
+                  <option value="zoom">Zoom</option><option value="wipe">Wipe</option><option value="glitch">Glitch</option><option value="pageTurn">Page Turn</option><option value="blurZoom">Blur Zoom</option><option value="whipPan">Whip Pan</option>
                 </select>
               </div>
               <div>
@@ -435,6 +435,15 @@ export const Inspector: React.FC<InspectorProps> = ({
                         ))}
                       </select>
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold text-[#8DA0B4] mb-1">Exit</label>
+                    <select value={char.exit || "none"} onChange={(e) => { const copy = [...scene.characters!]; copy[i] = { ...copy[i], exit: e.target.value as any }; updateField("characters", copy); }}
+                      className="w-full bg-[#0C1724] border border-[#213248] rounded-lg px-2 py-1 text-white outline-none text-[11px]">
+                      <option value="none">None</option><option value="fade_out">Fade Out</option><option value="exit_left">Exit Left</option>
+                      <option value="exit_right">Exit Right</option><option value="scale_out">Scale Out</option><option value="slide_out">Slide Out</option>
+                    </select>
                   </div>
 
                   <div>
