@@ -70,10 +70,10 @@ export const Inspector: React.FC<InspectorProps> = ({
 }) => {
   if (!scene) {
     return (
-      <div className="w-80 bg-[#0d1222] border-l border-[#1e2740] p-5 text-[#64748b] text-[13px] flex flex-col items-center justify-center text-center">
+      <div className="w-[286px] bg-[#0d131d] border-l border-[#202c3d] p-5 text-[#5f6d82] text-[13px] flex flex-col items-center justify-center text-center">
         <Layers className="w-8 h-8 mb-2 opacity-40 text-[#5b8dff]" />
         <p className="font-semibold text-white">No Scene Selected</p>
-        <p className="text-[11px] mt-1 text-[#8d9cc2]">Click any scene block in the timeline to inspect and edit its properties.</p>
+        <p className="text-[11px] mt-1 text-[#8d9bb0]">Click any scene block in the timeline to inspect and edit its properties.</p>
       </div>
     );
   }
@@ -85,7 +85,7 @@ export const Inspector: React.FC<InspectorProps> = ({
   return (
     <aside className="w-80 bg-[#0d1222] border-l border-[#1e2740] flex flex-col h-full overflow-y-auto text-[12px] scrollbar-thin scrollbar-thumb-[#232d47]">
       {/* Inspector Header */}
-      <div className="p-4 border-b border-[#1e2740] flex items-center justify-between bg-[#090e1c] shrink-0">
+      <div className="p-4 border-b border-[#1e2740] flex items-center justify-between bg-[#0a1018] shrink-0">
         <div className="flex items-center gap-2">
           <Settings className="w-4 h-4 text-[#5b8dff]" />
           <span className="font-extrabold text-white text-[13px]">Scene Inspector</span>
@@ -111,7 +111,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                 step="0.1"
                 value={scene.start}
                 onChange={(e) => updateField("start", parseFloat(e.target.value) || 0)}
-                className="w-full bg-[#151b2e] border border-[#232d47] rounded-lg px-2.5 py-1.5 text-white font-mono"
+                className="w-full bg-[#111925] border border-[#29374b] rounded-lg px-2.5 py-1.5 text-white font-mono"
               />
             </div>
             <div>
