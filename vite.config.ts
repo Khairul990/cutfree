@@ -5,6 +5,7 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
+    base: './',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
@@ -13,7 +14,8 @@ export default defineConfig(() => {
     },
     server: {
       host: '0.0.0.0',
-      allowedHosts: true,
+      // @ts-ignore - allow e2b preview host
+      allowedHosts: true as unknown as string[],
       cors: true,
       headers: { 'X-Frame-Options': 'ALLOWALL' },
       hmr: process.env.DISABLE_HMR !== 'true',

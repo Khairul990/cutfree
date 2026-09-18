@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="CutFree">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7c5cff"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="44" height="44" rx="12" fill="url(#g)"/>
+  <g fill="none" stroke="#0b0f17" stroke-width="3" stroke-linecap="round">
+    <!-- film strip -->
+    <rect x="9" y="14" width="30" height="20" rx="4"/>
+    <path d="M15 14v20M33 14v20M9 24h30"/>
+    <!-- scissors -->
+    <path d="M20 30l14-13M20 18l14 13"/>
+  </g>
+  <g fill="#0b0f17">
+    <circle cx="18" cy="31.5" r="3.2"/>
+    <circle cx="18" cy="16.5" r="3.2"/>
+  </g>
+</svg>
