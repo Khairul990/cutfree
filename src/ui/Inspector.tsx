@@ -303,6 +303,16 @@ export const Inspector: React.FC<InspectorProps> = ({
               </div>
             </div>
 
+            <div>
+              <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Text Animation</label>
+              <select value={scene.textAnimation || "fade"} onChange={(e) => updateField("textAnimation", e.target.value as any)}
+                className="w-full bg-[#07101A] border border-[#213248] rounded-lg px-2.5 py-1.5 text-white outline-none text-[11px]">
+                <option value="fade">Fade</option><option value="slide_up">Slide Up</option><option value="slide_down">Slide Down</option>
+                <option value="slide_left">Slide Left</option><option value="slide_right">Slide Right</option><option value="scale">Scale</option>
+                <option value="typewriter">Typewriter</option><option value="word_reveal">Word Reveal</option><option value="line_reveal">Line Reveal</option>
+                <option value="pop">Pop</option><option value="emphasis">Emphasis</option>
+              </select>
+            </div>
             {/* Scene Notes Accordion */}
             <div className="border border-[#213248] rounded-xl bg-[#07101A] overflow-hidden">
               <button
