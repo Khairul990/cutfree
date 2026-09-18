@@ -2,9 +2,9 @@
   "outputDirectory": "dist",
   "cleanUrls": false,
   "rewrites": [
-    { "source": "/studio-pro", "destination": "/studio-pro.html" },
-    { "source": "/studio", "destination": "/studio.html" },
-    { "source": "/editor", "destination": "/editor.html" },
+    { "source": "/studio-pro", "destination": "/app.html" },
+    { "source": "/studio", "destination": "/app.html" },
+    { "source": "/editor", "destination": "/app.html" },
     { "source": "/app", "destination": "/app.html" }
   ]
 }
