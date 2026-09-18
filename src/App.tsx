@@ -2459,7 +2459,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#06080e] text-[#e9eefb] flex flex-col selection:bg-[#7c5cff]/30">
+    <div className="cutfree-app min-h-screen bg-[#06080e] text-[#e9eefb] flex flex-col selection:bg-[#7c5cff]/30">
       {/* Header */}
       <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#0d1120]/90 border-b border-[#232d47]">
         <div className="mx-auto max-w-[1700px] px-4 md:px-6 h-[56px] flex items-center justify-between gap-4">
