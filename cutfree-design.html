@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CutFree Studio — UI Design Prototype</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:#07101a;color:#eef4fb}
+button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
+:root{--bg:#07101a;--panel:#0d1825;--panel2:#101e2d;--line:#213248;--muted:#8da0b4;--blue:#259cff;--purple:#7c5cff;--green:#28d7a0}
+.app{height:100vh;display:grid;grid-template-rows:68px 1fr 292px 34px;background:radial-gradient(circle at 50% 20%,#0d1b2a 0,#07101a 45%,#050b12 100%)}
+.top{display:flex;align-items:center;gap:18px;padding:0 22px;border-bottom:1px solid var(--line);background:#09131f}
+.brand{display:flex;align-items:center;gap:10px;min-width:330px}.logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#38bdf8,#6655ff);display:grid;place-items:center;font-size:21px;font-weight:900}.brand b{font-size:19px}.brand b span{color:#36a9ff}.brand small{display:block;color:#8396aa;font-size:11px;margin-top:2px}
+.toolbar{display:flex;align-items:center;gap:8px;flex:1}.tool{height:44px;padding:0 15px;border:1px solid var(--line);background:#101d2b;border-radius:10px;display:flex;align-items:center;gap:10px;font-size:12px}.tool small{display:block;color:#72869a;font-size:10px}.tool.primary{background:linear-gradient(135deg,#765bff,#1c9eff);border-color:#6e74ff}.tool.export{margin-left:auto;background:linear-gradient(135deg,#7c5cff,#1f9eff);font-size:14px;font-weight:700;padding:0 20px}.iconbtn{width:42px;height:42px;border:1px solid var(--line);background:#101d2b;border-radius:10px}
+.workspace{display:grid;grid-template-columns:86px 340px 1fr 320px;min-height:0}
+.nav{border-right:1px solid var(--line);background:#09131f;padding:10px 7px;display:flex;flex-direction:column;gap:5px}.nav button{border:0;background:transparent;color:#9cafc1;border-radius:10px;padding:11px 4px;font-size:10px}.nav button.active{background:#178ff0;color:white}.nav .ico{font-size:19px;display:block;margin-bottom:4px}
+.assets{border-right:1px solid var(--line);background:#0a1521;padding:15px;overflow:hidden}.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.section-head b{font-size:15px}.muted{color:var(--muted);font-size:11px}.search{height:36px;border:1px solid var(--line);border-radius:9px;background:#0e1a27;padding:0 12px;width:100%;outline:0}.tabs{display:flex;gap:7px;margin:10px 0}.tab{padding:7px 11px;border:1px solid var(--line);background:#101d2b;border-radius:8px;font-size:10px}.tab.active{background:#218ff0;border-color:#218ff0}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}.thumb{height:75px;border-radius:9px;border:1px solid #294058;background:linear-gradient(145deg,#17304a,#39285e);position:relative;overflow:hidden}.thumb:before{content:"";position:absolute;inset:12px;border-radius:50%;background:radial-gradient(circle,#ffd66b 0,#ff9c35 28%,transparent 30%)}.thumb:nth-child(2){background:linear-gradient(145deg,#122f45,#0d5e66)}.thumb:nth-child(3){background:linear-gradient(145deg,#36284f,#163c51)}.thumb label{position:absolute;bottom:4px;left:5px;font-size:9px;color:#fff;text-shadow:0 1px 3px #000}
+.preview{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 34px;background:#060d15}.stage{width:min(100%,900px);aspect-ratio:16/9;border:1px solid #263c52;border-radius:12px;overflow:hidden;background:linear-gradient(125deg,#071b27,#1b2342 48%,#0b3c3b);position:relative;box-shadow:0 20px 60px #0009}.stage:before{content:"";position:absolute;width:280px;height:280px;border-radius:50%;left:42%;top:42%;transform:translate(-50%,-50%);background:radial-gradient(circle,#ffd86d 0,#ffad45 12%,#e26b31 22%,transparent 55%);filter:blur(2px)}.stage:after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 25%,#5fd9ff22 50%,transparent 70%),linear-gradient(180deg,#0000 60%,#0008)}.scene-text{position:absolute;right:7%;top:22%;z-index:2;width:30%;font-family:Georgia,serif;font-size:27px;line-height:1.12}.scene-text span{color:#f4ca63}.character{position:absolute;z-index:2;left:35%;bottom:9%;font-size:115px;filter:drop-shadow(0 12px 18px #0008)}.star{position:absolute;z-index:2;left:57%;bottom:13%;font-size:80px;filter:drop-shadow(0 0 16px #ffd85c)}.controls{width:min(100%,900px);display:flex;align-items:center;gap:12px;margin-top:10px}.play{width:38px;height:38px;border:0;border-radius:50%;background:#249df5;font-size:18px}.scrub{flex:1}.time{font-size:11px;color:#93a6ba}.ratio{border:1px solid var(--line);background:#0f1b28;border-radius:7px;padding:6px 10px;font-size:10px}
+.inspector{border-left:1px solid var(--line);background:#0a1521;padding:14px;overflow:auto}.inspect-tabs{display:flex;border-bottom:1px solid var(--line);margin-bottom:14px}.inspect-tabs button{flex:1;border:0;background:transparent;padding:10px 3px;color:#8497aa;font-size:10px}.inspect-tabs button.active{color:#fff;border-bottom:2px solid #249df5}.field{margin:11px 0}.field label{display:block;color:#8396aa;font-size:10px;margin-bottom:5px}.field input,.field select,.field textarea{width:100%;background:#0e1b28;border:1px solid var(--line);border-radius:8px;padding:9px;outline:0;font-size:11px}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.notes{min-height:70px;resize:none}.range{width:100%}
+.timeline{background:#09131f;border-top:1px solid var(--line);padding:9px 12px;min-height:0;overflow:hidden}.tlbar{display:flex;align-items:center;gap:8px;height:34px}.tlbtn{border:1px solid var(--line);background:#101d2b;border-radius:7px;padding:6px 10px;font-size:10px}.tlbtn.active{background:#198fe9}.zoom{margin-left:auto;width:150px}.ruler{height:24px;margin-left:155px;display:flex;justify-content:space-between;color:#607489;font-size:9px;border-bottom:1px solid var(--line)}.tracks{height:205px;position:relative}.track{height:38px;display:grid;grid-template-columns:155px 1fr;border-bottom:1px solid #172534}.trackname{display:flex;align-items:center;gap:7px;padding-left:8px;color:#9db0c2;font-size:10px;border-right:1px solid var(--line)}.clips{display:flex;gap:3px;padding:4px;background:#080f17;overflow:hidden}.clip{height:29px;min-width:145px;border:1px solid #2b78b6;border-radius:5px;background:linear-gradient(90deg,#123a5b,#17527d);padding:5px 8px;font-size:9px;white-space:nowrap;overflow:hidden}.clip.purple{background:#4b2a83;border-color:#8a5cff}.clip.green{background:#0d604d;border-color:#18b98d}.clip.audio{background:repeating-linear-gradient(90deg,#104a78 0 3px,#176aa6 3px 6px);border-color:#198fe9}.footer{display:flex;align-items:center;padding:0 18px;border-top:1px solid var(--line);background:#08111b;color:#72879a;font-size:9px}.footer b{color:#a9b9c8}.status{margin-left:auto;color:#49d9a8}
+@media(max-width:1100px){.workspace{grid-template-columns:70px 270px 1fr}.inspector{display:none}.brand{min-width:220px}.tool:nth-child(1),.tool:nth-child(2){display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <div class="brand"><div class="logo">✦</div><div><b>CutFree <span>Studio</span></b><small>Turn Audio into Amazing Videos</small></div></div>
+  <div class="toolbar">
+    <button class="tool">📁 <span>Project<small>Untitled Video</small></span></button>
+    <button class="tool">⇩ <span>Import Audio<small>MP3, WAV, M4A</small></span></button>
+    <button class="tool">⌘ <span>Import JSON<small>Blueprint</small></span></button>
+    <button class="tool">▣ <span>Save<small style="color:#40d9a3">Auto-saved</small></span></button>
+    <button class="iconbtn">↶</button><button class="iconbtn">↷</button>
+    <button class="tool">▶ Preview</button><button class="tool export">⇧ Export Video</button>
+    <button class="iconbtn">⚙</button><button class="iconbtn">K</button>
+  </div>
+</header>
+<section class="workspace">
+  <nav class="nav">
+    <button class="active"><span class="ico">▧</span>Assets</button>
+    <button><span class="ico">▱</span>Scenes</button>
+    <button><span class="ico">◖</span>Audio</button>
+    <button><span class="ico">T</span>Text</button>
+    <button><span class="ico">♙</span>Characters</button>
+    <button><span class="ico">▣</span>Backgrounds</button>
+    <button><span class="ico">◇</span>Objects</button>
+    <button><span class="ico">♫</span>Music</button>
+    <button><span class="ico">▦</span>Templates</button>
+  </nav>
+  <aside class="assets">
+    <div class="section-head"><b>Assets Library</b><span class="muted">See all</span></div>
+    <input class="search" placeholder="⌕  Search assets...">
+    <div class="tabs"><button class="tab active">All</button><button class="tab">Characters</button><button class="tab">Backgrounds</button></div>
+    <div class="section-head"><b>Characters</b><span class="muted">See all</span></div>
+    <div class="grid"><div class="thumb"><label>Nooruddin</label></div><div class="thumb"><label>Nuri</label></div><div class="thumb"><label>Ayesha</label></div></div>
+    <div class="section-head"><b>Backgrounds</b><span class="muted">See all</span></div>
+    <div class="grid"><div class="thumb"><label>Mosque</label></div><div class="thumb"><label>Village</label></div><div class="thumb"><label>Forest</label></div></div>
+    <div class="section-head"><b>Objects</b><span class="muted">See all</span></div>
+    <div class="grid"><div class="thumb"><label>Lantern</label></div><div class="thumb"><label>Book</label></div><div class="thumb"><label>Tree</label></div></div>
+  </aside>
+  <main class="preview">
+    <div class="stage">
+      <div class="scene-text">Small<br>Good Deeds<br>Make a <span>Big Difference</span></div>
+      <div class="character">👦</div><div class="star">★</div>
+    </div>
+    <div class="controls"><button class="play">▶</button><button class="iconbtn">◀</button><button class="iconbtn">▶</button><span class="time">🔊</span><input class="scrub" type="range" value="23"><span class="time">00:12.35 / 05:41.89</span><span class="ratio">16:9 ▾</span><button class="iconbtn">⛶</button></div>
+  </main>
+  <aside class="inspector">
+    <div class="section-head"><b>Inspector</b><span class="muted">×</span></div>
+    <div class="inspect-tabs"><button class="active">Scene</button><button>Text</button><button>Character</button><button>Animation</button></div>
+    <div class="field"><label>Scene Title</label><input value="Introduction"></div>
+    <div class="row"><div class="field"><label>Start Time</label><input value="00:00.00"></div><div class="field"><label>End Time</label><input value="00:20.50"></div></div>
+    <div class="field"><label>Background</label><select><option>Mosque — night.jpg</option></select></div>
+    <div class="row"><div class="field"><label>Fit</label><select><option>Cover</option></select></div><div class="field"><label>Opacity</label><input type="range" class="range" value="100"></div></div>
+    <div class="field"><label>Camera Animation</label><select><option>Slow Zoom In</option><option>Pan Left</option><option>Pan Right</option><option>Push In</option></select></div>
+    <div class="row"><div class="field"><label>Transition</label><select><option>Fade</option><option>Dissolve</option><option>Cut</option></select></div><div class="field"><label>Duration</label><select><option>1.0s</option><option>0.5s</option></select></div></div>
+    <div class="field"><label>Scene Notes</label><textarea class="notes">Show Nooruddin and Nuri, introduce the story with a warm and peaceful background.</textarea></div>
+  </aside>
+</section>
+<section class="timeline">
+  <div class="tlbar"><button class="tlbtn active">↖ Select</button><button class="tlbtn">✂ Split</button><button class="tlbtn">▣ Delete</button><button class="tlbtn">⧉ Duplicate</button><button class="tlbtn">⌕ Zoom</button><input class="zoom" type="range" value="40"><span class="muted">05:41.89</span></div>
+  <div class="ruler"><span>0:00</span><span>0:30</span><span>1:00</span><span>1:30</span><span>2:00</span><span>2:30</span><span>3:00</span><span>3:30</span><span>4:00</span><span>4:30</span><span>5:00</span><span>5:41</span></div>
+  <div class="tracks">
+    <div class="track"><div class="trackname">▦ Scenes</div><div class="clips"><div class="clip">1. Introduction</div><div class="clip">2. A Small Village</div><div class="clip">3. The Kindness</div><div class="clip">4. Helping Others</div><div class="clip">5. A Big Lesson</div><div class="clip">6. Final Message</div></div></div>
+    <div class="track"><div class="trackname">▣ Video</div><div class="clips"><div class="clip">🌄 Introduction</div><div class="clip">🌄 Village</div><div class="clip">🌄 Mosque</div><div class="clip">🌄 Forest</div><div class="clip">🌄 Sunset</div></div></div>
+    <div class="track"><div class="trackname">♙ Characters</div><div class="clips"><div class="clip purple">Nooruddin</div><div class="clip purple">Nuri</div><div class="clip purple">Nooruddin + Nuri</div></div></div>
+    <div class="track"><div class="trackname">T Text / Captions</div><div class="clips"><div class="clip green">Assalamu Alaikum!</div><div class="clip green">Let's learn together...</div><div class="clip green">Kindness is beautiful...</div><div class="clip green">Help others...</div><div class="clip green">Small deeds...</div><div class="clip green">JazakAllah!</div></div></div>
+    <div class="track"><div class="trackname">◖ Audio</div><div class="clips"><div class="clip audio" style="min-width:100%">Voice waveform • merged_islamic_story.wav</div></div></div>
+    <div class="track"><div class="trackname">♫ Music</div><div class="clips"><div class="clip purple" style="min-width:100%">Background Music (Soft)</div></div></div>
+  </div>
+</section>
+<footer class="footer"><b>CutFree Studio</b>&nbsp; • &nbsp;Production Workspace&nbsp; • &nbsp;Create · Animate · Edit · Export <span class="status">● Ready</span></footer>
+</div>
+</body>
+</html>
