@@ -3,6 +3,41 @@
 All notable changes to CutFree are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [SemVer](https://semver.org/).
 
+## [2.3.0] — 2026-09-18
+
+Two studios, one repo — and the deployment actually deploys.
+
+### Added
+- **`studio-pro.html`** — the story-mode / WebCodecs studio (v2.2.0 work) restored as a
+  first-class page and linked from the landing page, the factory page and the footer.
+  Single-file build: `cutfree-studio-pro.html` (395 KB). `studio.html` stays the compact
+  factory page, `index.html` stays the editor.
+- **`tests/factory.e2e.cjs`** — 15 checks for the factory page: boot, demo → plan,
+  timeline drawn, canvas paints *and* changes over time, click-to-scrub, playback clock,
+  thumbnail PNG (real PNG signature), SRT, project JSON, and a no-runtime-errors guard.
+- `npm test` / `test:factory` / `test:studio` / `test:all` / `test:single` scripts and
+  `playwright` in devDependencies.
+
+### Fixed
+- **Factory page audio scheduler** threw
+  `Failed to execute 'setValueAtTime' … Time must be a finite non-negative number: -0.0017`
+  while playing: the offline pre-roll chunk was scheduling notes before the buffer start.
+  Notes that begin before the render window are now dropped (`pad`, `bass`, `pluck`,
+  `kick`, `hat`, `snare`) — the console stays clean and playback cannot be cut short.
+- **Tests could not run at all** once the package became `"type": "module"` (the suites are
+  CommonJS): they are now `tests/*.cjs`, and the page footers link to the new paths.
+- **GitHub Pages had never deployed** — 10 workflow runs failed because Pages was not
+  enabled. Pages is now enabled (workflow build) and the workflow assembles a `_site/`
+  folder containing only the static files (no `src/`, `tools/` or git history) before
+  uploading it.
+- Theme assertions pinned to exactly 8 theme swatches / 6 moods broke when the theme
+  library grew to 13 — the suite now checks the real feature (`>= 8`).
+
+### Changed
+- README: three surfaces (Pro Studio · Factory Studio · Editor), live links, test commands,
+  refreshed file tree. The React page (`app.html` + `src/` + `server.ts`) is documented as
+  server-dependent and therefore not part of the static deploy.
+
 ## [2.2.0] — 2026-09-17
 
 **Story Mode** — write the story, hand over the voice, get a staged video. Still zero-cost,

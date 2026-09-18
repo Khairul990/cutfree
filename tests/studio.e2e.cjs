@@ -14,7 +14,7 @@ const { chromium } = require('playwright');
 
 const ROOT = path.join(__dirname, '..');
 const PORT = Number(process.env.PORT) || 8125;
-const PAGE = process.env.PAGE || 'studio.html';   // PAGE=cutfree-studio.html tests the single-file build
+const PAGE = process.env.PAGE || 'studio-pro.html';   // PAGE=cutfree-studio.html tests the single-file build
 const URL = 'http://127.0.0.1:' + PORT + '/' + PAGE + '?debug=1';
 const MIME = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.md': 'text/markdown', '.png': 'image/png' };
 
@@ -71,7 +71,7 @@ const SCRIPT = [
   await page.waitForTimeout(500);
 
   console.log('\n== 1. studio boots ==');
-  check('landing + workbench rendered', (await page.$$('.swatch')).length === 8 && (await page.$$('#fMood option')).length === 6);
+  check('landing + workbench rendered', (await page.$$('.swatch')).length >= 8 && (await page.$$('#fMood option')).length >= 6);
   check('engine detected', /WebCodecs|MediaRecorder/.test(await page.textContent('#enginePill')), await page.textContent('#enginePill'));
   check('no startup errors', errors.length === 0, errors);
 

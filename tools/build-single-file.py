@@ -24,6 +24,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 PAGES = [
     ("index.html", "cutfree.html"),
     ("studio.html", "cutfree-studio.html"),
+    ("studio-pro.html", "cutfree-studio-pro.html"),
 ]
 
 LINK_RE = re.compile(r'<link[^>]*href="(?P<href>[^"]+\.css)"[^>]*>', re.I)

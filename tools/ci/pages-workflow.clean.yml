@@ -1,0 +1,64 @@
+# Improved Pages deploy (kept here, not active yet).
+#
+# The live workflow is .github/workflows/pages.yml. This variant assembles a clean
+# _site/ folder (index.html, studio*.html, cutfree*.html, css/, js/, assets/,
+# manifest, sw.js, robots.txt) instead of uploading the whole repo root — no
+# src/, no tools/, no docs/ screenshots. Copy it over the live file when a
+# token with the `workflow` scope is available:
+#
+#   cp tools/ci/pages-workflow.clean.yml .github/workflows/pages.yml
+#
+name: Deploy CutFree to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Everything CutFree ships is static, so the site is assembled from the
+      # build outputs instead of uploading the whole repo (no src/, no tools/,
+      # no 46 MB of history). The React page (app.html) is intentionally left
+      # out: it needs the Node server in server.ts for its /api routes.
+      - name: Assemble the static site
+        run: |
+          set -e
+          mkdir -p _site
+          for f in index.html studio.html studio-pro.html \
+                   cutfree.html cutfree-studio.html cutfree-studio-pro.html \
+                   manifest.webmanifest sw.js robots.txt LICENSE README.md; do
+            if [ -f "$f" ]; then cp "$f" _site/; fi
+          done
+          for d in css js assets; do
+            if [ -d "$d" ]; then cp -r "$d" _site/; fi
+          done
+          echo "--- _site ---"; find _site -maxdepth 2 -type f | sort | head -40
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload static site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

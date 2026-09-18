@@ -242,7 +242,7 @@
   /* ---------------- CutFree Studio (auto video engine) ---------------- */
   var STUDIO = {
     bn: {
-      navStudio: 'অটো স্টুডিও', navPipeline: 'পাইপলাইন', navPublish: 'পাবলিশ', navDocs: 'ডকস', navTests: 'টেস্ট',
+      navStudio: 'অটো স্টুডিও', navPro: 'প্রো স্টুডিও', navPipeline: 'পাইপলাইন', navPublish: 'পাবলিশ', navDocs: 'ডকস', navTests: 'টেস্ট',
       studioKicker: 'ভিডিও ফ্যাক্টরি · জিরো কস্ট · জিরো কষ্ট',
       studioTitle: 'লেখা দিন — ভিডিও, মিউজিক, থাম্বনেইল আর YouTube কিট নিজে থেকেই তৈরি',
       studioLead: 'CutFree Studio একটা ডিটারমিনিস্টিক মোশন-গ্রাফিক্স ইঞ্জিন: WebCodecs দিয়ে জিপিইউ-স্পিডে ফ্রেম-পারফেক্ট এনকোড, নিজের লেখা WebM মিউক্সার, প্রসিডিউরাল মিউজিক, কাইনেটিক টাইপোগ্রাফি, কালার-ব্লেন্ডিং গ্রেড, আর এক ক্লিকে YouTube পাবলিশ ফ্যাক।',
@@ -362,7 +362,7 @@
       stProjectFail: 'প্রজেক্ট ফাইলটা পড়া গেল না।',
     },
     en: {
-      navStudio: 'Auto Studio', navPipeline: 'Pipeline', navPublish: 'Publish', navDocs: 'Docs', navTests: 'Tests',
+      navStudio: 'Auto Studio', navPro: 'Pro Studio', navPipeline: 'Pipeline', navPublish: 'Publish', navDocs: 'Docs', navTests: 'Tests',
       studioKicker: 'Video factory · zero cost · zero effort',
       studioTitle: 'Give it words — get the video, the music, the thumbnail and the YouTube kit',
       studioLead: 'CutFree Studio is a deterministic motion-graphics engine: frame-perfect WebCodecs encoding at GPU speed, our own WebM muxer, procedural music, kinetic typography, colour-blended grading and a one-click YouTube publish stack.',

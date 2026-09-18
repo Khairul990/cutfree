@@ -87,6 +87,7 @@ canvas{max-width:100%;max-height:100%;border-radius:10px;background:#000;box-sha
     <div class="brand-modes">
       <span class="mode-pill active" title="অটো ভিডিও স্টুডিও">⚡ স্টুডিও</span>
       <a href="cutfree.html" class="mode-pill" title="ভিডিও কাটার ও এডিটর">✂️ এডিটর</a>
+      <a href="studio-pro.html" class="mode-pill" title="স্টোরি মোড · ভয়েস ট্র্যাক · WebCodecs ফাস্ট রেন্ডার · YouTube কিট">📖 প্রো স্টুডিও</a>
     </div>
   </div>
   <div class="tabs">
@@ -792,29 +793,29 @@ function nbuf(ac){if(nbuf._a===ac)return nbuf._b;var n=Math.ceil(ac.sampleRate*1
   for(var i=0;i<n;i++)d[i]=Math.random()*2-1;nbuf._a=ac;nbuf._b=b;return b}
 function ir(ac,sec,dc){var l=Math.ceil(ac.sampleRate*sec),b=ac.createBuffer(2,l,ac.sampleRate);
   for(var c=0;c<2;c++){var d=b.getChannelData(c);for(var i=0;i<l;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/l,dc)}return b}
-function pad(ac,dest,snd,t,f,dur,g,cut){cut=cut||900;var lp=ac.createBiquadFilter();lp.type='lowpass';lp.Q.value=.9;
+function pad(ac,dest,snd,t,f,dur,g,cut){if(!(t>=0))return;cut=cut||900;var lp=ac.createBiquadFilter();lp.type='lowpass';lp.Q.value=.9;
   lp.frequency.setValueAtTime(500,t);lp.frequency.linearRampToValueAtTime(cut,t+dur*.55);
   var gn=ac.createGain();gn.gain.setValueAtTime(.0001,t);gn.gain.linearRampToValueAtTime(g,t+Math.min(1.1,dur*.3));
   gn.gain.setValueAtTime(g,t+dur*.72);gn.gain.exponentialRampToValueAtTime(.0001,t+dur);
   for(var k=0;k<2;k++){var o=ac.createOscillator();o.type=k?'triangle':'sawtooth';o.frequency.value=f*(k?1.0025:1);
     var og=ac.createGain();og.gain.value=k?.36:.64;o.connect(og).connect(lp);o.start(t);o.stop(t+dur+.05)}
   lp.connect(gn);gn.connect(dest);gn.connect(snd)}
-function bass(ac,dest,t,f,dur,g){var o=ac.createOscillator();o.type='triangle';o.frequency.value=f;
+function bass(ac,dest,t,f,dur,g){if(!(t>=0))return;var o=ac.createOscillator();o.type='triangle';o.frequency.value=f;
   var lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=340;var gn=ac.createGain();
   gn.gain.setValueAtTime(.0001,t);gn.gain.exponentialRampToValueAtTime(g,t+.025);gn.gain.exponentialRampToValueAtTime(.0001,t+dur);
   o.connect(lp).connect(gn).connect(dest);o.start(t);o.stop(t+dur+.06)}
-function pluck(ac,dest,snd,t,f,g,dec){var o=ac.createOscillator();o.type='triangle';o.frequency.value=f;
+function pluck(ac,dest,snd,t,f,g,dec){if(!(t>=0))return;var o=ac.createOscillator();o.type='triangle';o.frequency.value=f;
   var o2=ac.createOscillator();o2.type='sine';o2.frequency.value=f*2.005;var g2=ac.createGain();g2.gain.value=.22;
   var gn=ac.createGain();gn.gain.setValueAtTime(g,t);gn.gain.exponentialRampToValueAtTime(.0001,t+dec);
   o.connect(gn);o2.connect(g2).connect(gn);gn.connect(dest);gn.connect(snd);o.start(t);o.stop(t+dec+.03);o2.start(t);o2.stop(t+dec+.03)}
-function kick(ac,dest,t,g){var o=ac.createOscillator();o.type='sine';o.frequency.setValueAtTime(150,t);
+function kick(ac,dest,t,g){if(!(t>=0))return;var o=ac.createOscillator();o.type='sine';o.frequency.setValueAtTime(150,t);
   o.frequency.exponentialRampToValueAtTime(44,t+.13);var gn=ac.createGain();gn.gain.setValueAtTime(g,t);
   gn.gain.exponentialRampToValueAtTime(.0001,t+.36);o.connect(gn).connect(dest);o.start(t);o.stop(t+.42)}
-function hat(ac,dest,t,g,dec){dec=dec||.055;var s=ac.createBufferSource();s.buffer=nbuf(ac);
+function hat(ac,dest,t,g,dec){if(!(t>=0))return;dec=dec||.055;var s=ac.createBufferSource();s.buffer=nbuf(ac);
   var hp=ac.createBiquadFilter();hp.type='highpass';hp.frequency.value=7600;var gn=ac.createGain();
   gn.gain.setValueAtTime(g,t);gn.gain.exponentialRampToValueAtTime(.0001,t+dec);
   s.connect(hp).connect(gn).connect(dest);s.start(t);s.stop(t+dec+.03)}
-function snare(ac,dest,snd,t,g){var s=ac.createBufferSource();s.buffer=nbuf(ac);
+function snare(ac,dest,snd,t,g){if(!(t>=0))return;var s=ac.createBufferSource();s.buffer=nbuf(ac);
   var bp=ac.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1900;bp.Q.value=.85;var gn=ac.createGain();
   gn.gain.setValueAtTime(g,t);gn.gain.exponentialRampToValueAtTime(.0001,t+.2);
   s.connect(bp).connect(gn);gn.connect(dest);gn.connect(snd);s.start(t);s.stop(t+.24);

@@ -27,14 +27,30 @@
 
 ---
 
-## 🎯 দুইটা টুল, একই রিপো
+## 🎯 এক রিপো, তিনটে সারফেস
 
-| | কী | ফাইল |
-| --- | --- | --- |
-| ⚡ **Studio** | টেক্সট → অটো অ্যানিমেটেড ভিডিও + মিউজিক + থাম্বনেইল + YouTube পাবলিশ প্যাক | `studio.html` (সিঙ্গেল ফাইল: `cutfree-studio.html`) |
-| ✂️ **Editor** | হাতে করা ভিডিও কাটা/ট্রিম/জোড়া লাগানো (আপলোড ছাড়াই) | `index.html` (সিঙ্গেল ফাইল: `cutfree.html`) |
+| | কী | ফাইল | সিঙ্গেল ফাইল |
+| --- | --- | --- | --- |
+| 📖 **Pro Studio** | স্টোরি মোড (নিজের ভয়েস ট্র্যাক), WebCodecs ফাস্ট রেন্ডার, SRT/VTT, Shorts, YouTube কিট, প্রজেক্ট সেভ/লোড, অফলাইন PWA | `studio-pro.html` | `cutfree-studio-pro.html` |
+| ⚡ **Factory Studio** | হালকা এক-পেজ ফ্যাক্টরি: লাইন-বাই-লাইন সিন, এক ক্লিকে ভিডিও, mic/TTS, থাম্বনেইল, SRT, প্রজেক্ট JSON | `studio.html` | `cutfree-studio.html` |
+| ✂️ **Editor** | হাতে করা ভিডিও কাটা/ট্রিম/জোড়া লাগানো (আপলোড ছাড়াই) | `index.html` | `cutfree.html` |
 
-দুটোই ১০০% ক্লায়েন্ট-সাইড — কোনো ডিপেন্ডেন্সি, CDN, ফন্ট বা সার্ভার নেই।
+**তিনটেই ১০০% ক্লায়েন্ট-সাইড** — কোনো ডিপেন্ডেন্সি, CDN, ফন্ট বা সার্ভার নেই।
+
+### লাইভ
+| হোস্ট | লিংক |
+| --- | --- |
+| GitHub Pages | <https://khairul990.github.io/cutfree/> · `/studio-pro.html` · `/studio.html` |
+| Vercel | <https://cutfree.vercel.app> |
+
+> `app.html` + `src/App.tsx` (React এডিশন) আর `server.ts` আলাদা — ওদের `/api/ai/script`
+> রুটের জন্য Node সার্ভার লাগে, তাই স্ট্যাটিক হোস্টে ওটা ডিপ্লয় করা হয় না।
+> বাকি সব পেজ সার্ভার ছাড়াই চলে।
+
+### কোনটা কখন
+- **নিজের গল্প + নিজের ভয়েস** → Pro Studio (প্যানেল ২ · স্টোরি)।
+- **হাতে লেখা স্ক্রিপ্ট, এক ক্লিকে ভিডিও** → Factory Studio।
+- **নিজের শুট করা ফুটেজ কাটা** → Editor।
 
 ---
 
@@ -151,6 +167,9 @@ CLI যা করে: **resumable upload** (4MB চাঙ্ক, নেট গ�
 
 ## 📖 স্টোরি মোড (২.২) — নিজের গল্প, নিজের ভয়েস
 
+> 📄 এই প্যানেলটা এখন **`studio-pro.html`** পেজে (সিঙ্গেল ফাইল: `cutfree-studio-pro.html`) —
+> ল্যান্ডিং পেজ আর ফ্যাক্টরি স্টুডিওর হেডার থেকে এক ক্লিকে পৌঁছে যাবেন।
+
 আপনি শুধু গল্পটা লেখেন আর ভয়েসটা দেন — বাকিটা টুল করে দেয়: **ভয়েস ট্র্যাক করে
 প্রতিটা শব্দ কখন বলা হচ্ছে বের করা হয়**, তারপর ঠিক সেই মুহূর্তে শব্দ ভেসে ওঠে পর্দায়।
 আর কোনো API নেই, কোনো খরচ নেই — অ্যালাইনমেন্টও আপনার ব্রাউজারেই চলে।
@@ -217,12 +236,20 @@ mp3/wav আগের মতোই আপলোড করা যায়।
 
 ```bash
 npm i -D playwright && npx playwright install chromium
-npm test            # এডিটর: ৩০টা চেক
-npm run test:studio # স্টুডিও: ১০৭টা চেক
+npm test              # এডিটর (index.html): ৩০টা চেক
+npm run test:factory  # Factory Studio (studio.html): ১৫টা চেক
+npm run test:studio   # Pro Studio (studio-pro.html): ১০৭টা চেক
 npm run test:all
 
-PAGE=cutfree-studio.html npm run test:studio   # সিঙ্গেল-ফাইল বিল্ডের বিরুদ্ধে
+PAGE=cutfree-studio-pro.html npm run test:studio   # সিঙ্গেল-ফাইল বিল্ডের বিরুদ্ধে
+PAGE=cutfree-studio.html npm run test:factory
 ```
+
+**Factory Suite** ঠিক যা যাচাই করে: পেজ ওঠে (কোনো এরর ছাড়া) → ডেমো স্ক্রিপ্ট →
+প্ল্যান (সিন/দৈর্ঘ্য/টাইমলাইন) → ক্যানভাস সত্যিই আঁকে ও সময়ের সাথে বদলায় →
+টাইমলাইনে ক্লিক করে স্ক্রাব → প্লে ঘড়ি এগোয় → থাম্বনেইল PNG (আসল PNG সিগনেচার,
+সাইজ) → SRT → প্রজেক্ট JSON — আর শেষে **অডিও শিডিউলার কোনো এরর ছোড়ে কি না**
+(`setValueAtTime` নেগেটিভ টাইম বাগটার রিগ্রেশন গার্ড)।
 
 স্টুডিও টেস্ট আসলেই যা যাচাই করে: সিন স্প্লিটিং → মিউজিক (audible + নরমালাইজড
 এনার্জি) → রেন্ডারার ডিটারমিনিস্টিক (একই t = একই পিক্সেল, ভিন্ন t = ভিন্ন) →
@@ -248,31 +275,35 @@ PAGE=cutfree-studio.html npm run test:studio   # সিঙ্গেল-ফাই
 
 ```
 cutfree/
-├── studio.html / cutfree-studio.html   # ⚡ অটো স্টুডিও (+ সিঙ্গেল-ফাইল বিল্ড)
-├── index.html  / cutfree.html          # ✂️ কাটার/এডিটর
+├── studio-pro.html  / cutfree-studio-pro.html   # 📖 প্রো স্টুডিও (স্টোরি মোড + WebCodecs + কিট)
+├── studio.html      / cutfree-studio.html       # ⚡ ফ্যাক্টরি স্টুডিও (এক-পেজ, লাইন-বাই-লাইন)
+├── index.html       / cutfree.html              # ✂️ কাটার/এডিটর
+├── app.html · src/ · server.ts · vite.config.ts # React এডিশন (Node সার্ভার দরকার)
 ├── css/style.css · css/studio.css
 ├── js/
 │   ├── app.js · i18n.js                # এডিটর + দুই ভাষার স্ট্রিং
 │   └── studio/
-│       ├── themes.js   # ৮টা থিম, ৬টা মিউজিক মুড, ব্লেন্ড রেসিপি
-│       ├── engine.js   # রেন্ডারার: কাইনেটিক টাইপোগ্রাফি, অরোরা, ট্রানজিশন
+│       ├── themes.js   # থিম, মিউজিক মুড, ব্লেন্ড রেসিপি
+│       ├── engine.js   # রেন্ডারার: কাইনেটিক টাইপোগ্রাফি, স্টোরি সিন, ট্রানজিশন
 │       ├── music.js    # প্রসিডিউরাল মিউজিক + ভয়েস ডাকিং + এনার্জি
 │       ├── muxer.js    # নিজের WebM/EBML মিউক্সার
 │       ├── encode.js   # WebCodecs ফাস্ট পাথ + MediaRecorder কম্প্যাট
 │       ├── director.js # স্ক্রিপ্ট → সিন প্ল্যান + YouTube মেটাডেটা
-│       ├── captions.js # SRT/VTT পার্স-বিল্ড, শব্দ-টাইমিং → কারাওকে কিউ
+│       ├── captions.js # SRT/VTT পার্স-বিল্ড, clampTo, কারাওকে কিউ
 │       ├── voice.js    # TTS ভয়েস, শব্দ-ধরা টাইমিং, ট্যাব-অডিও রেকর্ডিং
 │       ├── align.js    # VAD + শব্দ-টাইমিং অ্যালাইনমেন্ট (স্টোরি মোডের ইঞ্জিন)
 │       ├── story.js    # স্ক্রিপ্ট + ভয়েস → স্টোরি সিন, বিরতি কার্ড, ক্যাপশন
 │       ├── publish.js  # থাম্বনেইল, প্যাক, লিভিং HTML, ব্রাউজার আপলোড
-│       └── ui.js       # ওয়ার্কবেঞ্চ
+│       └── ui.js       # প্রো স্টুডিওর ওয়ার্কবেঞ্চ
 ├── tools/
-│   ├── build-single-file.py   # দুটো পেজের সিঙ্গেল-ফাইল বিল্ড
-│   ├── yt-upload.mjs          # CLI আপলোডার (ডিভাইস-ফ্লো OAuth, 0 ডিপেন্ডেন্সি)
-│   ├── screenshots.js · studio-shots.js
+│   ├── build-single-file.js   # সিঙ্গেল-ফাইল বিল্ড (৩ পেজ)
+│   ├── build.js               # পুরো প্রোডাকশন বিল্ড (dist/ + server.cjs)
+│   ├── yt-upload.mjs          # CLI আপলোডার (ডিভাইস-ফ্লো OAuth)
+│   └── studio-shots.js        # ডকস স্ক্রিনশট
 ├── sw.js · manifest.webmanifest        # PWA / অফলাইন শেল
-├── tests/e2e.js · tests/studio.e2e.js
-└── Dockerfile · .github/workflows/pages.yml
+├── tests/e2e.cjs · factory.e2e.cjs · studio.e2e.cjs
+├── .github/workflows/pages.yml         # GitHub Pages ডিপ্লয় (_site/)
+└── Dockerfile · vercel.json
 ```
 
 ---

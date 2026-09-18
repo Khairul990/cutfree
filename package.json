@@ -1,7 +1,7 @@
 {
   "name": "cutfree-studio",
   "private": true,
-  "version": "2.2.0",
+  "version": "2.3.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -12,7 +12,12 @@
     "preview": "vite preview --host 0.0.0.0 --port 4173",
     "start": "node dist/server.cjs",
     "lint": "tsc --noEmit",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node tests/e2e.cjs",
+    "test:studio": "node tests/studio.e2e.cjs",
+    "test:all": "node tests/e2e.cjs && node tests/factory.e2e.cjs && node tests/studio.e2e.cjs",
+    "test:single": "PAGE=cutfree-studio-pro.html node tests/studio.e2e.cjs",
+    "test:factory": "node tests/factory.e2e.cjs"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -34,6 +39,7 @@
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.3",
-    "@types/express": "^4.17.21"
+    "@types/express": "^4.17.21",
+    "playwright": "^1.56.0"
   }
 }

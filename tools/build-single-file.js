@@ -17,7 +17,8 @@ const ROOT = path.resolve(__dirname, '..');
 
 const PAGES = [
   ['index.html', 'cutfree.html'],
-  ['studio.html', 'cutfree-studio.html']
+  ['studio.html', 'cutfree-studio.html'],
+  ['studio-pro.html', 'cutfree-studio-pro.html']
 ];
 
 const LINK_RE = /<link[^>]*href="([^"]+\.css)"[^>]*>/gi;

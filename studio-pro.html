@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>📖 CutFree Pro Studio — স্টোরি মোড · ভয়েস ট্র্যাক · ফাস্ট রেন্ডার</title>
+<meta name="description" content="লেখা দিন, ভিডিও নিন: ব্রাউজারেই অটো-জেনারেটেড প্রিমিয়াম অ্যানিমেটেড ভিডিও, নিজস্ব মিউজিক, থাম্বনেইল, YouTube কিট আর শিডিউল — সম্পূর্ণ ফ্রি, সার্ভার ছাড়া।" />
+<meta name="theme-color" content="#05070f" />
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml" />
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/studio.css" />
+</head>
+<body class="studio">
+
+<header class="site-head">
+  <div class="wrap head-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/logo.svg" alt="" width="34" height="34" />
+      <span class="brand-text">
+        <strong>CutFree <em class="studio-tag">Studio</em></strong>
+        <small data-i18n="taglineShort">ফ্রি ভিডিও কাটার ও এডিটর</small>
+      </span>
+    </a>
+    <nav class="nav">
+      <a href="studio.html" data-i18n="navStudio">অটো স্টুডিও</a>
+      <a href="studio-pro.html" class="on" data-i18n="navPro">প্রো স্টুডিও</a>
+      <a href="index.html" data-i18n="navEditor">এডিটর</a>
+      <a href="#pipeline" data-i18n="navPipeline">পাইপলাইন</a>
+      <a href="#publish" data-i18n="navPublish">পাবলিশ</a>
+      <a href="README.md" data-i18n="navDocs">ডকস</a>
+    </nav>
+    <div class="head-actions">
+      <span class="pill live" id="enginePill">—</span>
+      <button class="btn ghost small" id="langBtn" type="button">বাংলা / EN</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ================= HERO ================= -->
+  <section class="hero studio-hero">
+    <div class="wrap">
+      <p class="kicker" data-i18n="studioKicker">ভিডিও ফ্যাক্টরি · জিরো কস্ট · জিরো কষ্ট</p>
+      <h1 data-i18n="studioTitle">লেখা দিন — ভিডিও, মিউজিক, থাম্বনেইল আর YouTube কিট নিজে থেকেই তৈরি</h1>
+      <p class="lead" data-i18n="studioLead">
+        CutFree Studio একটা ডিটারমিনিস্টিক মোশন-গ্রাফিক্স ইঞ্জিন: WebCodecs দিয়ে জিপিইউ-স্পিডে
+        ফ্রেম-পারফেক্ট এনকোড, নিজের লেখা WebM মিউক্সার, প্রসিডিউরাল মিউজিক, কাইনেটিক টাইপোগ্রাফি,
+        কালার-ব্লেন্ডিং গ্রেড, আর এক ক্লিকে YouTube পাবলিশ ফ্যাক।
+      </p>
+      <div class="hero-cta">
+        <button class="btn primary big" id="btnGenerate" type="button" data-i18n="ctaGenerate">🎬 ভিডিও বানাও</button>
+        <button class="btn ghost big" id="btnDemo" type="button" data-i18n="ctaDemo">ডেমো স্ক্রিপ্ট বসাও</button>
+      </div>
+      <ul class="badges">
+        <li data-i18n="b1">৯০%+ ওয়েব ব্রাউজারে চলে</li>
+        <li data-i18n="b2">ফোন-কম্পিউটার দুটোতেই</li>
+        <li data-i18n="b3">নিজের মিউজিক, কপিরাইট-ফ্রি</li>
+        <li data-i18n="b4">YouTube-রেডি ফাইল + শিডিউল</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= WORKBENCH ================= -->
+  <section class="wrap" id="workbench">
+    <div class="studio-grid">
+
+      <!-- ---------- left: the brief ---------- -->
+      <aside class="panel-card">
+        <h3 class="card-title" data-i18n="srcTitle">১ · ব্রিফ / স্ক্রিপ্ট</h3>
+
+        <label class="field">
+          <span data-i18n="fTitle">ভিডিওর টাইটেল</span>
+          <input type="text" id="fTitle" placeholder="যেমন: ৫ মিনিটে ওয়েব ডিজাইন শিখুন" />
+        </label>
+
+        <label class="field">
+          <span data-i18n="fScript">স্ক্রিপ্ট (প্রতি প্যারাগ্রাফ = একটা সিন)</span>
+          <textarea id="fScript" rows="12" placeholder="প্রথম লাইন = হুক&#10;&#10;পরের প্যারাগ্রাফ = মূল আলোচনা&#10;&#10;- তিন বা তার বেশি লাইন দিলে বুলেট সিন হয়&#10;- অটো ডিরেক্টর টাইপ বুঝে নেয়&#10;&#10;৯০% → সংখ্যা দিলে স্ট্যাট সিন হয়।"></textarea>
+        </label>
+
+        <div class="brief-row">
+          <button class="btn ghost small" type="button" id="btnBatchSample" data-i18n="sampleBatch">নমুনা ব্যাচ</button>
+          <button class="btn ghost small" type="button" id="btnClearBrief" data-i18n="clearBrief">খালি করুন</button>
+        </div>
+
+
+        <h3 class="card-title" data-i18n="storyTitle">২ · স্টোরি মোড — ভয়েস ট্র্যাক</h3>
+        <label class="field checkbox">
+          <input type="checkbox" id="fStory" />
+          <span data-i18n="fStory">স্টোরি মোড (ভয়েস ট্র্যাক করে গল্পের ভিডিও)</span>
+        </label>
+        <p class="hint" data-i18n="storyHint">গল্পের টেক্সট লিখে ভয়েসটা দিন — ভয়েস ট্র্যাক করে প্রতিটা শব্দ কখন বলা হচ্ছে বের করা হয়, তারপর সেই মুহূর্তেই শব্দ ফুটিয়ে তোলে টাইপোগ্রাফি আর কারাওকে ক্যাপশন সাজায়।</p>
+        <div class="field">
+          <span data-i18n="fVoice">গল্পের ভয়েস (mp3 / wav / m4a / webm)</span>
+          <label class="btn ghost small file-btn wide-btn">
+            <input type="file" id="fVoice" accept="audio/*" hidden />
+            <span data-i18n="pickAudio">📁 অডিও ফাইল বাছুন</span>
+          </label>
+        </div>
+        <div class="brief-row wrap">
+          <button class="btn ghost small" id="btnTrack" type="button" data-i18n="ctaTrack">🎧 ভয়েস ট্র্যাক করুন</button>
+          <label class="field inline">
+            <span data-i18n="fStoryStyle">টাইপোগ্রাফি</span>
+            <select id="fStoryStyle">
+              <option value="auto" selected data-i18n="typAuto">অটো (সিন বুঝে)</option>
+              <option value="reveal" data-i18n="typReveal">শব্দ-বাই-শব্দ ফুটে ওঠে</option>
+              <option value="board" data-i18n="typBoard">স্টোরিবুক কার্ড</option>
+              <option value="stack" data-i18n="typStack">টেলিপ্রম্পটার</option>
+              <option value="typewriter" data-i18n="typType">টাইপরাইটার</option>
+            </select>
+          </label>
+        </div>
+        <div class="two-col">
+          <label class="field">
+            <span data-i18n="fKicker">উপরের ছোট লাইন</span>
+            <input type="text" id="fKicker" placeholder="একটি গল্প" />
+          </label>
+          <label class="field">
+            <span data-i18n="fEndCard">শেষ কার্ড</span>
+            <input type="text" id="fEndCard" placeholder="সমাপ্ত" />
+          </label>
+        </div>
+        <div id="alignWrap" hidden>
+          <div class="align-head">
+            <span class="align-stats" id="alignStats"></span>
+            <button class="btn ghost small" id="btnAlignPlay" type="button" title="Track again" data-i18n="ctaEstimate">🎧 আবার ট্র্যাক</button>
+          </div>
+          <canvas id="alignCanvas" height="130"></canvas>
+          <div class="align-list" id="alignList"></div>
+          <p class="hint" data-i18n="stAlignHint">ওয়েভফর্মে ক্লিক করে সেই মুহূর্তে যান · নিচের লাইনে ক্লিক করে লাইন ধরে শুনুন</p>
+        </div>
+
+        <h3 class="card-title" data-i18n="lookTitle">২ · লুক ও ফিল</h3>
+        <div class="theme-picker" id="themePicker"></div>
+
+        <div class="two-col">
+          <label class="field">
+            <span data-i18n="fMood">মিউজিক মুড</span>
+            <select id="fMood"></select>
+          </label>
+          <label class="field">
+            <span data-i18n="fAspect">অ্যাসপেক্ট</span>
+            <select id="fAspect">
+              <option value="16:9">YouTube 16:9</option>
+              <option value="9:16">Shorts 9:16</option>
+              <option value="1:1">স্কয়ার 1:1</option>
+              <option value="4:5">ফিড 4:5</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="two-col">
+          <label class="field">
+            <span data-i18n="fQuality">কোয়ালিটি</span>
+            <select id="fQuality">
+              <option value="720p" selected>720p (দ্রুত)</option>
+              <option value="1080p">1080p (প্রিমিয়াম)</option>
+              <option value="1440p">1440p</option>
+              <option value="480p">480p (হালকা)</option>
+            </select>
+          </label>
+          <label class="field">
+            <span data-i18n="fFps">ফ্রেম রেট</span>
+            <select id="fFps">
+              <option value="30" selected>30 fps</option>
+              <option value="24">24 fps</option>
+              <option value="60">60 fps</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="two-col">
+          <label class="field">
+            <span data-i18n="fDuration">টার্গেট দৈর্ঘ্য (সেকেন্ড)</span>
+            <input type="number" id="fDuration" min="10" max="600" step="5" value="45" />
+          </label>
+          <label class="field">
+            <span data-i18n="fPerf">পারফরম্যান্স মোড</span>
+            <select id="fPerf">
+              <option value="high" selected data-i18n="perfHigh">হাই (ডেস্কটপ)</option>
+              <option value="balanced" data-i18n="perfBal">ব্যালেন্সড</option>
+              <option value="fast" data-i18n="perfFast">ফাস্ট (ফোন / লম্বা ভিডিও)</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="field">
+          <span data-i18n="fWatermark">ওয়াটারমার্ক / চ্যানেল</span>
+          <input type="text" id="fWatermark" placeholder="@yourchannel" />
+        </label>
+
+        <label class="field checkbox">
+          <input type="checkbox" id="fMusic" checked />
+          <span data-i18n="fMusic">প্রসিডিউরাল মিউজিক (নিজস্ব, কপিরাইট-ফ্রি)</span>
+        </label>
+        <label class="field checkbox">
+          <input type="checkbox" id="fProgress" checked />
+          <span data-i18n="fProgressBar">নিচে প্রোগ্রেস বার</span>
+        </label>
+
+        <div class="field">
+          <span data-i18n="fLogo">ব্র্যান্ড লোগো (ঐচ্ছিক — png/svg)</span>
+          <label class="btn ghost small file-btn wide-btn">
+            <input type="file" id="fLogo" accept="image/*" hidden />
+            <span data-i18n="pickImage">🖼️ ছবি বাছুন</span>
+          </label>
+        </div>
+
+
+        <h3 class="card-title" data-i18n="voiceTitle">৩ · ভয়েসওভার ও সাবটাইটেল</h3>
+        <div class="two-col">
+          <label class="field">
+            <span data-i18n="fVoicePick">TTS ভয়েস</span>
+            <select id="fVoicePick"></select>
+          </label>
+          <label class="field">
+            <span><span data-i18n="fVoiceRate">গতি</span>: <b id="voiceRateVal">1.0</b>×</span>
+            <input type="range" id="fVoiceRate" min="0.6" max="1.6" step="0.05" value="1" />
+          </label>
+        </div>
+        <div class="brief-row wrap">
+          <button class="btn ghost small" id="btnVoiceTest" type="button" data-i18n="ctaVoiceTest">🔊 ভয়েস চেক</button>
+          <button class="btn ghost small" id="btnMeasure" type="button" data-i18n="ctaMeasure">⏱ টাইমিং মাপুন</button>
+          <button class="btn ghost small" id="btnRecordVoice" type="button" data-i18n="ctaRecordVoice">🎙 ভয়েসওভার রেকর্ড</button>
+        </div>
+        <p class="hint" id="voiceHint" data-i18n="voiceHint"></p>
+        <label class="field checkbox">
+          <input type="checkbox" id="fNarrFit" checked />
+          <span data-i18n="fNarrFit">সিনের দৈর্ঘ্য ন্যারেশনের সাথে মিলিয়ে নাও</span>
+        </label>
+
+        <h4 class="mini-title" data-i18n="subsTitle">সাবটাইটেল</h4>
+        <div class="brief-row wrap">
+          <label class="btn ghost small file-btn">
+            <input type="file" id="fSrt" accept=".srt,.vtt,.txt" hidden />
+            <span data-i18n="ctaSrtImport">📄 SRT / VTT ইমপোর্ট</span>
+          </label>
+          <button class="btn ghost small" id="btnSrtExport" type="button" data-i18n="ctaSrtExport">⬇️ SRT এক্সপোর্ট</button>
+        </div>
+        <div class="two-col">
+          <label class="field">
+            <span data-i18n="fCaptionStyle">সাবটাইটেল স্টাইল</span>
+            <select id="fCaptionStyle">
+              <option value="karaoke" data-i18n="capKaraoke">কারাওকে (শব্দ হাইলাইট)</option>
+              <option value="bar" selected data-i18n="capBar">সিম্পল বার</option>
+              <option value="none" data-i18n="capNone">কোনোটাই না</option>
+            </select>
+          </label>
+          <label class="field checkbox">
+            <input type="checkbox" id="fShorts" />
+            <span data-i18n="fShorts">Shorts মোড (9:16 + safe zone + #Shorts)</span>
+          </label>
+        </div>
+        <p class="hint" data-i18n="shortsHint"></p>
+
+        <h4 class="mini-title" data-i18n="projectTitle">প্রজেক্ট</h4>
+        <div class="brief-row wrap">
+          <button class="btn ghost small" id="btnSaveProject" type="button" data-i18n="ctaSaveProject">💾 সেভ (.json)</button>
+          <label class="btn ghost small file-btn">
+            <input type="file" id="fProject" accept=".json,application/json" hidden />
+            <span data-i18n="ctaLoadProject">📂 লোড</span>
+          </label>
+        </div>
+
+        <div class="panel-actions">
+          <button class="btn primary wide" id="btnBuild" type="button" data-i18n="ctaBuildPlan">প্ল্যান বানাও (প্রিভিউ)</button>
+          <button class="btn wide" id="btnQueue" type="button" data-i18n="ctaQueue">সব ভিডিও কিউতে দাও</button>
+        </div>
+      </aside>
+
+      <!-- ---------- center: preview ---------- -->
+      <section class="panel-card preview-card">
+        <div class="card-head">
+          <h3 class="card-title" data-i18n="previewTitle">৩ · লাইভ প্রিভিউ</h3>
+          <span class="chip" id="sceneChip">—</span>
+        </div>
+        <div class="preview-holder" id="previewHolder">
+          <canvas id="preview"></canvas>
+        </div>
+        <div class="transport">
+          <button class="btn icon" id="btnRew" type="button" title="Start">⏮</button>
+          <button class="btn primary icon-round" id="btnPlay" type="button">▶</button>
+          <button class="btn icon" id="btnFwd" type="button" title="End">⏭</button>
+          <input type="range" id="scrub" min="0" max="100" value="0" step="0.1" />
+          <span class="time" id="timeLabel">00:00 / 00:00</span>
+        </div>
+        <div class="scene-strip" id="sceneStrip"></div>
+        <div class="plan-stats" id="planStats"></div>
+
+        <div class="card-head">
+          <h3 class="card-title" data-i18n="renderTitle">৪ · রেন্ডার</h3>
+          <span class="chip" id="renderChip">—</span>
+        </div>
+        <div class="render-row">
+          <button class="btn primary" id="btnRender" type="button" data-i18n="ctaRender">⚡ ফাস্ট রেন্ডার (WebCodecs)</button>
+          <button class="btn" id="btnRenderCompat" type="button" data-i18n="ctaRenderCompat">🎥 MP4 / কম্প্যাট রেন্ডার</button>
+          <button class="btn danger" id="btnCancelRender" type="button" hidden data-i18n="ctaCancel">বাতিল</button>
+        </div>
+        <div class="progress" id="progressWrap" hidden>
+          <div class="bar"><i id="progressBar"></i></div>
+          <div class="progress-row"><span id="progressText">0%</span><span id="progressNote"></span></div>
+        </div>
+      </section>
+
+      <!-- ---------- right: publish + queue ---------- -->
+      <aside class="panel-card" id="publish">
+        <h3 class="card-title" data-i18n="publishTitle">৫ · পাবলিশ (YouTube)</h3>
+
+        <div class="thumb-holder"><canvas id="thumb"></canvas></div>
+        <div class="brief-row">
+          <button class="btn ghost small" id="btnThumb" type="button" data-i18n="ctaThumb">থাম্বনেইল রেন্ডার</button>
+          <button class="btn ghost small" id="btnThumbDl" type="button" data-i18n="ctaThumbDl">ডাউনলোড PNG</button>
+        </div>
+
+        <label class="field">
+          <span data-i18n="fYtTitle">YouTube টাইটেল</span>
+          <input type="text" id="ytTitle" />
+        </label>
+        <label class="field">
+          <span data-i18n="fYtDesc">ডেসক্রিপশন (চ্যাপ্টার সহ)</span>
+          <textarea id="ytDesc" rows="7"></textarea>
+        </label>
+        <label class="field">
+          <span data-i18n="fYtTags">ট্যাগ</span>
+          <input type="text" id="ytTags" />
+        </label>
+
+        <div class="two-col">
+          <label class="field">
+            <span data-i18n="fPrivacy">প্রাইভেসি</span>
+            <select id="fPrivacy">
+              <option value="private">Private (স্ক্রিপ্টের জন্য)</option>
+              <option value="unlisted">Unlisted</option>
+              <option value="public">Public</option>
+            </select>
+          </label>
+          <label class="field">
+            <span data-i18n="fSchedule">শিডিউল শুরু (তারিখ)</span>
+            <input type="date" id="fSchedule" />
+          </label>
+        </div>
+
+        <div class="brief-row wrap">
+          <button class="btn ghost small" id="btnCopyMeta" type="button" data-i18n="ctaCopy">মেটাডেটা কপি</button>
+          <button class="btn ghost small" id="btnOpenStudio" type="button" data-i18n="ctaOpenStudio">YouTube Studio খুলুন</button>
+        </div>
+
+        <h4 class="mini-title" data-i18n="packTitle">পাবলিশ প্যাক</h4>
+        <div class="brief-row wrap">
+          <button class="btn ghost small" id="btnPack" type="button" data-i18n="ctaPack">ভিডিও + থাম্ব + মেটাডেটা + HTML</button>
+          <button class="btn ghost small" id="btnAnimHtml" type="button" data-i18n="ctaAnimHtml">লিভিং HTML (ভিডিও ফাইল ছাড়া)</button>
+        </div>
+
+        <h4 class="mini-title" data-i18n="apiTitle">সরাসরি আপলোড (ঐচ্ছিক)</h4>
+        <label class="field">
+          <span data-i18n="fClientId">Google OAuth Client ID (নিজের, ফ্রি)</span>
+          <input type="text" id="fClientId" placeholder="xxxx.apps.googleusercontent.com" />
+        </label>
+        <button class="btn wide" id="btnUpload" type="button" data-i18n="ctaUpload">⬆️ YouTube-এ আপলোড</button>
+        <p class="hint" data-i18n="uploadHint">
+          দিনে ৬টি ভিডিও ফ্রি (API কোটা)। ব্রাউজার CORS আটকালে <b>tools/yt-upload.mjs</b> CLI
+          দিয়ে প্যাক ফোল্ডারটা আপলোড করুন — সেটা ডিভাইস-ফ্লো OAuth ব্যবহার করে, সম্পূর্ণ অটো।
+        </p>
+
+        <h4 class="mini-title" data-i18n="queueTitle">রেন্ডার কিউ</h4>
+        <ul class="queue" id="queue"></ul>
+        <button class="btn ghost wide small" id="btnClearQueue" type="button" data-i18n="ctaClearQueue">কিউ খালি করুন</button>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ================= PIPELINE ================= -->
+  <section class="wrap section" id="pipeline">
+    <h2 class="section-title" data-i18n="pipeTitle">পাইপলাইন — কোনটা কী করে</h2>
+    <p class="section-sub" data-i18n="pipeSub">প্রতিটা ধাপই আপনার ব্রাউজারে; কোনো সার্ভার, কোনো সাবস্ক্রিপশন নেই।</p>
+    <div class="grid">
+      <div class="feature"><span class="ico">🧠</span><h3 data-i18n="p1t">অটো ডিরেক্টর</h3><p data-i18n="p1d">স্ক্রিপ্ট পড়ে সিন ভাগ করে (টাইটেল, কাইনেটিক টেক্সট, বুলেট, স্ট্যাট, কোট, ব্রোল, আউট্রো), ন্যারেশন পেসে টাইমিং ঠিক করে, থিম ও মুড বেছে নেয়।</p></div>
+      <div class="feature"><span class="ico">🎨</span><h3 data-i18n="p2t">রেন্ডার ইঞ্জিন</h3><p data-i18n="p2d">প্রতিটা ফ্রেম সময়ের ফাংশন — প্রিভিউ আর এক্সপোর্ট হুবহু এক। অরোরা ব্লব, রিবন, কণা, ভিনিয়েট, ফিল্ম গ্রেইন ও স্ক্রিন/লাইটার/ওভারলে ব্লেন্ডে প্রিমিয়াম গ্রেড।</p></div>
+      <div class="feature"><span class="ico">🎵</span><h3 data-i18n="p3t">প্রসিডিউরাল মিউজিক</h3><p data-i18n="p3d">প্যাড, বেস, আর্প, ড্রাম, রিভার্ব — সব WebAudio-তে সিন্থেসাইজড, তাই ১০০% কপিরাইট-ফ্রি। ভয়েসওভার দিলে অটো-ডাকিং সহ মিক্স হয়।</p></div>
+      <div class="feature"><span class="ico">⚡</span><h3 data-i18n="p4t">WebCodecs এনকোড</h3><p data-i18n="p4d">GPU এনকোডার দিয়ে VP9 + Opus, আমাদের নিজের WebM মিউক্সারে প্যাক। রিয়েল-টাইম না — ১ মিনিটের ভিডিও সেকেন্ডেই রেন্ডার হয়।</p></div>
+      <div class="feature"><span class="ico">📦</span><h3 data-i18n="p5t">পাবলিশ প্যাক</h3><p data-i18n="p5d">ভিডিও, থাম্বনেইল PNG, metadata.json, chapters.txt, descriptions.txt, একটা প্লেয়ার HTML আর একটা "লিভিং HTML" (ভিডিও ছাড়াই অ্যানিমেশন চলে)।</p></div>
+      <div class="feature"><span class="ico">🚀</span><h3 data-i18n="p6t">শিডিউল + CLI আপলোড</h3><p data-i18n="p6d">তারিখ দিলে publishAt সেট হয়ে যায়; tools/yt-upload.mjs ডিভাইস-ফ্লো OAuth দিয়ে পুরো ফোল্ডার ক্রমাগত আপলোড করে — ঘুমিয়ে থেকেও চ্যানেল চলবে।</p></div>
+    </div>
+  </section>
+
+  <!-- ================= CTA ================= -->
+  <section class="wrap section">
+    <div class="cta-band">
+      <h2 data-i18n="ctaTitle">একটা স্ক্রিপ্ট থেকে প্রতিদিন একটা ভিডিও</h2>
+      <p data-i18n="ctaSub">প্রথম ভিডিও ৬০ সেকেন্ডে। এরপর শুধু টেক্সট বদলান — বাকিটা ইঞ্জিন করে দেবে।</p>
+      <button class="btn primary big" id="btnGenerate2" type="button" data-i18n="ctaGenerate">🎬 ভিডিও বানাও</button>
+    </div>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap foot-inner">
+    <div><strong>CutFree Studio</strong> · <span data-i18n="footLicense">MIT লাইসেন্স, ওপেন সোর্স</span></div>
+    <div class="foot-links">
+      <a href="studio.html" data-i18n="navStudio">অটো স্টুডিও</a>
+      <a href="studio-pro.html" data-i18n="navPro">প্রো স্টুডিও</a>
+      <a href="index.html" data-i18n="navEditor">এডিটর</a>
+      <a href="tests/e2e.cjs" data-i18n="navTests">টেস্ট</a>
+    </div>
+    <div class="hint" data-i18n="footMade">ব্রাউজারে তৈরি — আপনার ফাইল আপনার কাছেই থাকে।</div>
+  </div>
+</footer>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="js/i18n.js"></script>
+<script data-module="themes" src="js/studio/themes.js"></script>
+<script data-module="engine" src="js/studio/engine.js"></script>
+<script data-module="music" src="js/studio/music.js"></script>
+<script data-module="captions" src="js/studio/captions.js"></script>
+<script data-module="align" src="js/studio/align.js"></script>
+<script data-module="story" src="js/studio/story.js"></script>
+<script data-module="voice" src="js/studio/voice.js"></script>
+<script data-module="muxer" src="js/studio/muxer.js"></script>
+<script data-module="encode" src="js/studio/encode.js"></script>
+<script data-module="director" src="js/studio/director.js"></script>
+<script data-module="publish" src="js/studio/publish.js"></script>
+<script src="js/studio/ui.js"></script>
+<script>
+  // offline-first: the studio never talks to the network, so caching it makes
+  // the whole workbench work with no connection (needs http(s), not file://)
+  if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+    navigator.serviceWorker.register('sw.js').catch(function () { });
+  }
+</script>
+</body>
+</html>
