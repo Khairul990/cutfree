@@ -63,23 +63,23 @@ export const AssetPanel: React.FC<AssetPanelProps> = ({
   };
 
   return (
-    <div className="w-72 bg-[#0b0f1d] border-r border-[#1e2740] flex flex-col h-full text-[12px]">
+    <div className="w-[270px] bg-[#0d131d] border-r border-[#202c3d] flex flex-col h-full text-[12px]">
       {/* Header */}
-      <div className="p-3.5 border-b border-[#1e2740] flex items-center justify-between bg-[#080c18]">
+      <div className="p-3.5 border-b border-[#1e2740] flex items-center justify-between bg-[#0a1018]">
         <div className="flex items-center gap-2">
           <FolderKanban className="w-4 h-4 text-[#38bdf8]" />
           <span className="font-extrabold text-white">Asset Library</span>
         </div>
-        <label className="p-1 rounded-lg bg-[#151b2e] hover:bg-[#1e2740] text-[#38bdf8] border border-[#232d47] cursor-pointer" title="Upload Custom Asset">
+        <label className="p-1 rounded-lg bg-[#151b2e] hover:bg-[#1e2740] text-[#38bdf8] border border-[#29374b] cursor-pointer" title="Upload Custom Asset">
           <Plus className="w-4 h-4" />
           <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
         </label>
       </div>
 
       {/* Search */}
-      <div className="p-2.5 border-b border-[#1e2740] bg-[#070a14]">
-        <div className="flex items-center gap-2 bg-[#121829] px-2.5 py-1.5 rounded-lg border border-[#232d47]">
-          <Search className="w-3.5 h-3.5 text-[#64748b]" />
+      <div className="p-2.5 border-b border-[#1e2740] bg-[#0b1119]">
+        <div className="flex items-center gap-2 bg-[#111925] px-2.5 py-1.5 rounded-lg border border-[#232d47]">
+          <Search className="w-3.5 h-3.5 text-[#5f6d82]" />
           <input
             type="text"
             value={searchQuery}
@@ -102,7 +102,7 @@ export const AssetPanel: React.FC<AssetPanelProps> = ({
             key={cat.id}
             onClick={() => setActiveCategory(cat.id)}
             className={`py-1 rounded text-center transition ${
-              activeCategory === cat.id ? "bg-[#38bdf8] text-[#051018]" : "text-[#8d9cc2] hover:bg-[#151b2e]"
+              activeCategory === cat.id ? "bg-[#38bdf8] text-[#051018]" : "text-[#8d9bb0] hover:bg-[#151b2e]"
             }`}
           >
             {cat.label}
@@ -116,7 +116,7 @@ export const AssetPanel: React.FC<AssetPanelProps> = ({
           <div
             key={asset.id}
             onClick={() => onInsertAsset(asset)}
-            className="p-2 rounded-xl bg-[#121829] border border-[#1e2740] hover:border-[#38bdf8] transition cursor-pointer flex items-center gap-2.5 group"
+            className="p-2 rounded-lg bg-[#121829] border border-[#1e2740] hover:border-[#38bdf8] transition cursor-pointer flex items-center gap-2.5 group"
           >
             <div className="w-8 h-8 rounded-lg bg-[#1a233d] flex items-center justify-center text-[#38bdf8] shrink-0 group-hover:scale-105 transition">
               {asset.type === "character" ? (
