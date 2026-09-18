@@ -60,6 +60,14 @@ try {
   const viteApp = path.join(distDir, 'app.html');
   if (fs.existsSync(viteApp)) {
     console.log('✅ app.html ready in dist/ (hub remains at index.html)');
+    // Also copy to root app.html and root assets so root deployments (e.g. Vercel outputDirectory ".") have latest bundle
+    try {
+      fs.copyFileSync(viteApp, path.join(ROOT, 'app.html'));
+      copyRecursive(path.join(distDir, 'assets'), path.join(ROOT, 'assets'));
+      console.log('✅ Synchronized app.html and assets/ to root deployment directory');
+    } catch (e) {
+      console.warn('Sync to root failed', e);
+    }
   }
 } catch (err) {
   console.warn('⚠️  Vite build skipped or failed (non-critical):', err.message);

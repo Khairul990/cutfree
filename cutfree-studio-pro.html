@@ -1110,6 +1110,14 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
           <button class="btn" id="btnRenderCompat" type="button" data-i18n="ctaRenderCompat">🎥 MP4 / কম্প্যাট রেন্ডার</button>
           <button class="btn danger" id="btnCancelRender" type="button" hidden data-i18n="ctaCancel">বাতিল</button>
         </div>
+        <label class="field checkbox" style="margin-top:10px;">
+          <input type="checkbox" id="fAutoDl" checked />
+          <span data-i18n="fAutoDl">রেন্ডার শেষ হলে সাথে সাথে অটো ডাউনলোড</span>
+        </label>
+        <div id="downloadReadyWrap" style="display:none;margin-top:14px;padding:16px;border-radius:14px;background:rgba(34,197,94,0.14);border:2px solid rgba(34,197,94,0.45);text-align:center;">
+          <div style="font-weight:800;color:#86efac;font-size:15px;margin-bottom:10px;">🎉 ভিডিও তৈরি সম্পন্ন!</div>
+          <button class="btn wide" id="btnDownloadVideo" type="button" style="background:#22c55e;color:#04150a;font-weight:800;font-size:15px;box-shadow:0 6px 18px rgba(34,197,94,0.4);cursor:pointer;padding:12px;border-radius:10px;">⬇️ তৈরি হওয়া ভিডিও ডাউনলোড করুন</button>
+        </div>
         <div class="progress" id="progressWrap" hidden>
           <div class="bar"><i id="progressBar"></i></div>
           <div class="progress-row"><span id="progressText">0%</span><span id="progressNote"></span></div>
@@ -7593,7 +7601,18 @@ input[type="range"] { accent-color: var(--brand2); width: 100%; }
         ext: result.ext,
         name: slug(S.spec.meta.title || 'video') + '.' + result.ext
       };
-      if ($('#fAutoDl') && $('#fAutoDl').checked) {
+      var wrap = $('#downloadReadyWrap');
+      var btnDl = $('#btnDownloadVideo');
+      if (wrap && btnDl) {
+        wrap.style.display = 'block';
+        btnDl.textContent = '⬇️ ' + (window.CF_LANG === 'en' ? 'Download Video (' : 'ভিডিও ডাউনলোড করুন (') + fmtSize(result.blob.size) + ')';
+        btnDl.onclick = function () {
+          window.CFX.publish.downloadBlob(result.blob, S.lastRendered.name);
+          toast(window.CF_LANG === 'en' ? 'Downloading video...' : 'ভিডিও ডাউনলোড শুরু হয়েছে...');
+        };
+      }
+      var autoDl = $('#fAutoDl');
+      if (!autoDl || autoDl.checked) {
         window.CFX.publish.downloadBlob(result.blob, S.lastRendered.name);
       }
       $('#renderChip').textContent = (result.mode === 'webcodecs' ? t('stEngineFast') : t('stEngineCompat')) + ' · ' + fmtSize(result.blob.size);

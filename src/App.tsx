@@ -1629,6 +1629,23 @@ export default function App() {
   const [isRecording, setIsRecording] = useState(false);
   const [showToast, setShowToast] = useState<string | null>(null);
 
+  // Video Export & Download state
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [exportProgress, setExportProgress] = useState<number>(0);
+  const [exportStage, setExportStage] = useState<string>("");
+  const [exportedVideo, setExportedVideo] = useState<{
+    url: string;
+    name: string;
+    size: string;
+    blob: Blob;
+    srtUrl?: string;
+    srtName?: string;
+    thumbUrl?: string;
+    thumbName?: string;
+  } | null>(null);
+  const cancelExportRef = useRef<boolean>(false);
+  const activeRecorderRef = useRef<MediaRecorder | null>(null);
+
   // ——— Voice-tracked auto video (100% free, client-side) ———
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null);
   const [bgName, setBgName] = useState<string>("");
@@ -2078,74 +2095,209 @@ export default function App() {
     toast(isBn ? "ভয়েস টেস্ট চালু" : "Voice test playing");
   }, [script, isBn, ttsRate, ttsVoice, voices, toast]);
 
-  // High-quality export: VP9/Opus, voice mix, SRT + thumbnail (100% free, highest quality)
+  const cancelExport = useCallback(() => {
+    cancelExportRef.current = true;
+    if (activeRecorderRef.current && activeRecorderRef.current.state !== "inactive") {
+      try { activeRecorderRef.current.stop(); } catch {}
+    }
+    setIsExporting(false);
+    setIsPlaying(false);
+    toast(isBn ? "রেন্ডার বাতিল করা হয়েছে" : "Render cancelled");
+  }, [isBn, toast]);
+
+  // High-quality export: VP9/Opus or MP4, WebAudio voice mix, SRT + thumbnail (100% free, highest quality)
   const handleExport = useCallback(async () => {
     if (!spec || !canvasRef.current) return;
     const canvas = canvasRef.current;
-    // High-quality: VP9/Opus + voice mix
-    toast(isBn ? "⚡ রেন্ডার শুরু — সর্বোচ্চ কোয়ালিটি..." : "⚡ Rendering — highest quality...");
+    cancelExportRef.current = false;
+    setIsExporting(true);
+    setExportProgress(0);
+    setExportStage(isBn ? "অডিও ও এনকোডার প্রস্তুত হচ্ছে..." : "Preparing audio & encoder...");
+    toast(isBn ? "⚡ রেন্ডার শুরু হচ্ছে..." : "⚡ Rendering starting...");
+
+    let audioCtx: AudioContext | null = null;
+    let audioSource: AudioBufferSourceNode | null = null;
+    let voiceAudioElem: HTMLAudioElement | null = null;
+
     try {
-      const fps = spec.fps;
+      const fps = spec.fps || 30;
       const canvasStream = (canvas as HTMLCanvasElement).captureStream(fps);
-      let mixedStream: MediaStream = canvasStream;
-      let voiceAudio: HTMLAudioElement | null = null;
-      if (audioUrl) {
+      let mixedStream: MediaStream = new MediaStream([...canvasStream.getVideoTracks()]);
+
+      // Web Audio mixing for pristine voice recording
+      if (voiceFile) {
         try {
-          voiceAudio = new Audio(audioUrl);
-          voiceAudio.crossOrigin = "anonymous";
-          // @ts-ignore
-          if (typeof (voiceAudio as unknown as { captureStream?: () => MediaStream }).captureStream === "function") {
-            const aStream = (voiceAudio as unknown as { captureStream: () => MediaStream }).captureStream();
-            const aTrack = aStream.getAudioTracks()[0];
-            if (aTrack) mixedStream = new MediaStream([...canvasStream.getVideoTracks(), aTrack]);
-          } else if (typeof (voiceAudio as unknown as { mozCaptureStream?: () => MediaStream }).mozCaptureStream === "function") {
-            const aStream = (voiceAudio as unknown as { mozCaptureStream: () => MediaStream }).mozCaptureStream!();
-            const aTrack = aStream.getAudioTracks()[0];
-            if (aTrack) mixedStream = new MediaStream([...canvasStream.getVideoTracks(), aTrack]);
-          }
+          const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+          audioCtx = new AC();
+          if (audioCtx.state === "suspended") await audioCtx.resume();
+          const ab = await voiceFile.arrayBuffer();
+          const buf = await audioCtx.decodeAudioData(ab.slice(0));
+          const audioDest = audioCtx.createMediaStreamDestination();
+          audioSource = audioCtx.createBufferSource();
+          audioSource.buffer = buf;
+          audioSource.connect(audioDest);
+          audioDest.stream.getAudioTracks().forEach((track) => {
+            mixedStream.addTrack(track);
+          });
+        } catch (err) {
+          console.warn("Audio mixing fallback:", err);
+        }
+      } else if (audioUrl) {
+        try {
+          voiceAudioElem = new Audio(audioUrl);
+          voiceAudioElem.crossOrigin = "anonymous";
+          const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+          audioCtx = new AC();
+          if (audioCtx.state === "suspended") await audioCtx.resume();
+          const audioDest = audioCtx.createMediaStreamDestination();
+          const source = audioCtx.createMediaElementSource(voiceAudioElem);
+          source.connect(audioDest);
+          audioDest.stream.getAudioTracks().forEach((track) => {
+            mixedStream.addTrack(track);
+          });
         } catch {}
       }
-      const candidates = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp9", "video/webm;codecs=vp8,opus", "video/webm", "video/mp4"];
-      const mime = candidates.find((m) => MediaRecorder.isTypeSupported(m)) || "video/webm";
+
+      const candidates = [
+        "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
+        "video/mp4",
+        "video/webm;codecs=vp9,opus",
+        "video/webm;codecs=vp9",
+        "video/webm;codecs=vp8,opus",
+        "video/webm"
+      ];
+      const mime = candidates.find((m) => {
+        try { return MediaRecorder.isTypeSupported(m); } catch { return false; }
+      }) || "video/webm";
+
       const bitrate = spec.width >= 1920 || quality === "1080p" ? 5000000 : spec.width >= 1280 || quality === "720p" ? 2500000 : 1200000;
       const recorder = new MediaRecorder(mixedStream, { mimeType: mime, videoBitsPerSecond: bitrate } as unknown as MediaRecorderOptions);
+      activeRecorderRef.current = recorder;
       const chunks: Blob[] = [];
-      recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size) chunks.push(e.data);
+      };
+
       recorder.onstop = async () => {
+        if (cancelExportRef.current) {
+          setIsExporting(false);
+          setIsPlaying(false);
+          return;
+        }
+
+        setExportStage(isBn ? "ফাইল চূড়ান্ত হচ্ছে..." : "Finalizing file...");
         const blob = new Blob(chunks, { type: mime });
         const ext = mime.includes("mp4") ? "mp4" : "webm";
         const safeTitle = (spec.meta.title.slice(0, 40).replace(/[^\w\-]+/g, "_") || "cutfree").replace(/^_+|_+$/g, "");
         const url = URL.createObjectURL(blob);
-        const a = document.createElement("a"); a.href = url; a.download = `${safeTitle}-${spec.width}x${spec.height}.${ext}`; a.click();
+        const fileName = `${safeTitle}-${spec.width}x${spec.height}.${ext}`;
+        const fileSize = (blob.size / (1024 * 1024)).toFixed(2) + " MB";
+
+        // Generate SRT
+        let srtBlob: Blob | undefined;
+        let srtUrl: string | undefined;
+        let srtName: string | undefined;
         const caps = spec.captions && spec.captions.length ? spec.captions : null;
         if (caps && caps.length) {
-          const srt = caps.map((c, i) => {
-            const fmt = (s: number) => { const h = Math.floor(s/3600); const m2=Math.floor((s%3600)/60); const s2=Math.floor(s%60); const ms=Math.floor((s%1)*1000); return `${String(h).padStart(2,"0")}:${String(m2).padStart(2,"0")}:${String(s2).padStart(2,"0")},${String(ms).padStart(3,"0")}`; };
-            return `${i+1}\n${fmt(c.start)} --> ${fmt(c.end)}\n${c.text}\n`;
+          const srtText = caps.map((c, i) => {
+            const fmt = (s: number) => {
+              const h = Math.floor(s / 3600);
+              const m2 = Math.floor((s % 3600) / 60);
+              const s2 = Math.floor(s % 60);
+              const ms = Math.floor((s % 1) * 1000);
+              return `${String(h).padStart(2, "0")}:${String(m2).padStart(2, "0")}:${String(s2).padStart(2, "0")},${String(ms).padStart(3, "0")}`;
+            };
+            return `${i + 1}\n${fmt(c.start)} --> ${fmt(c.end)}\n${c.text}\n`;
           }).join("\n");
-          const srtBlob = new Blob([srt], { type: "text/srt" }); const srtUrl=URL.createObjectURL(srtBlob); const srtA=document.createElement("a"); srtA.href=srtUrl; srtA.download=`${safeTitle}.srt`; setTimeout(()=>{srtA.click(); URL.revokeObjectURL(srtUrl);},600);
+          srtBlob = new Blob([srtText], { type: "text/srt" });
+          srtUrl = URL.createObjectURL(srtBlob);
+          srtName = `${safeTitle}.srt`;
         }
+
+        // Generate Thumbnail
+        let thumbUrl: string | undefined;
+        let thumbName: string | undefined;
         try {
-          const thumbCanvas=document.createElement("canvas"); thumbCanvas.width=spec.width; thumbCanvas.height=spec.height; const tctx=thumbCanvas.getContext("2d")!;
-          const vw=(spec as unknown as { _voiceWords?: {w:string;s:number;e:number;para:number}[] })._voiceWords;
-          renderFrame(tctx, spec, Math.min(spec.duration*0.12,1.2), new Map(), bgImage, vw);
-          const thumbUrl=thumbCanvas.toDataURL("image/jpeg",0.92); const tA=document.createElement("a"); tA.href=thumbUrl; tA.download=`${safeTitle}-thumb.jpg`; setTimeout(()=>tA.click(),900);
+          const thumbCanvas = document.createElement("canvas");
+          thumbCanvas.width = spec.width;
+          thumbCanvas.height = spec.height;
+          const tctx = thumbCanvas.getContext("2d")!;
+          const vw = (spec as unknown as { _voiceWords?: { w: string; s: number; e: number; para: number }[] })._voiceWords;
+          renderFrame(tctx, spec, Math.min(spec.duration * 0.12, 1.2), new Map(), bgImage, vw);
+          thumbUrl = thumbCanvas.toDataURL("image/jpeg", 0.92);
+          thumbName = `${safeTitle}-thumb.jpg`;
         } catch {}
-        URL.revokeObjectURL(url);
-        toast(isBn ? `✅ ভিডিও + ${caps ? "SRT" : "থাম্ব"} রেডি!` : `✅ Video + ${caps ? "SRT" : "thumb"} ready!`);
-        if (voiceAudio) { voiceAudio.pause(); voiceAudio.src=""; }
+
+        setExportedVideo({
+          url,
+          name: fileName,
+          size: fileSize,
+          blob,
+          srtUrl,
+          srtName,
+          thumbUrl,
+          thumbName
+        });
+        setIsExporting(false);
+        setExportProgress(100);
+        setExportStage(isBn ? "সম্পূর্ণ হয়েছে!" : "Complete!");
+
+        // Auto trigger download cleanly
+        try {
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } catch (e) {
+          console.warn("Auto-download popup blocked, button is available", e);
+        }
+
+        toast(isBn ? `✅ ভিডিও তৈরি সম্পন্ন (${fileSize})!` : `✅ Video ready (${fileSize})!`);
+        if (voiceAudioElem) { voiceAudioElem.pause(); voiceAudioElem.src = ""; }
+        if (audioSource) { try { audioSource.stop(); } catch {} }
+        if (audioCtx) { try { audioCtx.close(); } catch {} }
       };
+
       recorder.start(100);
-      setCurrentTime(0); setIsPlaying(true);
-      if (voiceAudio) { voiceAudio.currentTime=0; voiceAudio.play().catch(()=>{}); }
-      setTimeout(()=>{ recorder.stop(); setIsPlaying(false); if(voiceAudio) voiceAudio.pause(); }, spec.duration*1000+500);
+      setCurrentTime(0);
+      setIsPlaying(true);
+      if (audioSource) audioSource.start(0);
+      if (voiceAudioElem) { voiceAudioElem.currentTime = 0; voiceAudioElem.play().catch(() => {}); }
+
+      const totalMs = spec.duration * 1000;
+      const startTime = performance.now();
+
+      const progressInterval = setInterval(() => {
+        if (cancelExportRef.current) {
+          clearInterval(progressInterval);
+          return;
+        }
+        const elapsed = performance.now() - startTime;
+        const pct = Math.min(99, Math.round((elapsed / totalMs) * 100));
+        setExportProgress(pct);
+        setExportStage(isBn ? `এনকোড হচ্ছে: ${pct}%` : `Encoding: ${pct}%`);
+
+        if (elapsed >= totalMs + 300) {
+          clearInterval(progressInterval);
+          if (recorder.state !== "inactive") {
+            recorder.stop();
+          }
+          setIsPlaying(false);
+        }
+      }, 150);
+
     } catch (e) {
       console.error(e);
+      setIsExporting(false);
+      setIsPlaying(false);
       const url = canvas.toDataURL("image/png");
-      const a = document.createElement("a"); a.href=url; a.download="cutfree-frame.png"; a.click();
+      const a = document.createElement("a"); a.href = url; a.download = "cutfree-frame.png"; a.click();
       toast(isBn ? "ফ্রেম PNG হিসেবে সেভ হলো" : "Frame saved as PNG (fallback)");
     }
-  }, [spec, isBn, toast, audioUrl, bgImage, quality]);
+  }, [spec, isBn, toast, audioUrl, voiceFile, bgImage, quality]);
 
   const scenes = spec?.scenes || [];
   const curSceneIndex = useMemo(() => {
@@ -2981,12 +3133,89 @@ export default function App() {
                     </div>
                   </div>
 
-                  <button
-                    onClick={handleExport}
-                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-br from-[#22d3ee] to-[#0ea5e9] text-[#051018] font-black text-[14px] shadow-lg shadow-[#22d3ee]/20 hover:brightness-110 transition"
-                  >
-                    <Download className="w-5 h-5" /> {isBn ? "⚡ ফাস্ট রেন্ডার & ডাউনলোড" : "⚡ Fast Render & Download"}
-                  </button>
+                  {isExporting ? (
+                    <div className="space-y-3 p-4 rounded-xl bg-[#0b1220] border border-[#22d3ee]/40">
+                      <div className="flex items-center justify-between text-[13px] font-extrabold text-white">
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 text-[#22d3ee] animate-spin" />
+                          {exportStage || (isBn ? "ভিডিও তৈরি হচ্ছে..." : "Rendering video...")}
+                        </span>
+                        <span className="text-[#22d3ee] font-black text-[15px]">{exportProgress}%</span>
+                      </div>
+                      <div className="w-full bg-[#151b2e] rounded-full h-3 overflow-hidden border border-[#232d47]">
+                        <div
+                          className="bg-gradient-to-r from-[#22d3ee] via-[#38bdf8] to-[#0ea5e9] h-3 rounded-full transition-all duration-200"
+                          style={{ width: `${exportProgress}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-[#8d9cc2]">
+                          {isBn ? "ট্যাব বন্ধ করবেন না, এনকোডিং শেষ হলে অটো ডাউনলোড হবে।" : "Keep this tab open, download starts on finish."}
+                        </span>
+                        <button
+                          onClick={cancelExport}
+                          className="px-3 py-1 rounded-lg bg-[#ef4444]/20 border border-[#ef4444]/40 text-[#fca5a5] text-[11px] font-bold hover:bg-[#ef4444]/30 transition"
+                        >
+                          {isBn ? "বাতিল" : "Cancel"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleExport}
+                      className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-br from-[#22d3ee] to-[#0ea5e9] text-[#051018] font-black text-[14px] shadow-lg shadow-[#22d3ee]/20 hover:brightness-110 transition cursor-pointer"
+                    >
+                      <Download className="w-5 h-5" /> {isBn ? "⚡ ফাস্ট রেন্ডার & ডাউনলোড" : "⚡ Fast Render & Download"}
+                    </button>
+                  )}
+
+                  {exportedVideo && (
+                    <div className="mt-3 p-4 rounded-xl bg-[#22c55e]/15 border-2 border-[#22c55e]/50 text-white shadow-xl shadow-[#22c55e]/10">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <div className="flex items-center gap-2">
+                          <Check className="w-5 h-5 text-[#22c55e]" />
+                          <span className="font-black text-[14px] text-[#86efac]">
+                            {isBn ? "ভিডিও ডাউনলোড প্রস্তুত!" : "Video Ready for Download!"}
+                          </span>
+                        </div>
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-[#22c55e]/25 text-[#86efac]">
+                          {exportedVideo.size}
+                        </span>
+                      </div>
+
+                      <a
+                        href={exportedVideo.url}
+                        download={exportedVideo.name}
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-[#22c55e] to-[#16a34a] text-black font-black text-[14px] hover:brightness-110 shadow-lg shadow-[#22c55e]/25 transition cursor-pointer mb-2"
+                      >
+                        <Download className="w-5 h-5" />
+                        {isBn ? `⬇️ ভিডিও ডাউনলোড করুন (${exportedVideo.name})` : `⬇️ Download Video (${exportedVideo.name})`}
+                      </a>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        {exportedVideo.srtUrl && (
+                          <a
+                            href={exportedVideo.srtUrl}
+                            download={exportedVideo.srtName}
+                            className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-[#151b2e] border border-[#232d47] text-[#86efac] font-bold text-[11px] hover:border-[#22c55e] transition"
+                          >
+                            <Type className="w-3.5 h-3.5" />
+                            {isBn ? "📄 SRT সাবটাইটেল" : "📄 SRT Subtitles"}
+                          </a>
+                        )}
+                        {exportedVideo.thumbUrl && (
+                          <a
+                            href={exportedVideo.thumbUrl}
+                            download={exportedVideo.thumbName}
+                            className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-[#151b2e] border border-[#232d47] text-[#86efac] font-bold text-[11px] hover:border-[#22c55e] transition"
+                          >
+                            <Palette className="w-3.5 h-3.5" />
+                            {isBn ? "🖼️ থাম্বনেইল JPG" : "🖼️ Thumbnail JPG"}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-2 mt-3">
                     <button
