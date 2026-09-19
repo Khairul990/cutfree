@@ -1719,7 +1719,7 @@ export default function App() {
     // envelope
     const env = vadResult.envelope;
     if (env.length) {
-      const max = Math.max(...Array.from(env), 0.001);
+      const max = Math.max(...Array.from(env as unknown as number[]), 0.001);
       ctx.strokeStyle = "rgba(124,92,255,0.18)";
       ctx.lineWidth = 1 * dpr;
       ctx.beginPath();
@@ -2305,6 +2305,18 @@ export default function App() {
                     <Zap className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[#c4b5fd]" />
                     <span>{aiStatus}</span>
                   </div>
+                </div>
+
+                {/* Brain Foundation — Phase 1 (offline, free, optional) */}
+                <div className="rounded-2xl bg-gradient-to-br from-[#0f172a] to-[#1a1440] border border-[#2a365c] p-4">
+                  <div className="flex items-center gap-2 text-[12px] font-extrabold text-white mb-2">
+                    <Cpu className="w-4 h-4 text-[#7c5cff]" /> AI Brain — Phase 1
+                    <span className="ml-auto text-[10px] px-2 py-1 rounded-full bg-[#1a2440] border border-[#2a365c] text-[#8cb4ff]">local • free</span>
+                  </div>
+                  <div className="text-[11px] leading-relaxed text-[#a3b4dc] mb-2">
+                    Audio → Timing → Blueprint → Timeline. Browser-native VAD, deterministic. Ollama optional, never required.
+                  </div>
+                  <div className="text-[11px] text-[#6b7bb0]">Core: <span className="text-[#8cb4ff]">AudioAnalyzer</span> • <span className="text-[#8cb4ff]">Transcription</span> • <span className="text-[#8cb4ff]">VideoBrain</span> • Validator</div>
                 </div>
 
                 {/* HERO — সবচেয়ে বড় ভিডিও তৈরি বাটন (বাংলা) */}
