@@ -15,6 +15,12 @@ build/
 .cache/
 __pycache__/
 
+# Large video exports and recordings
+*.webm
+*.mp4
+tests/artifacts/*.webm
+tests/artifacts/*.mp4
+
 # logs & local env
 *.log
 .env

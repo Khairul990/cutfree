@@ -26,9 +26,8 @@ export default defineConfig(() => {
       emptyOutDir: false,
       rollupOptions: {
         input: {
-          main: 'app.html',
-          editor: 'index.html',
-          studio: 'studio.html',
+          main: path.resolve(__dirname, 'index.html'),
+          app: path.resolve(__dirname, 'app.html'),
         },
       },
     },

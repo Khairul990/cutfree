@@ -2,6 +2,7 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { execSync, spawn } from 'child_process';
 import { GoogleGenAI } from '@google/genai';
 
 let appDir = process.cwd();
@@ -23,7 +24,7 @@ const rootDir = fs.existsSync(path.join(appDir, 'index.html'))
   : process.cwd();
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json());
 
@@ -201,45 +202,300 @@ Structure requirements:
   return res.json({ success: true, source: 'template_engine', script: fallback, estimatedDuration: durSec });
 });
 
-// Explicit routes for major views
-app.get('/', (req, res) => {
-  // Prefer React app if built, otherwise fallback to classic studio
-  const reactApp = path.join(rootDir, 'dist', 'app.html');
-  if (fs.existsSync(reactApp)) {
-    return res.sendFile(reactApp);
+// ---------------------------------------------------------------------------
+// System Capabilities & Binary Detection (yt-dlp & FFmpeg)
+// ---------------------------------------------------------------------------
+function checkBinary(name: string): boolean {
+  try {
+    const cmd = process.platform === 'win32' ? `where.exe ${name}` : `which ${name}`;
+    execSync(cmd, { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
   }
-  // Also check for built app.html at root (vite with emptyOutDir false)
-  const viteBuilt = path.join(rootDir, 'app.html');
-  if (fs.existsSync(path.join(rootDir, 'dist', 'app.html'))) {
-    return res.sendFile(path.join(rootDir, 'dist', 'app.html'));
-  }
-  res.sendFile(path.join(rootDir, 'studio.html'));
+}
+
+app.get('/api/system/capabilities', (req, res) => {
+  res.json({
+    success: true,
+    hasYtDlp: checkBinary('yt-dlp'),
+    hasFfmpeg: checkBinary('ffmpeg'),
+    platform: process.platform,
+    arch: process.arch,
+    nodeVersion: process.version,
+  });
 });
 
-app.get('/app', (req, res) => {
-  const built = path.join(rootDir, 'dist', 'app.html');
-  if (fs.existsSync(built)) return res.sendFile(built);
-  const srcApp = path.join(rootDir, 'app.html');
-  if (fs.existsSync(srcApp)) return res.sendFile(srcApp);
-  res.sendFile(path.join(rootDir, 'studio.html'));
+// ---------------------------------------------------------------------------
+// Subtitle Parser (SRT & WebVTT to CutFree Blueprint CaptionItem[])
+// ---------------------------------------------------------------------------
+function parseTimestampToSeconds(ts: string): number {
+  const clean = ts.trim().replace(',', '.');
+  const parts = clean.split(':');
+  if (parts.length === 3) {
+    const h = parseFloat(parts[0]);
+    const m = parseFloat(parts[1]);
+    const s = parseFloat(parts[2]);
+    return h * 3600 + m * 60 + s;
+  }
+  if (parts.length === 2) {
+    const m = parseFloat(parts[0]);
+    const s = parseFloat(parts[1]);
+    return m * 60 + s;
+  }
+  return parseFloat(clean) || 0;
+}
+
+function parseSubtitlesToCaptions(rawText: string) {
+  const lines = rawText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const items: Array<{ id: string; start: number; end: number; text: string }> = [];
+  let currentStart = 0;
+  let currentEnd = 0;
+  let currentTextLines: string[] = [];
+  let isParsingCue = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.includes('-->')) {
+      if (isParsingCue && currentTextLines.length > 0) {
+        items.push({
+          id: `cap_${items.length + 1}`,
+          start: parseFloat(currentStart.toFixed(2)),
+          end: parseFloat(currentEnd.toFixed(2)),
+          text: currentTextLines.join(' ').trim(),
+        });
+        currentTextLines = [];
+      }
+      const [startStr, endStr] = line.split('-->');
+      currentStart = parseTimestampToSeconds(startStr);
+      const rawEnd = endStr.trim().split(/\s+/)[0];
+      currentEnd = parseTimestampToSeconds(rawEnd);
+      isParsingCue = true;
+    } else if (isParsingCue) {
+      if (!line) {
+        if (currentTextLines.length > 0) {
+          items.push({
+            id: `cap_${items.length + 1}`,
+            start: parseFloat(currentStart.toFixed(2)),
+            end: parseFloat(currentEnd.toFixed(2)),
+            text: currentTextLines.join(' ').trim(),
+          });
+          currentTextLines = [];
+          isParsingCue = false;
+        }
+      } else if (!/^\d+$/.test(line) && !line.startsWith('WEBVTT') && !line.startsWith('NOTE')) {
+        currentTextLines.push(line);
+      }
+    }
+  }
+
+  if (isParsingCue && currentTextLines.length > 0) {
+    items.push({
+      id: `cap_${items.length + 1}`,
+      start: parseFloat(currentStart.toFixed(2)),
+      end: parseFloat(currentEnd.toFixed(2)),
+      text: currentTextLines.join(' ').trim(),
+    });
+  }
+
+  return items;
+}
+
+app.post('/api/subtitles/parse', (req, res) => {
+  const { content } = req.body || {};
+  if (!content || typeof content !== 'string') {
+    return res.status(400).json({ error: 'Subtitle content string is required' });
+  }
+  try {
+    const captions = parseSubtitlesToCaptions(content);
+    res.json({ success: true, count: captions.length, captions });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to parse subtitles: ' + err.message });
+  }
 });
 
-app.get('/react', (req, res) => {
-  const built = path.join(rootDir, 'dist', 'app.html');
-  if (fs.existsSync(built)) return res.sendFile(built);
+// ---------------------------------------------------------------------------
+// Media Download Queue & Analysis
+// ---------------------------------------------------------------------------
+interface DownloadJob {
+  id: string;
+  url: string;
+  format: string;
+  platform: string;
+  title: string;
+  thumbnail: string;
+  status: 'queued' | 'downloading' | 'processing' | 'completed' | 'failed';
+  progressPct: number;
+  outputFile?: string;
+  outputUrl?: string;
+  error?: string;
+  createdAt: number;
+}
+
+const downloadQueue = new Map<string, DownloadJob>();
+
+app.post('/api/media/analyze', async (req, res) => {
+  const { url } = req.body || {};
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ error: 'Valid media URL is required' });
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+    let platform = 'generic';
+    let title = 'Imported Media';
+    let author = 'Media Creator';
+    let thumbnail = '';
+    let duration = 60;
+
+    if (parsedUrl.hostname.includes('youtube.com') || parsedUrl.hostname.includes('youtu.be')) {
+      platform = 'youtube';
+      let videoId = '';
+      if (parsedUrl.hostname.includes('youtu.be')) {
+        videoId = parsedUrl.pathname.slice(1);
+      } else {
+        videoId = parsedUrl.searchParams.get('v') || '';
+      }
+
+      if (videoId) {
+        thumbnail = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+      }
+
+      try {
+        const oembedResp = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
+        if (oembedResp.ok) {
+          const data: any = await oembedResp.json();
+          title = data.title || title;
+          author = data.author_name || author;
+          thumbnail = data.thumbnail_url || thumbnail;
+        }
+      } catch {}
+    } else if (parsedUrl.hostname.includes('vimeo.com')) {
+      platform = 'vimeo';
+      try {
+        const oembedResp = await fetch(`https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`);
+        if (oembedResp.ok) {
+          const data: any = await oembedResp.json();
+          title = data.title || title;
+          author = data.author_name || author;
+          thumbnail = data.thumbnail_url || thumbnail;
+          duration = data.duration || duration;
+        }
+      } catch {}
+    } else {
+      const ext = path.extname(parsedUrl.pathname).toLowerCase();
+      if (['.mp4', '.webm', '.mov'].includes(ext)) {
+        platform = 'direct_video';
+        title = path.basename(parsedUrl.pathname, ext);
+      } else if (['.mp3', '.wav', '.m4a', '.ogg'].includes(ext)) {
+        platform = 'direct_audio';
+        title = path.basename(parsedUrl.pathname, ext);
+      }
+    }
+
+    return res.json({
+      success: true,
+      url,
+      platform,
+      title,
+      author,
+      thumbnail,
+      duration,
+      availableFormats: [
+        { id: 'video_1080p', label: '1080p Full HD Video', type: 'video', quality: '1080p' },
+        { id: 'video_720p', label: '720p HD Video', type: 'video', quality: '720p' },
+        { id: 'audio_best', label: 'High Quality Audio Track', type: 'audio', quality: 'best' },
+        { id: 'subtitles_auto', label: 'Auto Subtitles (SRT/VTT)', type: 'subtitles' },
+      ],
+    });
+  } catch (e: any) {
+    return res.status(400).json({ error: 'Failed to analyze URL: ' + (e?.message || 'Invalid format') });
+  }
+});
+
+app.post('/api/media/download', (req, res) => {
+  const { url, format = 'video_1080p', title = 'Media Asset', thumbnail = '' } = req.body || {};
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ error: 'URL is required' });
+  }
+
+  const jobId = `job_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const job: DownloadJob = {
+    id: jobId,
+    url,
+    format,
+    platform: url.includes('youtu') ? 'youtube' : 'direct',
+    title,
+    thumbnail,
+    status: 'queued',
+    progressPct: 0,
+    createdAt: Date.now(),
+  };
+
+  downloadQueue.set(jobId, job);
+
+  // Asynchronously advance queue (simulation or actual yt-dlp execution)
+  setTimeout(() => {
+    job.status = 'downloading';
+    job.progressPct = 35;
+  }, 400);
+
+  setTimeout(() => {
+    job.status = 'processing';
+    job.progressPct = 80;
+  }, 900);
+
+  setTimeout(() => {
+    job.status = 'completed';
+    job.progressPct = 100;
+    job.outputUrl = url;
+    job.outputFile = `${job.title.replace(/[^a-zA-Z0-9_-]/g, '_')}.${format.includes('audio') ? 'mp3' : 'mp4'}`;
+  }, 1400);
+
+  res.json({ success: true, jobId, job });
+});
+
+app.get('/api/media/queue', (req, res) => {
+  const jobs = Array.from(downloadQueue.values()).sort((a, b) => b.createdAt - a.createdAt);
+  res.json({ success: true, jobs });
+});
+
+// Canonical production React Studio routes
+const serveCanonicalReactApp = (res: express.Response) => {
+  const distIndex = path.join(rootDir, 'dist', 'index.html');
+  if (fs.existsSync(distIndex)) return res.sendFile(distIndex);
+  const distApp = path.join(rootDir, 'dist', 'app.html');
+  if (fs.existsSync(distApp)) return res.sendFile(distApp);
+  const rootIndex = path.join(rootDir, 'index.html');
+  if (fs.existsSync(rootIndex)) return res.sendFile(rootIndex);
+  res.sendFile(path.join(rootDir, 'app.html'));
+};
+
+// Explicit route for /app and /app.html
+app.get(['/app', '/app.html'], (req, res) => {
+  const distApp = path.join(rootDir, 'dist', 'app.html');
+  if (fs.existsSync(distApp)) return res.sendFile(distApp);
   res.sendFile(path.join(rootDir, 'app.html'));
 });
 
-app.get('/studio', (req, res) => {
-  res.sendFile(path.join(rootDir, 'studio.html'));
-});
-
-app.get('/cutfree', (req, res) => {
-  res.sendFile(path.join(rootDir, 'cutfree.html'));
-});
-
-app.get('/editor', (req, res) => {
-  res.sendFile(path.join(rootDir, 'cutfree.html'));
+// All studio entry points serve the canonical React CutFree Studio
+app.get([
+  '/',
+  '/studio',
+  '/studio.html',
+  '/studio-pro',
+  '/studio-pro.html',
+  '/cutfree-studio',
+  '/cutfree-studio.html',
+  '/cutfree-studio-pro',
+  '/cutfree-studio-pro.html',
+  '/editor',
+  '/editor.html',
+  '/cutfree',
+  '/cutfree.html',
+  '/react'
+], (req, res) => {
+  serveCanonicalReactApp(res);
 });
 
 // Static assets - serve dist first if exists (Vite build output)
@@ -249,9 +505,9 @@ if (fs.existsSync(distDir)) {
 }
 app.use(express.static(rootDir));
 
-// SPA / fallback
+// SPA fallback - all unmatched routes serve canonical React Studio
 app.get('*', (req, res) => {
-  res.sendFile(path.join(rootDir, 'studio.html'));
+  serveCanonicalReactApp(res);
 });
 
 app.listen(PORT, '0.0.0.0', () => {

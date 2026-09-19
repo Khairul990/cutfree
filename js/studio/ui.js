@@ -637,7 +637,18 @@
         ext: result.ext,
         name: slug(S.spec.meta.title || 'video') + '.' + result.ext
       };
-      if ($('#fAutoDl') && $('#fAutoDl').checked) {
+      var wrap = $('#downloadReadyWrap');
+      var btnDl = $('#btnDownloadVideo');
+      if (wrap && btnDl) {
+        wrap.style.display = 'block';
+        btnDl.textContent = '⬇️ ' + (window.CF_LANG === 'en' ? 'Download Video (' : 'ভিডিও ডাউনলোড করুন (') + fmtSize(result.blob.size) + ')';
+        btnDl.onclick = function () {
+          window.CFX.publish.downloadBlob(result.blob, S.lastRendered.name);
+          toast(window.CF_LANG === 'en' ? 'Downloading video...' : 'ভিডিও ডাউনলোড শুরু হয়েছে...');
+        };
+      }
+      var autoDl = $('#fAutoDl');
+      if (!autoDl || autoDl.checked) {
         window.CFX.publish.downloadBlob(result.blob, S.lastRendered.name);
       }
       $('#renderChip').textContent = (result.mode === 'webcodecs' ? t('stEngineFast') : t('stEngineCompat')) + ' · ' + fmtSize(result.blob.size);

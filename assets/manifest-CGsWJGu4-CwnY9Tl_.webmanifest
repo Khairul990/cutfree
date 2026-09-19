@@ -1,0 +1,20 @@
+{
+  "name": "CutFree Studio — auto video engine",
+  "short_name": "CutFree",
+  "description": "Zero-cost video factory in the browser: auto-generated animated videos, procedural music, captions and a YouTube publish kit. Works offline.",
+  "start_url": "./studio.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#05070f",
+  "theme_color": "#05070f",
+  "categories": ["video", "productivity", "utilities"],
+  "icons": [
+    { "src": "assets/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "assets/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Auto studio", "url": "./studio.html" },
+    { "name": "Video cutter", "url": "./index.html" }
+  ]
+}

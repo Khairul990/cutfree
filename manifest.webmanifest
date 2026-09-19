@@ -1,20 +1,20 @@
 {
-  "name": "CutFree Studio — auto video engine",
+  "name": "CutFree Studio — Video Production Studio",
   "short_name": "CutFree",
-  "description": "Zero-cost video factory in the browser: auto-generated animated videos, procedural music, captions and a YouTube publish kit. Works offline.",
-  "start_url": "./studio.html",
+  "description": "Browser-first video production studio with JSON blueprint, multi-track timeline, animation engines, and frame-accurate video export.",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#05070f",
-  "theme_color": "#05070f",
-  "categories": ["video", "productivity", "utilities"],
+  "background_color": "#07101A",
+  "theme_color": "#07101A",
+  "categories": ["video", "productivity", "multimedia"],
   "icons": [
     { "src": "assets/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
     { "src": "assets/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Auto studio", "url": "./studio.html" },
-    { "name": "Video cutter", "url": "./index.html" }
+    { "name": "CutFree Studio", "url": "./app.html" },
+    { "name": "Production Timeline", "url": "./index.html" }
   ]
 }
