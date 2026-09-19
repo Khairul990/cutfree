@@ -181,31 +181,6 @@ export default function App() {
     };
   }, [isPlaying, duration, audioUrl]);
 
-  const handleApplyTemplate = useCallback(
-    (templateId: string) => {
-      const presets: Record<string, { camera: any; transition: any; textAnimation: any; mood: string }> = {
-        islamic_story: { camera: "slow_zoom_in", transition: "fade", textAnimation: "word_reveal", mood: "warm" },
-        cinematic: { camera: "zoom_focus", transition: "blurZoom", textAnimation: "fade", mood: "cinematic" },
-        shorts_fast: { camera: "camera_push", transition: "zoom", textAnimation: "pop", mood: "energetic" },
-        minimal: { camera: "static", transition: "none", textAnimation: "fade", mood: "clean" },
-      };
-      const preset = presets[templateId];
-      if (!preset || !blueprint.scenes.length) return;
-      const scenes = blueprint.scenes.map((scene, index) => ({
-        ...scene,
-        camera: { ...(scene.camera || {}), preset: preset.camera, intensity: scene.camera?.intensity ?? 1 },
-        transition: preset.transition,
-        textAnimation: preset.textAnimation,
-        mood: scene.mood || preset.mood,
-        title: scene.title || "Scene " + (index + 1),
-      }));
-      const nextAspect = templateId === "shorts_fast" ? "9:16" : aspect;
-      setAspect(nextAspect);
-      commitBlueprint({ ...blueprint, project: { ...blueprint.project, aspectRatio: nextAspect }, scenes });
-    },
-    [blueprint, aspect, commitBlueprint]
-  );
-
   // Sync active scene with currentTime
   useEffect(() => {
     const active = blueprint.scenes.find(
@@ -660,30 +635,35 @@ export default function App() {
     (templateId: string) => {
       let aspectTarget: "16:9" | "9:16" | "1:1" = "16:9";
       let defaultMotion: any = "slow_pan";
-      let defaultAnim: any = "fade";
+      let defaultAnim: any = "word_reveal";
       let defaultCam: any = "slow_zoom_in";
+      let defaultTransition: any = "fade";
 
-      if (templateId === "viral_shorts") {
+      if (templateId === "viral_shorts" || templateId === "shorts_fast") {
         aspectTarget = "9:16";
         defaultMotion = "zoom_in";
-        defaultAnim = "scale";
+        defaultAnim = "pop";
         defaultCam = "camera_push";
-      } else if (templateId === "cinematic_doc") {
+        defaultTransition = "zoom";
+      } else if (templateId === "cinematic_doc" || templateId === "cinematic") {
         aspectTarget = "16:9";
         defaultMotion = "drift";
-        defaultAnim = "typewriter";
-        defaultCam = "slow_zoom_in";
-      } else if (templateId === "minimal_explainer") {
+        defaultAnim = "fade";
+        defaultCam = "zoom_focus";
+        defaultTransition = "blurZoom";
+      } else if (templateId === "minimal_explainer" || templateId === "minimal") {
         aspectTarget = "1:1";
         defaultMotion = "static";
-        defaultAnim = "slide";
+        defaultAnim = "fade";
         defaultCam = "static";
+        defaultTransition = "none";
       } else {
-        // islamic_epic
+        // islamic_story / islamic_aurora
         aspectTarget = "16:9";
         defaultMotion = "slow_pan";
-        defaultAnim = "fade";
-        defaultCam = "pan_right";
+        defaultAnim = "word_reveal";
+        defaultCam = "slow_zoom_in";
+        defaultTransition = "fade";
       }
 
       setAspect(aspectTarget);
@@ -693,9 +673,11 @@ export default function App() {
         background: {
           ...s.background,
           motion: defaultMotion,
-          transition: "dissolve" as const,
+          transition: defaultTransition,
           transitionDuration: 1.0,
         },
+        transition: defaultTransition,
+        textAnimation: defaultAnim,
         camera: {
           preset: defaultCam,
           intensity: 1.0,
