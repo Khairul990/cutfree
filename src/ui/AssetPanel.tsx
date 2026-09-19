@@ -464,42 +464,52 @@ export const AssetPanel: React.FC<AssetPanelProps> = ({
 
   const templates = [
     {
-      id: "islamic_aurora",
-      name: "Aurora Islamic Story",
-      desc: "Cinematic teal/blue aura with slow pan & serene pacing",
+      id: "islamic_story",
+      name: "Islamic Story",
+      desc: "Warm • slow camera • word reveal",
       aspect: "16:9",
-      theme: "aurora",
+      theme: "warm",
       icon: Monitor,
       gradient: "from-[#0f172a] via-[#0e7490] to-[#047857]",
     },
     {
-      id: "viral_shorts",
-      name: "Viral Vertical Reel",
-      desc: "High energy 9:16 vertical shorts with bounce & punchy cuts",
+      id: "shorts_fast",
+      name: "Shorts Fast",
+      desc: "9:16 • energetic motion • pop text",
       aspect: "9:16",
       theme: "electric",
       icon: Smartphone,
       gradient: "from-[#4c1d95] via-[#7c3aed] to-[#ec4899]",
     },
     {
-      id: "cinematic_doc",
-      name: "Cinematic Documentary",
-      desc: "Rich contrast, smooth drift, and narrative captions",
+      id: "cinematic",
+      name: "Cinematic",
+      desc: "Dramatic camera • blur transitions",
       aspect: "16:9",
       theme: "cinematic",
       icon: Monitor,
       gradient: "from-[#18181b] via-[#27272a] to-[#3f3f46]",
     },
     {
-      id: "minimal_explainer",
-      name: "Minimalist Explainer",
-      desc: "1:1 square video post with clean typography",
+      id: "minimal",
+      name: "Minimal",
+      desc: "Clean cuts • static camera",
       aspect: "1:1",
       theme: "clean",
       icon: Square,
       gradient: "from-[#064e3b] via-[#047857] to-[#10b981]",
     },
   ];
+
+  useEffect(() => {
+    const map: Record<string, AssetFilter> = {
+      characters: "characters",
+      backgrounds: "backgrounds",
+      objects: "objects",
+    };
+    if (activeNavTab && map[activeNavTab]) setSelectedFilter(map[activeNavTab]);
+    else if (activeNavTab === "assets") setSelectedFilter("all");
+  }, [activeNavTab]);
 
   const isTemplatesMode = activeNavTab === "templates";
 

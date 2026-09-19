@@ -181,6 +181,31 @@ export default function App() {
     };
   }, [isPlaying, duration, audioUrl]);
 
+  const handleApplyTemplate = useCallback(
+    (templateId: string) => {
+      const presets: Record<string, { camera: any; transition: any; textAnimation: any; mood: string }> = {
+        islamic_story: { camera: "slow_zoom_in", transition: "fade", textAnimation: "word_reveal", mood: "warm" },
+        cinematic: { camera: "zoom_focus", transition: "blurZoom", textAnimation: "fade", mood: "cinematic" },
+        shorts_fast: { camera: "camera_push", transition: "zoom", textAnimation: "pop", mood: "energetic" },
+        minimal: { camera: "static", transition: "none", textAnimation: "fade", mood: "clean" },
+      };
+      const preset = presets[templateId];
+      if (!preset || !blueprint.scenes.length) return;
+      const scenes = blueprint.scenes.map((scene, index) => ({
+        ...scene,
+        camera: { ...(scene.camera || {}), preset: preset.camera, intensity: scene.camera?.intensity ?? 1 },
+        transition: preset.transition,
+        textAnimation: preset.textAnimation,
+        mood: scene.mood || preset.mood,
+        title: scene.title || "Scene " + (index + 1),
+      }));
+      const nextAspect = templateId === "shorts_fast" ? "9:16" : aspect;
+      setAspect(nextAspect);
+      commitBlueprint({ ...blueprint, project: { ...blueprint.project, aspectRatio: nextAspect }, scenes });
+    },
+    [blueprint, aspect, commitBlueprint]
+  );
+
   // Sync active scene with currentTime
   useEffect(() => {
     const active = blueprint.scenes.find(
