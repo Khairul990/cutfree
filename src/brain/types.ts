@@ -6,12 +6,14 @@
  */
 
 export const BLUEPRINT_SCHEMA_VERSION = '1.0.0' as const;
+export const BLUEPRINT_SCHEMA_VERSIONS = ['1.0.0', '2.0.0'] as const;
 
 // Minimal Blueprint shape — mirrors Spec in src/App.tsx without coupling.
 // The authoritative Blueprint remains Spec; this is a structural contract for validation.
 export interface BlueprintScene {
   type: string;
   dur: number;
+  id?: string;
   title?: string;
   subtitle?: string;
   heading?: string;
@@ -29,6 +31,14 @@ export interface BlueprintScene {
   words?: { w: string; s: number; e: number }[];
   style?: string;
   emphasis?: number[];
+  purpose?: string;
+  camera?: string;
+  textAnimation?: string;
+  start?: number;
+  end?: number;
+  character?: { action?: string; emotion?: string; x?: number; y?: number; scale?: number; opacity?: number };
+  visual?: { description?: string; treatment?: string };
+  keyframes?: { time: number; value: number; easing?: string }[];
 }
 
 export interface Blueprint {

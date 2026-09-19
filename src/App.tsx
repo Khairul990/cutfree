@@ -1,8 +1,8 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * CutFree Studio — React + Gemini AI Edition
- * Modern Vite + Tailwind + WebCodecs frontend with full studio engine ported to React.
+ * CutFree Studio — React Production Studio
+ * Deterministic Auto-Director + motion engine. Offline-first, no paid API required.
  */
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
@@ -43,7 +43,17 @@ import {
   Youtube,
   ShieldCheck,
   Cpu,
+  Undo2,
+  Redo2,
+  Magnet,
 } from "lucide-react";
+import { cameraAt, textAnimAt, characterAt, PARALLAX_LAYERS, CAMERA_PRESETS, TEXT_PRESETS, TRANSITIONS } from "./motion/presets";
+import { autoCreateVideo } from "./director/autoDirector";
+import { HistoryStack } from "./director/history";
+import { snapTime, collectSnapTargets, clampTime as clampT } from "./time";
+import { validateBlueprintJson } from "./brain/validator";
+import { normalizeBlueprint } from "./brain/normalizer";
+import { migrateBlueprint } from "./director/migrate";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -99,6 +109,14 @@ interface Scene {
   words?: { w: string; s: number; e: number }[];
   style?: string;
   emphasis?: number[];
+  id?: string;
+  purpose?: string;
+  camera?: string;
+  textAnimation?: string;
+  start?: number;
+  end?: number;
+  character?: { action?: string; emotion?: string; x?: number; y?: number; scale?: number; opacity?: number };
+  visual?: { description?: string; treatment?: string };
 }
 
 interface Spec {
@@ -1025,6 +1043,12 @@ function renderFrame(
   }
   const cur = spec.scenes[curIndex];
   const progress = clamp(local / cur.dur, 0, 1);
+  const cam = cameraAt(cur.camera, progress, spec.meta.seed || 0);
+  const tAnim = textAnimAt(cur.textAnimation, progress);
+  const next = spec.scenes[curIndex + 1];
+  const transName = cur.transitionOut || "fade";
+  const transWindow = 0.35;
+  const transT = cur.dur > transWindow && local > cur.dur - transWindow ? (local - (cur.dur - transWindow)) / transWindow : 0;
 
   // ---- background (image or procedural)
   if (bgImage && bgImage.complete && bgImage.naturalWidth > 0) {
@@ -1079,8 +1103,8 @@ function renderFrame(
       spriteCache.set(key, sc);
       sprite = sc;
     }
-    const nx = (0.2 + 0.6 * ((Math.sin(t * (0.08 + i * 0.02) + i * 1.3) + 1) / 2)) * W;
-    const ny = (0.25 + 0.5 * ((Math.cos(t * (0.07 + i * 0.015) + i * 2.1) + 1) / 2)) * H;
+    const nx = (0.2 + 0.6 * ((Math.sin(t * (0.08 + i * 0.02) + i * 1.3) + 1) / 2)) * W + cam.x * W * PARALLAX_LAYERS.background;
+    const ny = (0.25 + 0.5 * ((Math.cos(t * (0.07 + i * 0.015) + i * 2.1) + 1) / 2)) * H + cam.y * H * PARALLAX_LAYERS.background;
     const rad = U * (0.18 + i * 0.04) * (1 + 0.2 * e);
     // draw with screen-like feel: reduce alpha and let overlapping brighten
     ctx.globalAlpha = 0.55;
@@ -1170,13 +1194,35 @@ function renderFrame(
   const margin = U * 0.085;
   const maxW = W - margin * 2;
 
-  // scale + shake for hook
+  const treat = cur.visual?.treatment;
+  if (treat === "particles" || treat === "stars" || treat === "glow") {
+    ctx.save();
+    ctx.globalAlpha = treat === "glow" ? 0.18 : 0.35;
+    for (let p = 0; p < 18; p++) {
+      const px = ((p * 97 + t * (treat === "stars" ? 8 : 40)) % (W + 40)) - 20;
+      const py = ((p * 53 + t * 12) % (H + 40)) - 20;
+      ctx.fillStyle = treat === "glow" ? theme.accent : "#ffffff";
+      ctx.beginPath();
+      ctx.arc(px, py, treat === "glow" ? U * 0.04 : 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  } else if (treat === "fog") {
+    ctx.save();
+    ctx.globalAlpha = 0.12;
+    ctx.fillStyle = "#c7d2fe";
+    ctx.fillRect(0, H * 0.55, W, H * 0.45);
+    ctx.restore();
+  }
+
   ctx.save();
-  const zoom = 1.02 + 0.03 * progress + hookBoost;
+  const zoom = cam.zoom * tAnim.scale * (1.02 + 0.03 * progress + hookBoost);
   const shakeX = cur.isHook && local < 0.4 ? Math.sin(local * 62) * U * 0.008 * (1 - local / 0.4) : 0;
   const shakeY = cur.isHook && local < 0.4 ? Math.cos(local * 52) * U * 0.006 * (1 - local / 0.4) : 0;
-  ctx.translate(W / 2 + shakeX, winCY + shakeY);
+  ctx.translate(W / 2 + shakeX + cam.x * W * PARALLAX_LAYERS.foreground + tAnim.tx * W, winCY + shakeY + cam.y * H * PARALLAX_LAYERS.foreground + tAnim.ty * H);
+  ctx.rotate(cam.rotation);
   ctx.scale(zoom, zoom);
+  ctx.globalAlpha = Math.max(0.05, tAnim.opacity);
   ctx.translate(-W / 2, -winCY);
 
   // draw scene
@@ -1497,7 +1543,54 @@ function renderFrame(
       break;
   }
 
+  // 2D character transform fallback (no skeletal animation)
+  if (cur.character) {
+    const ch = characterAt(cur.character.action, cur.character.emotion, progress);
+    ctx.save();
+    ctx.globalAlpha = (cur.character.opacity ?? 1) * ch.opacity * 0.85;
+    const cx = W * (cur.character.x ?? ch.x);
+    const cy = winCY + H * (cur.character.y ?? ch.y) * 0.15;
+    ctx.translate(cx, cy);
+    ctx.rotate(ch.rotation);
+    ctx.scale(ch.scale * (cur.character.scale ?? 1), ch.scale * (cur.character.scale ?? 1));
+    ctx.fillStyle = theme.accent2;
+    ctx.beginPath();
+    ctx.arc(0, -U * 0.055, U * 0.038, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = theme.accent;
+    ctx.beginPath();
+    ctx.ellipse(0, U * 0.02, U * 0.042, U * 0.07, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   ctx.restore();
+
+  // transition overlay (Blueprint-driven, not UI-only)
+  if (transT > 0 && next) {
+    ctx.save();
+    if (transName === "fade" || transName === "crossfade") {
+      ctx.globalAlpha = transT * 0.35;
+      ctx.fillStyle = theme.bg;
+      ctx.fillRect(0, 0, W, H);
+    } else if (transName === "wipe" || transName === "slide") {
+      ctx.fillStyle = theme.bg;
+      ctx.fillRect(0, 0, W * transT, H);
+    } else if (transName === "zoom") {
+      ctx.globalAlpha = transT * 0.4;
+      ctx.fillStyle = theme.accent;
+      ctx.fillRect(0, 0, W, H);
+    } else if (transName === "glitch") {
+      ctx.globalAlpha = 0.25 * transT;
+      ctx.fillStyle = theme.accent2;
+      ctx.fillRect(0, (H * transT) % H, W, 8);
+    } else if (transName === "blur" || transName === "whip_pan" || transName === "page_turn") {
+      ctx.globalAlpha = transT * 0.3;
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, W, H);
+    }
+    ctx.restore();
+  }
 
   // progress bar
   if (spec.meta.showProgress) {
@@ -1640,6 +1733,10 @@ export default function App() {
   const [voiceError, setVoiceError] = useState<string>("");
   const [autoStory, setAutoStory] = useState(false);
   const [storyStyle, setStoryStyle] = useState<string>("reveal");
+  const [snapEnabled, setSnapEnabled] = useState(true);
+  const [directorStatus, setDirectorStatus] = useState<"ready" | "parsing" | "directing" | "validating" | "complete" | "error">("ready");
+  const [directorNote, setDirectorNote] = useState("");
+  const historyRef = useRef(new HistoryStack<Spec>(40));
   const waveformRef = useRef<HTMLCanvasElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const bgInputRef = useRef<HTMLInputElement>(null);
@@ -1808,6 +1905,22 @@ export default function App() {
   const toast = useCallback((msg: string) => {
     setShowToast(msg);
     setTimeout(() => setShowToast(null), 2200);
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("cutfree.spec.ok") !== "1") return;
+      const raw = localStorage.getItem("cutfree.spec.v2");
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      const migrated = migrateBlueprint(parsed);
+      const { blueprint: norm } = normalizeBlueprint(migrated);
+      const check = validateBlueprintJson({ blueprint: norm });
+      if (check.valid && Array.isArray(norm.scenes) && norm.scenes.length) {
+        setVoiceSpec(norm as unknown as Spec);
+        historyRef.current.seed(norm as unknown as Spec);
+      }
+    } catch { /* corrupt recovery ignored */ }
   }, []);
 
   // ——— Background image handler (free, client-side, theme-aware overlay) ———
@@ -1982,29 +2095,70 @@ export default function App() {
     setVoiceSpec(tSpec); setCurrentTime(0); toast(isBn ? "✅ টাইমলাইন-সিঙ্ক প্রয়োগ!" : "✅ Timeline sync applied!");
   }, [customTimeline, customSegments, builtSpec, script, isBn, toast]);
 
-  // One-click auto video: script alone → quality video, voice if present → tracked
+  // Auto Create Video — deterministic director (no cloud, no model)
   const handleAutoVideo = useCallback(() => {
-    const base = builtSpec;
-    if (!base) {
+    if (!script.trim() && !customSegments && !vadResult) {
       toast(isBn ? "স্ক্রিপ্ট লিখুন" : "Write a script first");
+      setDirectorStatus("error");
       return;
     }
-    if (vadResult && !voiceSpec) {
-      const v = buildVoiceSpec(script, vadResult, base, { title: base.meta.title });
-      if (v) {
-        setVoiceSpec(v);
-        toast(isBn ? "🎬 অটো ভিডিও — ভয়েস-সিঙ্কড!" : "🎬 Auto video — voice-synced!");
+    setDirectorStatus("parsing");
+    setDirectorNote(isBn ? "স্ক্রিপ্ট পার্স + স্টোরি বিট..." : "Parsing script + story beats...");
+    try {
+      const audioDuration = vadResult?.duration || (customSegments && customSegments.length ? customSegments[customSegments.length - 1].time + 2 : undefined);
+      setDirectorStatus("directing");
+      const directed = autoCreateVideo({
+        script,
+        language: lang,
+        theme,
+        mood,
+        aspect: shortsMode ? "9:16" : aspect,
+        quality,
+        shorts: shortsMode,
+        timing: vadResult
+          ? {
+              totalDuration: vadResult.duration,
+              speechSegments: vadResult.phrases,
+              pauses: vadResult.gaps.map((g) => ({ start: g.start, end: g.end, duration: g.end - g.start, kind: g.end - g.start >= 0.6 ? "long" : "short" })),
+              speechTime: vadResult.speechTime,
+              silenceTime: Math.max(0, vadResult.duration - vadResult.speechTime),
+              speechRatio: vadResult.speechRatio,
+            }
+          : null,
+        audioDuration,
+        segments: customSegments || undefined,
+        words: customTimeline || undefined,
+      });
+      setDirectorStatus("validating");
+      const migrated = migrateBlueprint(directed.blueprint);
+      const { blueprint: norm } = normalizeBlueprint(migrated);
+      const check = validateBlueprintJson({ schemaVersion: "2.0.0", blueprint: norm });
+      if (!check.valid) {
+        setDirectorStatus("error");
+        setDirectorNote(check.errors[0]?.message || "validation failed");
+        toast(isBn ? "ভ্যালিডেশন ব্যর্থ" : "Validation failed");
         return;
       }
+      const asSpec = norm as unknown as Spec;
+      if (historyRef.current.value) historyRef.current.push(asSpec);
+      else historyRef.current.seed(asSpec);
+      setVoiceSpec(asSpec);
+      setDirectorStatus("complete");
+      setDirectorNote(`${asSpec.scenes.length} scenes • ${asSpec.duration.toFixed(1)}s • ${directed.beats.length} beats`);
+      try {
+        localStorage.setItem("cutfree.spec.v2", JSON.stringify(asSpec));
+        localStorage.setItem("cutfree.spec.ok", "1");
+      } catch { /* ignore quota */ }
+      toast(isBn ? "▶ অটো ভিডিও রেডি — প্রিভিউ দেখুন" : "▶ Auto video ready — see preview");
+      setCurrentTime(0);
+      setIsPlaying(false);
+    } catch (e) {
+      console.error(e);
+      setDirectorStatus("error");
+      setDirectorNote((e as Error).message);
+      toast(isBn ? "অটো ডিরেক্টর ব্যর্থ" : "Auto director failed");
     }
-    if (voiceSpec) {
-      toast(isBn ? "🎬 ভয়েস-সিঙ্কড ভিডিও রেডি — প্রিভিউ দেখুন" : "🎬 Voice-synced video ready — see preview");
-    } else {
-      toast(isBn ? "🎬 অটো ভিডিও রেডি — প্রিভিউ দেখুন" : "🎬 Auto video ready — see preview");
-    }
-    setCurrentTime(0);
-    setIsPlaying(false);
-  }, [builtSpec, vadResult, voiceSpec, script, isBn, toast]);
+  }, [script, lang, theme, mood, aspect, quality, shortsMode, vadResult, customSegments, customTimeline, isBn, toast]);
 
   const handleAiGenerate = useCallback(async () => {
     const clean = topic.trim();
@@ -2013,7 +2167,7 @@ export default function App() {
       return;
     }
     setIsGenerating(true);
-    setAiStatus(isBn ? "Gemini ভাবছে..." : "Gemini is thinking...");
+    setAiStatus(isBn ? "স্ক্রিপ্ট তৈরি হচ্ছে..." : "Building script...");
     try {
       const res = await fetch("/api/ai/script", {
         method: "POST",
@@ -2198,7 +2352,7 @@ export default function App() {
           <div className="flex items-center gap-2">
             <div className="hidden lg:flex items-center gap-1.5 text-[11px] bg-[#151b2e] border border-[#232d47] rounded-full px-2.5 py-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[#8d9cc2]">{isBn ? "AI রেডি" : "AI ready"}</span>
+              <span className="text-[#8d9cc2]">{isBn ? "ডিরেক্টর রেডি" : "Director ready"}</span>
               <span className="w-px h-3 bg-[#232d47] mx-1" />
               <span className="text-white font-semibold">
                 {spec ? `${fmtTime(duration)} • ${spec.scenes.length} সিন` : "—"}
@@ -2257,9 +2411,9 @@ export default function App() {
                 <div className="rounded-2xl bg-gradient-to-br from-[#16192b] to-[#1a1540] border border-[#3c2a68] p-4 shadow-xl">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2 text-[#c4b5fd] font-extrabold text-[12px] tracking-wide">
-                      <Sparkles className="w-4 h-4" /> {isBn ? "AI স্ক্রিপ্ট জেনারেটর (Gemini)" : "AI Script Generator (Gemini)"}
+                      <Sparkles className="w-4 h-4" /> {isBn ? "স্ক্রিপ্ট জেনারেটর (ঐচ্ছিক)" : "Script generator (optional)"}
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-[#2e1065] border border-[#5b21b6] text-[#e9d5ff]">AUT0 SCENE</span>
+                    <span className="text-[10px] font-black px-2 py-1 rounded-full bg-[#241b3d] border border-[#433170] text-[#c4b5fd]">optional</span>
                   </div>
 
                   <div className="flex gap-2 mb-3">
@@ -2307,16 +2461,19 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Brain Foundation — Phase 1 (offline, free, optional) */}
                 <div className="rounded-2xl bg-gradient-to-br from-[#0f172a] to-[#1a1440] border border-[#2a365c] p-4">
                   <div className="flex items-center gap-2 text-[12px] font-extrabold text-white mb-2">
-                    <Cpu className="w-4 h-4 text-[#7c5cff]" /> AI Brain — Phase 1
-                    <span className="ml-auto text-[10px] px-2 py-1 rounded-full bg-[#1a2440] border border-[#2a365c] text-[#8cb4ff]">local • free</span>
+                    <Cpu className="w-4 h-4 text-[#7c5cff]" /> {isBn ? "অটো ডিরেক্টর" : "Auto Director"}
+                    <span className="ml-auto text-[10px] px-2 py-1 rounded-full bg-[#1a2440] border border-[#2a365c] text-[#8cb4ff]">{directorStatus}</span>
                   </div>
                   <div className="text-[11px] leading-relaxed text-[#a3b4dc] mb-2">
-                    Audio → Timing → Blueprint → Timeline. Browser-native VAD, deterministic. Ollama optional, never required.
+                    {isBn ? "স্ক্রিপ্ট + ভয়েস → স্টোরি বিট → সিন → ক্যামেরা → মোশন। ডিটারমিনিস্টিক, অফলাইন।" : "Script + voice → story beats → scenes → camera → motion. Deterministic, offline."}
                   </div>
-                  <div className="text-[11px] text-[#6b7bb0]">Core: <span className="text-[#8cb4ff]">AudioAnalyzer</span> • <span className="text-[#8cb4ff]">Transcription</span> • <span className="text-[#8cb4ff]">VideoBrain</span> • Validator</div>
+                  {directorNote && <div className="text-[11px] text-[#8cb4ff] mb-2">{directorNote}</div>}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={handleAutoVideo} className="py-2.5 rounded-xl bg-gradient-to-br from-[#7c5cff] to-[#5b8dff] text-white font-black text-[12px]">{isBn ? "অটো ভিডিও তৈরি" : "Auto Create Video"}</button>
+                    <button onClick={() => { if (voiceSpec) setVoiceSpec(null); setDirectorStatus("ready"); }} className="py-2.5 rounded-xl bg-[#151b2e] border border-[#232d47] text-white font-bold text-[12px]">{isBn ? "ম্যানুয়াল এডিট" : "Manual edit"}</button>
+                  </div>
                 </div>
 
                 {/* HERO — সবচেয়ে বড় ভিডিও তৈরি বাটন (বাংলা) */}
@@ -3166,6 +3323,27 @@ export default function App() {
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
+              <button
+                onClick={() => { const prev = historyRef.current.undo(); if (prev) setVoiceSpec(prev); }}
+                className="w-9 h-9 rounded-full bg-[#151b2e] border border-[#232d47] grid place-items-center text-[#8d9cc2] hover:text-white hover:border-[#5b8dff] transition shrink-0"
+                title="Undo"
+              >
+                <Undo2 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => { const nxt = historyRef.current.redo(); if (nxt) setVoiceSpec(nxt); }}
+                className="w-9 h-9 rounded-full bg-[#151b2e] border border-[#232d47] grid place-items-center text-[#8d9cc2] hover:text-white hover:border-[#5b8dff] transition shrink-0"
+                title="Redo"
+              >
+                <Redo2 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setSnapEnabled((v) => !v)}
+                className={`w-9 h-9 rounded-full border grid place-items-center transition shrink-0 ${snapEnabled ? "bg-[#5b8dff] border-[#5b8dff] text-white" : "bg-[#151b2e] border-[#232d47] text-[#8d9cc2]"}`}
+                title={snapEnabled ? "Snap on" : "Snap off"}
+              >
+                <Magnet className="w-4 h-4" />
+              </button>
 
               <div className="flex-1 min-w-0">
                 <div
@@ -3173,7 +3351,20 @@ export default function App() {
                   onClick={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     const pct = clamp((e.clientX - rect.left) / rect.width, 0, 1);
-                    setCurrentTime(pct * duration);
+                    let t = pct * duration;
+                    if (snapEnabled && spec) {
+                      let acc = 0;
+                      const sceneStarts: number[] = [];
+                      spec.scenes.forEach((s) => { sceneStarts.push(acc); acc += s.dur; });
+                      t = snapTime(t, collectSnapTargets({
+                        duration,
+                        sceneStarts,
+                        captionStarts: spec.captions?.map((c) => c.start),
+                        captionEnds: spec.captions?.map((c) => c.end),
+                        playhead: currentTime,
+                      }), 0.05, true);
+                    }
+                    setCurrentTime(clampT(t, 0, duration));
                   }}
                 >
                   <div className="absolute left-0 right-0 h-[6px] bg-[#1a2440] rounded-full overflow-hidden">
@@ -3254,6 +3445,47 @@ export default function App() {
                 );
               })}
             </div>
+            {spec && scenes[curSceneIndex] && (
+              <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                <span className="text-[#8d9cc2] font-bold uppercase tracking-wide">Motion</span>
+                <select
+                  value={scenes[curSceneIndex].camera || "static"}
+                  onChange={(e) => {
+                    if (!spec) return;
+                    historyRef.current.push(spec);
+                    const next = { ...spec, scenes: spec.scenes.map((s, i) => i === curSceneIndex ? { ...s, camera: e.target.value } : s) };
+                    setVoiceSpec(next);
+                  }}
+                  className="bg-[#151b2e] border border-[#232d47] rounded-lg px-2 py-1 text-[11px]"
+                >
+                  {CAMERA_PRESETS.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <select
+                  value={scenes[curSceneIndex].textAnimation || "fade"}
+                  onChange={(e) => {
+                    if (!spec) return;
+                    historyRef.current.push(spec);
+                    const next = { ...spec, scenes: spec.scenes.map((s, i) => i === curSceneIndex ? { ...s, textAnimation: e.target.value } : s) };
+                    setVoiceSpec(next);
+                  }}
+                  className="bg-[#151b2e] border border-[#232d47] rounded-lg px-2 py-1 text-[11px]"
+                >
+                  {TEXT_PRESETS.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <select
+                  value={scenes[curSceneIndex].transitionOut || "fade"}
+                  onChange={(e) => {
+                    if (!spec) return;
+                    historyRef.current.push(spec);
+                    const next = { ...spec, scenes: spec.scenes.map((s, i) => i === curSceneIndex ? { ...s, transitionOut: e.target.value } : s) };
+                    setVoiceSpec(next);
+                  }}
+                  className="bg-[#151b2e] border border-[#232d47] rounded-lg px-2 py-1 text-[11px]"
+                >
+                  {TRANSITIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+            )}
           </div>
         </main>
       </div>

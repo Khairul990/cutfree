@@ -8,8 +8,9 @@ import type { Blueprint } from './types';
 import { BLUEPRINT_SCHEMA_VERSION } from './types';
 
 const VALID_ASPECTS = new Set(['16:9', '9:16', '1:1', '4:5']);
-const VALID_TRANSITIONS = new Set(['fade', 'slide', 'zoom', 'glitch', 'none']);
-const VALID_ANIMS = new Set(['fadeIn', 'fadeOut', 'slideLeft', 'slideRight', 'scaleIn', 'scaleOut', 'zoomIn', 'zoomOut', 'typewriter', 'wordReveal', 'bounce', 'emphasis', 'cameraPan', 'cameraDolly']);
+const VALID_TRANSITIONS = new Set(['none', 'fade', 'crossfade', 'slide', 'wipe', 'zoom', 'blur', 'whip_pan', 'page_turn', 'glitch']);
+const VALID_ANIMS = new Set(['fadeIn', 'fadeOut', 'slideLeft', 'slideRight', 'scaleIn', 'scaleOut', 'zoomIn', 'zoomOut', 'typewriter', 'wordReveal', 'word_reveal', 'bounce', 'emphasis', 'cameraPan', 'cameraDolly', 'fade', 'slide_up', 'pop', 'blur_reveal', 'line_reveal', 'scale']);
+const VALID_CAMERAS = new Set(['static', 'slow_zoom_in', 'slow_zoom_out', 'pan_left', 'pan_right', 'pan_up', 'pan_down', 'push_in', 'pull_out', 'drift', 'parallax', 'handheld_soft']);
 
 export interface NormalizationResult {
   blueprint: Blueprint;

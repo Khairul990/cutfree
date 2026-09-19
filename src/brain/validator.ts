@@ -5,7 +5,7 @@
  */
 
 import type { Blueprint, ValidationResult, ValidationError } from './types';
-import { BLUEPRINT_SCHEMA_VERSION } from './types';
+import { BLUEPRINT_SCHEMA_VERSION, BLUEPRINT_SCHEMA_VERSIONS } from './types';
 
 function err(path: string, message: string): ValidationError {
   return { path, message, severity: 'error' };
@@ -26,8 +26,8 @@ export function validateBlueprintJson(raw: unknown): ValidationResult {
   // Schema version
   const meta = obj['meta'] as Record<string, unknown> | undefined;
   const schemaVersion = (obj as unknown as { schemaVersion?: string }).schemaVersion || (meta as unknown as { schemaVersion?: string })?.schemaVersion;
-  if (schemaVersion && schemaVersion !== BLUEPRINT_SCHEMA_VERSION) {
-    warnings.push(warn('schemaVersion', `Expected ${BLUEPRINT_SCHEMA_VERSION}, got ${schemaVersion} — will normalize`));
+  if (schemaVersion && !(BLUEPRINT_SCHEMA_VERSIONS as readonly string[]).includes(schemaVersion)) {
+    warnings.push(warn('schemaVersion', `Expected ${BLUEPRINT_SCHEMA_VERSION} or 2.0.0, got ${schemaVersion} — will migrate`));
   }
   if (!obj['scenes'] && !(obj as unknown as { blueprint?: unknown }).blueprint) {
     // Allow both raw Spec and wrapped CutFreeBlueprintFile
@@ -45,6 +45,9 @@ export function validateBlueprintJson(raw: unknown): ValidationResult {
   // Duration
   if (typeof blueprint.duration !== 'number' || !(blueprint.duration > 0)) {
     errors.push(err('duration', 'duration must be > 0'));
+  }
+  if (typeof blueprint.fps === 'number' && !(blueprint.fps > 0 && blueprint.fps <= 120)) {
+    errors.push(err('fps', 'fps must be in (0, 120]'));
   }
   if (blueprint.duration > 60 * 60) warnings.push(warn('duration', 'Unusually long duration > 1h'));
 
