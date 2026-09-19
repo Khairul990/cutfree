@@ -8,12 +8,21 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, '..');
 
-console.log('⚡ Starting CutFree Studio cross-platform build...');
+console.log('⚡ Starting CutFree Studio canonical production build...');
 
-// 1. Single canonical studio build
-// Legacy multi-editor inliner removed
+// 1. Build canonical React Production Studio with Vite
+console.log('📦 Compiling React Studio application with Vite...');
+try {
+  execSync('npx vite build', {
+    stdio: 'inherit',
+    cwd: ROOT,
+  });
+  console.log('✅ React Production Studio compiled successfully into dist/');
+} catch (err) {
+  console.error('❌ Failed to compile React Studio:', err.message);
+  process.exit(1);
+}
 
-// 2. Prepare dist folder
 const distDir = path.join(ROOT, 'dist');
 fs.mkdirSync(distDir, { recursive: true });
 
@@ -30,38 +39,30 @@ function copyRecursive(src, dst) {
   }
 }
 
-// 3. Copy frontend assets to dist
-const itemsToCopy = [
-  'index.html',
-  'editor.html',
-  'studio.html',
-  'studio-pro.html',
-  'cutfree.html',
-  'cutfree-studio.html',
-  'assets',
-  'css',
-  'js',
+// 2. Copy static and compatibility resources (without overwriting canonical React entries)
+const staticItems = [
   'manifest.webmanifest',
   'robots.txt',
-  'sw.js'
+  'sw.js',
+  'cutfree-studio.html',
+  'cutfree-studio-pro.html',
+  'studio-pro.html',
+  'cutfree.html',
+  'editor.html',
+  'studio.html',
 ];
 
-itemsToCopy.forEach(item => {
-  copyRecursive(path.join(ROOT, item), path.join(distDir, item));
+staticItems.forEach(item => {
+  const src = path.join(ROOT, item);
+  const dst = path.join(distDir, item);
+  if (fs.existsSync(src)) {
+    fs.copyFileSync(src, dst);
+  }
 });
-console.log('✅ Static assets copied to dist/');
+console.log('✅ Static & compatibility assets verified in dist/');
 
-// 5. Ensure the fully interactive CutFree Studio is the canonical app across all entry points
-const masterStudio = path.join(ROOT, 'studio.html');
-if (fs.existsSync(masterStudio)) {
-  fs.copyFileSync(masterStudio, path.join(distDir, 'index.html'));
-  fs.copyFileSync(masterStudio, path.join(distDir, 'app.html'));
-  fs.copyFileSync(masterStudio, path.join(distDir, 'studio.html'));
-  fs.copyFileSync(masterStudio, path.join(distDir, 'cutfree-studio.html'));
-  console.log('✅ Master CutFree Studio deployed to dist/index.html, dist/app.html, dist/studio.html, dist/cutfree-studio.html');
-}
-
-// 6. Bundle server.ts with esbuild
+// 3. Bundle backend server.ts with esbuild
+console.log('🚀 Bundling server.ts...');
 try {
   execSync('npx esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs', {
     stdio: 'inherit',
@@ -73,4 +74,12 @@ try {
   process.exit(1);
 }
 
-console.log('🎉 Production build complete in dist/!');
+// 4. Verify that canonical React entry points exist in dist/
+const indexEntry = path.join(distDir, 'index.html');
+const appEntry = path.join(distDir, 'app.html');
+if (!fs.existsSync(indexEntry) || !fs.existsSync(appEntry)) {
+  console.error('❌ Critical error: Canonical React entry points missing from dist/!');
+  process.exit(1);
+}
+
+console.log('🎉 Production build complete! React Studio is the canonical app in dist/.');

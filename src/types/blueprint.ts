@@ -174,19 +174,57 @@ export interface BlueprintCaption {
   start: number;
   end: number;
   text: string;
-  style?: string;
+  style?: any;
   position?: "bottom" | "top" | "center";
   words?: WordTiming[];
 }
 
+export type CaptionItem = BlueprintCaption;
+
+export type AssetType =
+  | "character"
+  | "background"
+  | "object"
+  | "prop"
+  | "audio"
+  | "music"
+  | "sfx"
+  | "video"
+  | "image"
+  | "subtitle"
+  | "thumbnail"
+  | "font";
+
+export interface AssetMetadata {
+  duration?: number;
+  width?: number;
+  height?: number;
+  mimeType?: string;
+  fileSize?: number;
+  format?: string;
+  sampleRate?: number;
+  channels?: number;
+  fps?: number;
+  captionCount?: number;
+  createdAt?: number;
+  updatedAt?: number;
+  originalFileName?: string;
+  sourceUrl?: string;
+  tags?: string[];
+}
+
 export interface BlueprintAsset {
   id: string;
-  type: "character" | "background" | "object" | "audio" | "image" | "font";
+  type: AssetType;
   name?: string;
   description?: string;
   url?: string;
   src?: string;
   category?: string;
+  source?: "builtin" | "upload" | "url" | "generated" | "recorded";
+  metadata?: AssetMetadata;
+  thumbnailUrl?: string;
+  colorPreset?: { bg: string; accent: string };
 }
 
 export interface BlueprintExport {
@@ -195,6 +233,24 @@ export interface BlueprintExport {
   audioCodec: AudioCodec;
   bitrate?: number;
   preset?: "youtube" | "shorts" | "square";
+}
+
+export interface BlueprintMarker {
+  id: string;
+  time: number; // in seconds
+  label: string;
+  color?: string;
+}
+
+export interface TimelineTrackConfig {
+  id: string;
+  type: "scenes" | "video" | "character" | "objects" | "captions" | "voice" | "music" | "sfx" | "markers";
+  name: string;
+  muted?: boolean;
+  locked?: boolean;
+  visible?: boolean;
+  collapsed?: boolean;
+  solo?: boolean;
 }
 
 export interface VideoBlueprint {
@@ -206,6 +262,8 @@ export interface VideoBlueprint {
   segments: BlueprintSegment[];
   captions: BlueprintCaption[];
   assets: BlueprintAsset[];
+  markers?: BlueprintMarker[];
+  tracks?: TimelineTrackConfig[];
   export?: BlueprintExport;
 }
 

@@ -2,8 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  * Inspector Component for CutFree Studio.
- * Matches exact layout, segmented tabs (Scene, Text, Character, Animation),
- * and dynamic controls from design specification.
+ * Fully reactive scene, text/captions, characters, and animations editor.
  */
 
 import React, { useState } from "react";
@@ -18,12 +17,20 @@ import {
   Film,
   Sparkles,
   Trash2,
+  ArrowLeft,
+  ArrowRight,
+  Plus,
+  Sliders,
+  Move,
+  Maximize2,
 } from "lucide-react";
 import {
   BlueprintScene,
   CameraPreset,
   CharacterAction,
   CharacterEmotion,
+  CharacterEntrance,
+  CharacterExit,
   CaptionItem,
 } from "../types/blueprint";
 
@@ -33,6 +40,11 @@ export interface InspectorProps {
   currentTime: number;
   onUpdateScene: (updated: BlueprintScene) => void;
   onDeleteScene: (sceneId: string) => void;
+  onMoveSceneEarlier?: (sceneId: string) => void;
+  onMoveSceneLater?: (sceneId: string) => void;
+  onUpdateCaption?: (captionId: string, text: string, style?: any) => void;
+  onAddCaption?: (time: number, text?: string) => void;
+  onDeleteCaption?: (captionId: string) => void;
   onClose?: () => void;
 }
 
@@ -71,17 +83,37 @@ const CHARACTER_EMOTIONS: CharacterEmotion[] = [
   "inspired",
 ];
 
+const CHARACTER_ENTRANCES: { id: CharacterEntrance; label: string }[] = [
+  { id: "fade_in", label: "Fade In" },
+  { id: "enter_left", label: "Enter Left" },
+  { id: "enter_right", label: "Enter Right" },
+  { id: "scale_in", label: "Scale In" },
+  { id: "slide_in", label: "Slide In Up" },
+];
+
+const CHARACTER_EXITS: { id: CharacterExit; label: string }[] = [
+  { id: "fade_out", label: "Fade Out" },
+  { id: "exit_left", label: "Exit Left" },
+  { id: "exit_right", label: "Exit Right" },
+  { id: "scale_out", label: "Scale Out" },
+  { id: "slide_out", label: "Slide Out Down" },
+];
+
 export const Inspector: React.FC<InspectorProps> = ({
   scene,
   captions = [],
   currentTime,
   onUpdateScene,
   onDeleteScene,
+  onMoveSceneEarlier,
+  onMoveSceneLater,
+  onUpdateCaption,
+  onAddCaption,
+  onDeleteCaption,
   onClose,
 }) => {
   const [activeTab, setActiveTab] = useState<"scene" | "text" | "character" | "animation">("scene");
   const [notesOpen, setNotesOpen] = useState<boolean>(true);
-  const [opacityVal, setOpacityVal] = useState<number>(100);
 
   // Format seconds to MM:SS.SS
   const fmt = (sec: number) => {
@@ -114,12 +146,41 @@ export const Inspector: React.FC<InspectorProps> = ({
     (c) => currentTime >= c.start && currentTime <= c.end
   );
 
+  const opacityPercent = Math.round(
+    ((scene.background?.opacity !== undefined
+      ? scene.background.opacity <= 1
+        ? scene.background.opacity * 100
+        : scene.background.opacity
+      : 100))
+  );
+
   return (
     <aside className="w-[300px] bg-[#0C1724] border-l border-[#213248] flex flex-col h-full shrink-0 z-10 select-none text-[12px] overflow-hidden">
       {/* Inspector Header */}
-      <div className="p-3.5 border-b border-[#213248] flex items-center justify-between">
-        <h2 className="font-extrabold text-white text-[14px] tracking-tight">Inspector</h2>
+      <div className="p-3.5 border-b border-[#213248] flex items-center justify-between bg-[#08101a]">
+        <div className="flex items-center gap-2">
+          <Sliders className="w-4 h-4 text-[#259CFF]" />
+          <h2 className="font-extrabold text-white text-[14px] tracking-tight">Inspector</h2>
+        </div>
         <div className="flex items-center gap-1">
+          {onMoveSceneEarlier && (
+            <button
+              onClick={() => onMoveSceneEarlier(scene.id)}
+              className="p-1 rounded-lg text-[#8DA0B4] hover:text-white hover:bg-[#0F1C2A] transition"
+              title="Move Scene Earlier (Shift Left)"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          )}
+          {onMoveSceneLater && (
+            <button
+              onClick={() => onMoveSceneLater(scene.id)}
+              className="p-1 rounded-lg text-[#8DA0B4] hover:text-white hover:bg-[#0F1C2A] transition"
+              title="Move Scene Later (Shift Right)"
+            >
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
           <button
             onClick={() => onDeleteScene(scene.id)}
             className="p-1 rounded-lg text-[#ef4444] hover:bg-[#ef4444]/15 transition"
@@ -193,14 +254,14 @@ export const Inspector: React.FC<InspectorProps> = ({
 
             {/* Background */}
             <div>
-              <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Background</label>
+              <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Background Asset</label>
               <div className="flex items-center justify-between p-2 rounded-lg bg-[#07101A] border border-[#213248]">
                 <div className="flex items-center gap-2 truncate">
                   <div className="w-7 h-7 rounded-md bg-[#1e293b] flex items-center justify-center text-white shrink-0">
                     <ImageIcon className="w-4 h-4 text-[#259CFF]" />
                   </div>
                   <span className="font-medium text-white truncate text-[11px]">
-                    {scene.background?.assetId ? `${scene.background.assetId}.jpg` : "None"}
+                    {scene.background?.assetId ? `${scene.background.assetId}` : "None"}
                   </span>
                 </div>
                 {scene.background?.assetId && (
@@ -239,14 +300,19 @@ export const Inspector: React.FC<InspectorProps> = ({
               <div>
                 <div className="flex items-center justify-between text-[11px] font-semibold text-[#8DA0B4] mb-1">
                   <span>Opacity</span>
-                  <span className="text-white">{opacityVal}%</span>
+                  <span className="text-white">{opacityPercent}%</span>
                 </div>
                 <input
                   type="range"
                   min="0"
                   max="100"
-                  value={opacityVal}
-                  onChange={(e) => setOpacityVal(Number(e.target.value))}
+                  value={opacityPercent}
+                  onChange={(e) =>
+                    updateField("background", {
+                      ...scene.background,
+                      opacity: Number(e.target.value),
+                    })
+                  }
                   className="w-full"
                 />
               </div>
@@ -254,7 +320,7 @@ export const Inspector: React.FC<InspectorProps> = ({
 
             {/* Camera Animation */}
             <div>
-              <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Camera Animation</label>
+              <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Camera Motion</label>
               <select
                 value={scene.camera?.preset || "slow_zoom_in"}
                 onChange={(e) =>
@@ -309,7 +375,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                 onClick={() => setNotesOpen(!notesOpen)}
                 className="w-full p-2.5 flex items-center justify-between font-bold text-white text-[11px] hover:bg-[#0F1C2A] transition"
               >
-                <span>Scene Notes</span>
+                <span>Scene Narration / Notes</span>
                 {notesOpen ? <ChevronUp className="w-3.5 h-3.5 text-[#8DA0B4]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#8DA0B4]" />}
               </button>
               {notesOpen && (
@@ -318,7 +384,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                     rows={3}
                     value={scene.body || ""}
                     onChange={(e) => updateField("body", e.target.value)}
-                    placeholder="Show Nooruddin and Nuri, introduce the story with a warm and peaceful background."
+                    placeholder="Enter narration or scene description..."
                     className="w-full bg-[#0C1724] border border-[#213248] rounded-lg p-2 text-white outline-none text-[11px] placeholder-[#8DA0B4] resize-none"
                   />
                 </div>
@@ -327,47 +393,118 @@ export const Inspector: React.FC<InspectorProps> = ({
           </>
         )}
 
-        {/* ================= TEXT TAB ================= */}
+        {/* ================= TEXT / CAPTION TAB ================= */}
         {activeTab === "text" && (
           <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-white text-[12px]">
+                {currentCaption ? "Active Caption" : "Scene Narration"}
+              </span>
+              {currentCaption && onDeleteCaption && (
+                <button
+                  onClick={() => onDeleteCaption(currentCaption.id)}
+                  className="text-[10px] text-[#ef4444] hover:underline flex items-center gap-1"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Delete Caption
+                </button>
+              )}
+            </div>
+
             <div>
-              <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Active Caption / Text</label>
+              <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">
+                {currentCaption ? `Caption (${fmt(currentCaption.start)} - ${fmt(currentCaption.end)})` : "Scene Text"}
+              </label>
               <textarea
                 rows={3}
-                value={currentCaption?.text || scene.body || ""}
-                onChange={(e) => updateField("body", e.target.value)}
-                placeholder="Caption text..."
-                className="w-full bg-[#07101A] border border-[#213248] rounded-lg p-2 text-white outline-none text-[12px] resize-none"
+                value={currentCaption ? currentCaption.text : (scene.body || "")}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (currentCaption) {
+                    if (onUpdateCaption) {
+                      onUpdateCaption(currentCaption.id, val, (currentCaption as any).style);
+                    }
+                  } else {
+                    updateField("body", val);
+                  }
+                }}
+                placeholder="Caption text displayed in video..."
+                className="w-full bg-[#07101A] border border-[#213248] focus:border-[#259CFF] rounded-lg p-2 text-white outline-none text-[12px] resize-none"
               />
             </div>
+
+            {!currentCaption && onAddCaption && (
+              <button
+                type="button"
+                onClick={() => onAddCaption(currentTime, scene.title || "New Caption")}
+                className="w-full py-2 rounded-lg bg-[#259CFF]/15 border border-[#259CFF]/40 text-[#259CFF] font-bold text-[11px] flex items-center justify-center gap-1.5 hover:bg-[#259CFF]/25 transition"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Caption at Playhead ({fmt(currentTime)})
+              </button>
+            )}
 
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Font Family</label>
-                <select className="w-full bg-[#07101A] border border-[#213248] rounded-lg px-2 py-1.5 text-white outline-none text-[11px]">
-                  <option>Noto Sans Bengali</option>
-                  <option>Hind Siliguri</option>
-                  <option>Inter</option>
-                  <option>Roboto</option>
+                <select
+                  value={(currentCaption as any)?.style?.fontFamily || "Noto Sans Bengali"}
+                  onChange={(e) => {
+                    if (currentCaption && onUpdateCaption) {
+                      onUpdateCaption(currentCaption.id, currentCaption.text, {
+                        ...((currentCaption as any).style || {}),
+                        fontFamily: e.target.value,
+                      });
+                    }
+                  }}
+                  className="w-full bg-[#07101A] border border-[#213248] rounded-lg px-2 py-1.5 text-white outline-none text-[11px]"
+                >
+                  <option value="Noto Sans Bengali">Noto Sans Bengali</option>
+                  <option value="Hind Siliguri">Hind Siliguri</option>
+                  <option value="Inter">Inter</option>
+                  <option value="Roboto">Roboto</option>
+                  <option value="Outfit">Outfit</option>
                 </select>
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Font Weight</label>
-                <select className="w-full bg-[#07101A] border border-[#213248] rounded-lg px-2 py-1.5 text-white outline-none text-[11px]">
-                  <option>Bold (700)</option>
-                  <option>Extra Bold (800)</option>
-                  <option>Black (900)</option>
-                  <option>Medium (500)</option>
+                <select
+                  value={(currentCaption as any)?.style?.fontWeight || "800"}
+                  onChange={(e) => {
+                    if (currentCaption && onUpdateCaption) {
+                      onUpdateCaption(currentCaption.id, currentCaption.text, {
+                        ...((currentCaption as any).style || {}),
+                        fontWeight: e.target.value,
+                      });
+                    }
+                  }}
+                  className="w-full bg-[#07101A] border border-[#213248] rounded-lg px-2 py-1.5 text-white outline-none text-[11px]"
+                >
+                  <option value="600">SemiBold (600)</option>
+                  <option value="700">Bold (700)</option>
+                  <option value="800">Extra Bold (800)</option>
+                  <option value="900">Black (900)</option>
                 </select>
               </div>
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Animation Style</label>
-              <select className="w-full bg-[#07101A] border border-[#213248] rounded-lg px-2.5 py-1.5 text-white outline-none text-[11px]">
+              <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Text Animation Style</label>
+              <select
+                value={(currentCaption as any)?.style?.animation || "fade"}
+                onChange={(e) => {
+                  if (currentCaption && onUpdateCaption) {
+                    onUpdateCaption(currentCaption.id, currentCaption.text, {
+                      ...((currentCaption as any).style || {}),
+                      animation: e.target.value,
+                    });
+                  }
+                }}
+                className="w-full bg-[#07101A] border border-[#213248] rounded-lg px-2.5 py-1.5 text-white outline-none text-[11px]"
+              >
                 <option value="fade">Word Reveal & Fade</option>
                 <option value="slide">Slide In Up</option>
-                <option value="typewriter">Typewriter</option>
+                <option value="typewriter">Typewriter Reveal</option>
                 <option value="scale">Bounce Scale</option>
               </select>
             </div>
@@ -379,12 +516,24 @@ export const Inspector: React.FC<InspectorProps> = ({
           <div className="space-y-3">
             {scene.characters && scene.characters.length > 0 ? (
               scene.characters.map((char, i) => (
-                <div key={char.id + i} className="p-3 bg-[#07101A] border border-[#213248] rounded-xl space-y-2">
+                <div key={char.id + i} className="p-3 bg-[#07101A] border border-[#213248] rounded-xl space-y-2.5">
                   <div className="flex items-center justify-between font-bold text-white text-[12px]">
                     <span className="capitalize">{char.id}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#259CFF]/20 text-[#259CFF]">
-                      Character #{i + 1}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#259CFF]/20 text-[#259CFF]">
+                        #{i + 1}
+                      </span>
+                      <button
+                        onClick={() => {
+                          const filtered = scene.characters!.filter((_, idx) => idx !== i);
+                          updateField("characters", filtered);
+                        }}
+                        className="p-1 rounded text-[#ef4444] hover:bg-[#ef4444]/15"
+                        title="Remove character from scene"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
@@ -427,22 +576,91 @@ export const Inspector: React.FC<InspectorProps> = ({
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-[#8DA0B4] mb-1">Entrance</label>
+                      <select
+                        value={char.entrance || "fade_in"}
+                        onChange={(e) => {
+                          const copy = [...scene.characters!];
+                          copy[i] = { ...copy[i], entrance: e.target.value as any };
+                          updateField("characters", copy);
+                        }}
+                        className="w-full bg-[#0C1724] border border-[#213248] rounded-lg px-2 py-1 text-white outline-none text-[11px]"
+                      >
+                        {CHARACTER_ENTRANCES.map((ent) => (
+                          <option key={ent.id} value={ent.id}>
+                            {ent.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-semibold text-[#8DA0B4] mb-1">Exit</label>
+                      <select
+                        value={char.exit || "fade_out"}
+                        onChange={(e) => {
+                          const copy = [...scene.characters!];
+                          copy[i] = { ...copy[i], exit: e.target.value as any };
+                          updateField("characters", copy);
+                        }}
+                        className="w-full bg-[#0C1724] border border-[#213248] rounded-lg px-2 py-1 text-white outline-none text-[11px]"
+                      >
+                        {CHARACTER_EXITS.map((ex) => (
+                          <option key={ex.id} value={ex.id}>
+                            {ex.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Character Position & Scale Sliders */}
                   <div>
-                    <label className="block text-[10px] font-semibold text-[#8DA0B4] mb-1">Entrance</label>
-                    <select
-                      value={char.entrance || "fade_in"}
+                    <div className="flex items-center justify-between text-[10px] font-semibold text-[#8DA0B4] mb-1">
+                      <span>Horizontal Position (X)</span>
+                      <span className="text-white">{Math.round((char.position?.x ?? 0.5) * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="0.9"
+                      step="0.02"
+                      value={char.position?.x ?? 0.5}
                       onChange={(e) => {
                         const copy = [...scene.characters!];
-                        copy[i] = { ...copy[i], entrance: e.target.value as any };
+                        copy[i] = {
+                          ...copy[i],
+                          position: { x: parseFloat(e.target.value), y: char.position?.y ?? 0.72 },
+                        };
                         updateField("characters", copy);
                       }}
-                      className="w-full bg-[#0C1724] border border-[#213248] rounded-lg px-2 py-1 text-white outline-none text-[11px]"
-                    >
-                      <option value="fade_in">Fade In</option>
-                      <option value="enter_left">Enter From Left</option>
-                      <option value="enter_right">Enter From Right</option>
-                      <option value="scale_in">Scale In</option>
-                    </select>
+                      className="w-full"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between text-[10px] font-semibold text-[#8DA0B4] mb-1">
+                      <span>Scale</span>
+                      <span className="text-white">{(char.scale ?? 1.0).toFixed(2)}x</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="1.8"
+                      step="0.05"
+                      value={char.scale ?? 1.0}
+                      onChange={(e) => {
+                        const copy = [...scene.characters!];
+                        copy[i] = {
+                          ...copy[i],
+                          scale: parseFloat(e.target.value),
+                        };
+                        updateField("characters", copy);
+                      }}
+                      className="w-full"
+                    />
                   </div>
                 </div>
               ))
@@ -450,7 +668,7 @@ export const Inspector: React.FC<InspectorProps> = ({
               <div className="text-center py-6 text-[#8DA0B4]">
                 <User className="w-8 h-8 mx-auto mb-2 opacity-40 text-[#259CFF]" />
                 <p>No characters in this scene.</p>
-                <p className="text-[10px] mt-1">Click a character from the Asset Library to add.</p>
+                <p className="text-[10px] mt-1">Select a character in the Asset Library to insert.</p>
               </div>
             )}
           </div>
@@ -486,8 +704,8 @@ export const Inspector: React.FC<InspectorProps> = ({
               </div>
               <input
                 type="range"
-                min="0.5"
-                max="2.0"
+                min="0.3"
+                max="2.5"
                 step="0.1"
                 value={scene.camera?.intensity ?? 1.0}
                 onChange={(e) =>
@@ -498,6 +716,33 @@ export const Inspector: React.FC<InspectorProps> = ({
                 }
                 className="w-full"
               />
+            </div>
+
+            <div className="pt-2 border-t border-[#213248]">
+              <label className="block text-[11px] font-semibold text-[#8DA0B4] mb-1">Scene Transition</label>
+              <div className="grid grid-cols-2 gap-2">
+                <select
+                  value={scene.transition || "fade"}
+                  onChange={(e) => updateField("transition", e.target.value)}
+                  className="w-full bg-[#07101A] border border-[#213248] rounded-lg px-2 py-1.5 text-white outline-none text-[11px]"
+                >
+                  <option value="fade">Fade In</option>
+                  <option value="cut">Hard Cut</option>
+                  <option value="slide">Slide In</option>
+                  <option value="dissolve">Dissolve</option>
+                </select>
+
+                <select
+                  value={String(scene.transitionDuration || 1.0)}
+                  onChange={(e) => updateField("transitionDuration", parseFloat(e.target.value))}
+                  className="w-full bg-[#07101A] border border-[#213248] rounded-lg px-2 py-1.5 text-white outline-none text-[11px]"
+                >
+                  <option value="0.5">0.5s</option>
+                  <option value="1.0">1.0s</option>
+                  <option value="1.5">1.5s</option>
+                  <option value="2.0">2.0s</option>
+                </select>
+              </div>
             </div>
           </div>
         )}

@@ -2,10 +2,12 @@
   "outputDirectory": "dist",
   "cleanUrls": false,
   "rewrites": [
-    { "source": "/cutfree-studio", "destination": "/cutfree-studio.html" },
-    { "source": "/studio", "destination": "/cutfree-studio.html" },
-    { "source": "/studio-pro", "destination": "/cutfree-studio.html" },
-    { "source": "/editor", "destination": "/cutfree-studio.html" },
-    { "source": "/app", "destination": "/app.html" }
+    { "source": "/app", "destination": "/app.html" },
+    { "source": "/studio", "destination": "/index.html" },
+    { "source": "/studio-pro", "destination": "/index.html" },
+    { "source": "/cutfree-studio", "destination": "/index.html" },
+    { "source": "/cutfree-studio-pro", "destination": "/index.html" },
+    { "source": "/editor", "destination": "/index.html" },
+    { "source": "/cutfree", "destination": "/index.html" }
   ]
 }

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * Video Export Modal for CutFree Studio.
  * Drives real rendering engine with WebCodecs/MediaRecorder, progress tracking,
- * and direct video download.
+ * full production duration rendering, and direct video download.
  */
 
 import React, { useState } from "react";
@@ -18,15 +18,18 @@ import {
   Monitor,
   Smartphone,
   Square,
+  Sparkles,
+  Clock,
 } from "lucide-react";
 import { VideoBlueprint } from "../types/blueprint";
-import { exportVideo } from "../render/exporter";
+import { exportVideo, checkSupportedExportFormat } from "../render/exporter";
 
 export interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
   blueprint: VideoBlueprint;
   audioBuffer?: AudioBuffer;
+  audioElement?: HTMLAudioElement | null;
 }
 
 export const ExportModal: React.FC<ExportModalProps> = ({
@@ -34,10 +37,12 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   onClose,
   blueprint,
   audioBuffer,
+  audioElement,
 }) => {
   const [preset, setPreset] = useState<"landscape" | "shorts" | "square">("landscape");
   const [format, setFormat] = useState<"mp4" | "webm">("mp4");
   const [quality, setQuality] = useState<"1080p" | "720p">("1080p");
+  const [exportMode, setExportMode] = useState<"full" | "preview">("full");
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
   const [stage, setStage] = useState<string>("");
@@ -87,6 +92,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           isShorts,
           quality,
           audioBuffer,
+          audioElement,
+          mode: exportMode,
         },
         (p, msg) => {
           setProgress(p);
@@ -95,16 +102,20 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       );
 
       const url = URL.createObjectURL(blob);
-      const ext = format === "mp4" ? "mp4" : "webm";
+      const codecInfo = checkSupportedExportFormat(format);
+      const actualExt = codecInfo.format;
       const cleanTitle = (blueprint.project.title || "video").replace(/[^a-zA-Z0-9_-]/g, "_");
-      const fileName = `${cleanTitle}_${preset}_${quality}.${ext}`;
+      const fileName = `${cleanTitle}_${preset}_${quality}_${exportMode}.${actualExt}`;
       const sizeMB = parseFloat((blob.size / (1024 * 1024)).toFixed(2));
+      const targetDuration = exportMode === "preview"
+        ? Math.min(30, blueprint.timeline.duration)
+        : blueprint.timeline.duration;
 
       setExportedResult({
         url,
         fileName,
         sizeMB,
-        durationSec: blueprint.timeline.duration,
+        durationSec: targetDuration,
       });
       setIsExporting(false);
     } catch (err: any) {
@@ -113,6 +124,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       setIsExporting(false);
     }
   };
+
+  const totalDuration = blueprint.timeline.duration || 10;
+  const activeDuration = exportMode === "preview" ? Math.min(30, totalDuration) : totalDuration;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 select-none">
@@ -135,6 +149,48 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
         {/* Modal Body */}
         <div className="p-5 space-y-4">
+          {/* Export Mode Toggle: Full vs Preview */}
+          <div>
+            <label className="block text-[11px] font-bold text-[#8DA0B4] mb-2 uppercase tracking-wide">
+              Export Scope
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setExportMode("full")}
+                className={`p-3 rounded-xl border flex flex-col items-center gap-1 transition ${
+                  exportMode === "full"
+                    ? "bg-[#259CFF]/15 border-[#259CFF] text-white ring-2 ring-[#259CFF]/30"
+                    : "bg-[#07101A] border-[#213248] text-[#8DA0B4] hover:text-white"
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-[#259CFF]" />
+                  <span className="font-extrabold text-[12px]">Full Production Export</span>
+                </div>
+                <span className="text-[10px] text-[#8DA0B4]">
+                  Full duration ({totalDuration.toFixed(1)}s)
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setExportMode("preview")}
+                className={`p-3 rounded-xl border flex flex-col items-center gap-1 transition ${
+                  exportMode === "preview"
+                    ? "bg-[#765CFF]/15 border-[#765CFF] text-white ring-2 ring-[#765CFF]/30"
+                    : "bg-[#07101A] border-[#213248] text-[#8DA0B4] hover:text-white"
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-[#765CFF]" />
+                  <span className="font-extrabold text-[12px]">Quick Preview (30s)</span>
+                </div>
+                <span className="text-[10px] text-[#8DA0B4]">Fast test render</span>
+              </button>
+            </div>
+          </div>
+
           {/* Preset Cards */}
           <div>
             <label className="block text-[11px] font-bold text-[#8DA0B4] mb-2 uppercase tracking-wide">
@@ -214,10 +270,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
           {/* Authoritative Duration Info */}
           <div className="p-3 bg-[#07101A] border border-[#213248] rounded-xl flex items-center justify-between text-[#8DA0B4] text-[11px]">
-            <span>Total Timeline Duration:</span>
+            <span>Active Render Duration:</span>
             <span className="font-mono font-bold text-white">
-              {blueprint.timeline.duration.toFixed(2)}s ({Math.floor(blueprint.timeline.duration / 60)}m{" "}
-              {Math.floor(blueprint.timeline.duration % 60)}s)
+              {activeDuration.toFixed(2)}s ({Math.floor(activeDuration / 60)}m{" "}
+              {Math.floor(activeDuration % 60)}s)
             </span>
           </div>
 

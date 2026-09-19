@@ -5,8 +5,8 @@
  */
 
 export interface HistoryManager<T> {
-  canUndo: boolean;
-  canRedo: boolean;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
   push: (state: T) => void;
   undo: (currentState: T) => T | null;
   redo: (currentState: T) => T | null;
@@ -17,11 +17,11 @@ export function createHistory<T>(maxHistory: number = 40): HistoryManager<T> {
   let past: T[] = [];
   let future: T[] = [];
 
-  return {
-    get canUndo() {
+  const manager: HistoryManager<T> = {
+    canUndo(): boolean {
       return past.length > 0;
     },
-    get canRedo() {
+    canRedo(): boolean {
       return future.length > 0;
     },
     push(state: T) {
@@ -50,4 +50,6 @@ export function createHistory<T>(maxHistory: number = 40): HistoryManager<T> {
       future = [];
     },
   };
+
+  return manager;
 }

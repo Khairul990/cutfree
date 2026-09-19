@@ -1,0 +1,2320 @@
+{
+  "version": "1.0",
+  "project": {
+    "id": "islamic-story-14scenes-341s",
+    "title": "বন্ধ দরজার ওপাশে কী ছিল? | Islamic Voice Bengali",
+    "language": "bn-BD",
+    "fps": 30,
+    "width": 1920,
+    "height": 1080,
+    "aspectRatio": "16:9",
+    "theme": "aurora",
+    "mood": "cinematic",
+    "watermark": "@IslamicVoiceBengali"
+  },
+  "audio": {
+    "source": "voice.mp3",
+    "duration": 341.89,
+    "sampleRate": 44100,
+    "channels": 2,
+    "fileName": "islamic-story-voice-341s.wav"
+  },
+  "timeline": {
+    "duration": 341.89,
+    "totalScenes": 14,
+    "totalSegments": 251,
+    "totalCaptions": 14
+  },
+  "scenes": [
+    {
+      "id": "scene_01",
+      "start": 0,
+      "end": 24,
+      "purpose": "intro_hook",
+      "title": "বন্ধ দরজার ওপাশে কী ছিল?",
+      "body": "দৃশ্য 1: বন্ধ দরজার ওপাশে কী ছিল? — সত্য ও সততার পথে অবিচল থাকার এক অনুপ্রেরণামূলক মুহূর্ত।",
+      "background": {
+        "assetId": "night_sky",
+        "fit": "cover",
+        "motion": "slow_pan",
+        "transition": "fade",
+        "transitionDuration": 1
+      },
+      "characters": [
+        {
+          "id": "narrator",
+          "position": {
+            "x": 0.5,
+            "y": 0.72
+          },
+          "scale": 1,
+          "emotion": "mysterious",
+          "action": "talk",
+          "entrance": "fade_in",
+          "exit": "fade_out"
+        }
+      ],
+      "objects": [],
+      "camera": {
+        "preset": "slow_zoom_in",
+        "intensity": 1
+      }
+    },
+    {
+      "id": "scene_02",
+      "start": 24,
+      "end": 50,
+      "purpose": "narrative",
+      "title": "এক অদ্ভুত নীরব শহর",
+      "body": "দৃশ্য 2: এক অদ্ভুত নীরব শহর — সত্য ও সততার পথে অবিচল থাকার এক অনুপ্রেরণামূলক মুহূর্ত।",
+      "background": {
+        "assetId": "rainy_street",
+        "fit": "cover",
+        "motion": "slow_pan",
+        "transition": "fade",
+        "transitionDuration": 1
+      },
+      "characters": [
+        {
+          "id": "salman",
+          "position": {
+            "x": 0.5,
+            "y": 0.72
+          },
+          "scale": 1,
+          "emotion": "serious",
+          "action": "walk",
+          "entrance": "fade_in",
+          "exit": "fade_out"
+        }
+      ],
+      "objects": [],
+      "camera": {
+        "preset": "pan_right",
+        "intensity": 1
+      }
+    },
+    {
+      "id": "scene_03",
+      "start": 50,
+      "end": 72,
+      "purpose": "narrative",
+      "title": "রহস্যময় পুরোনো বাড়ি",
+      "body": "দৃশ্য 3: রহস্যময় পুরোনো বাড়ি — সত্য ও সততার পথে অবিচল থাকার এক অনুপ্রেরণামূলক মুহূর্ত।",
+      "background": {
+        "assetId": "old_mysterious_door",
+        "fit": "cover",
+        "motion": "slow_pan",
+        "transition": "fade",
+        "transitionDuration": 1
+      },
+      "characters": [
+        {
+          "id": "salman",
+          "position": {
+            "x": 0.5,
+            "y": 0.72
+          },
+          "scale": 1,
+          "emotion": "alert",
+          "action": "look",
+          "entrance": "fade_in",
+          "exit": "fade_out"
+        }
+      ],
+      "objects": [],
+      "camera": {
+        "preset": "camera_push",
+        "intensity": 1
+      }
+    },
+    {
+      "id": "scene_04",
+      "start": 72,
+      "end": 97,
+      "purpose": "narrative",
+      "title": "অন্তরের পরীক্ষা",
+      "body": "দৃশ্য 4: অন্তরের পরীক্ষা — সত্য ও সততার পথে অবিচল থাকার এক অনুপ্রেরণামূলক মুহূর্ত।",
+      "background": {
+        "assetId": "islamic_mosque",
+        "fit": "cover",
+        "motion": "slow_pan",
+        "transition": "fade",
+        "transitionDuration": 1
+      },
+      "characters": [
+        {
+          "id": "salman",
+          "position": {
+            "x": 0.5,
+            "y": 0.72
+          },
+          "scale": 1,
+          "emotion": "inspired",
+          "action": "talk",
+          "entrance": "fade_in",
+          "exit": "fade_out"
+        }
+      ],
+      "objects": [],
+      "camera": {
+        "preset": "zoom_focus",
+        "intensity": 1
+      }
+    },
+    {
+      "id": "scene_05",
+      "start": 97,
+      "end": 120,
+      "purpose": "narrative",
+      "title": "বন্ধ দরজার সামনে দাঁড়িয়ে",
+      "body": "দৃশ্য 5: বন্ধ দরজার সামনে দাঁড়িয়ে — সত্য ও সততার পথে অবিচল থাকার এক অনুপ্রেরণামূলক মুহূর্ত।",
+      "background": {
+        "assetId": "old_mysterious_door",
+        "fit": "cover",
+        "motion": "slow_pan",
+        "transition": "fade",
+        "transitionDuration": 1
+      },
+      "characters": [
+        {
+          "id": "salman",
+          "position": {
+            "x": 0.5,
+            "y": 0.72
+          },
+          "scale": 1,
+          "emotion": "serious",
+          "action": "point",
+          "entrance": "fade_in",
+          "exit": "fade_out"
+        }
+      ],
+      "objects": [],
+      "camera": {
+        "preset": "slow_zoom_in",
+        "intensity": 1
+      }
+    },
+    {
+      "id": "scene_06",
+      "start": 120,
+      "end": 147,
+      "purpose": "narrative",
+      "title": "শয়তানের প্ররোচনা ও দ্বিধা",
+      "body": "দৃশ্য 6: শয়তানের প্ররোচনা ও দ্বিধা — সত্য ও সততার পথে অবিচল থাকার এক অনুপ্রেরণামূলক মুহূর্ত।",
+      "background": {
+        "assetId": "night_sky",
+        "fit": "cover",
+        "motion": "slow_pan",
+        "transition": "fade",
+        "transitionDuration": 1
+      },
+      "characters": [
+        {
+          "id": "narrator",
+          "position": {
+            "x": 0.5,
+            "y": 0.72
+          },
+          "scale": 1,
+          "emotion": "mysterious",
+          "action": "talk",
+          "entrance": "fade_in",
+          "exit": "fade_out"
+        }
+      ],
+      "objects": [],
+      "camera": {
+        "preset": "pan_left",
+        "intensity": 1
+      }
+    },
+    {
+      "id": "scene_07",
+      "start": 147,
+      "end": 171,
+      "purpose": "narrative",
+      "title": "আল্লাহর ভয়ের স্মরণ",
+      "body": "দৃশ্য 7: আল্লাহর ভয়ের স্মরণ — সত্য ও সততার পথে অবিচল থাকার এক অনুপ্রেরণামূলক মুহূর্ত।",
+      "background": {
+        "assetId": "islamic_mosque",
+        "fit": "cover",
+        "motion": "slow_pan",
+        "transition": "fade",
+        "transitionDuration": 1
+      },
+      "characters": [
+        {
+          "id": "salman",
+          "position": {
+            "x": 0.5,
+            "y": 0.72
+          },
+          "scale": 1,
+          "emotion": "inspired",
+          "action": "talk",
+          "entrance": "fade_in",
+          "exit": "fade_out"
+        }
+      ],
+      "objects": [],
+      "camera": {
+        "preset": "slow_zoom_out",
+        "intensity": 1
+      }
+    },
+    {
+      "id": "scene_08",
+      "start": 171,
+      "end": 196,
+      "purpose": "narrative",
+      "title": "একটি গোপন ভালো আমল",
+      "body": "দৃশ্য 8: একটি গোপন ভালো আমল — সত্য ও সততার পথে অবিচল থাকার এক অনুপ্রেরণামূলক মুহূর্ত।",
+      "background": {
+        "assetId": "village",
+        "fit": "cover",
+        "motion": "slow_pan",
+        "transition": "fade",
+        "transitionDuration": 1
+      },
+      "characters": [
+        {
+          "id": "salman",
+          "position": {
+            "x": 0.5,
+            "y": 0.72
+          },
+          "scale": 1,
+          "emotion": "happy",
+          "action": "walk",
+          "entrance": "fade_in",
+          "exit": "fade_out"
+        }
+      ],
+      "objects": [],
+      "camera": {
+        "preset": "slow_pan",
+        "intensity": 1
+      }
+    },
+    {
+      "id": "scene_09",
+      "start": 196,
+      "end": 220,
+      "purpose": "narrative",
+      "title": "দরজা খুলে যাওয়ার বিস্ময়",
+      "body": "দৃশ্য 9: দরজা খুলে যাওয়ার বিস্ময় — সত্য ও সততার পথে অবিচল থাকার এক অনুপ্রেরণামূলক মুহূর্ত।",
+      "background": {
+        "assetId": "old_mysterious_door",
+        "fit": "cover",
+        "motion": "slow_pan",
+        "transition": "fade",
+        "transitionDuration": 1
+      },
+      "characters": [
+        {
+          "id": "salman",
+          "position": {
+            "x": 0.5,
+            "y": 0.72
+          },
+          "scale": 1,
+          "emotion": "happy",
+          "action": "celebrate",
+          "entrance": "fade_in",
+          "exit": "fade_out"
+        }
+      ],
+      "objects": [],
+      "camera": {
+        "preset": "camera_pull",
+        "intensity": 1
+      }
+    },
+    {
+      "id": "scene_10",
+      "start": 220,
+      "end": 246,
+      "purpose": "narrative",
+      "title": "অন্ধকারে এক টুকরো নূর",
+      "body": "দৃশ্য 10: অন্ধকারে এক টুকরো নূর — সত্য ও সততার পথে অবিচল থাকার এক অনুপ্রেরণামূলক মুহূর্ত।",
+      "background": {
+        "assetId": "night_sky",
+        "fit": "cover",
+        "motion": "slow_pan",
+        "transition": "fade",
+        "transitionDuration": 1
+      },
+      "characters": [
+        {
+          "id": "narrator",
+          "position": {
+            "x": 0.5,
+            "y": 0.72
+          },
+          "scale": 1,
+          "emotion": "inspired",
+          "action": "talk",
+          "entrance": "fade_in",
+          "exit": "fade_out"
+        }
+      ],
+      "objects": [],
+      "camera": {
+        "preset": "zoom_focus",
+        "intensity": 1
+      }
+    },
+    {
+      "id": "scene_11",
+      "start": 246,
+      "end": 271,
+      "purpose": "narrative",
+      "title": "সততার অপূর্ব পুরস্কার",
+      "body": "দৃশ্য 11: সততার অপূর্ব পুরস্কার — সত্য ও সততার পথে অবিচল থাকার এক অনুপ্রেরণামূলক মুহূর্ত।",
+      "background": {
+        "assetId": "village",
+        "fit": "cover",
+        "motion": "slow_pan",
+        "transition": "fade",
+        "transitionDuration": 1
+      },
+      "characters": [
+        {
+          "id": "salman",
+          "position": {
+            "x": 0.5,
+            "y": 0.72
+          },
+          "scale": 1,
+          "emotion": "happy",
+          "action": "talk",
+          "entrance": "fade_in",
+          "exit": "fade_out"
+        }
+      ],
+      "objects": [],
+      "camera": {
+        "preset": "pan_right",
+        "intensity": 1
+      }
+    },
+    {
+      "id": "scene_12",
+      "start": 271,
+      "end": 295,
+      "purpose": "narrative",
+      "title": "জীবনের সবচেয়ে বড় শিক্ষা",
+      "body": "দৃশ্য 12: জীবনের সবচেয়ে বড় শিক্ষা — সত্য ও সততার পথে অবিচল থাকার এক অনুপ্রেরণামূলক মুহূর্ত।",
+      "background": {
+        "assetId": "islamic_mosque",
+        "fit": "cover",
+        "motion": "slow_pan",
+        "transition": "fade",
+        "transitionDuration": 1
+      },
+      "characters": [
+        {
+          "id": "narrator",
+          "position": {
+            "x": 0.5,
+            "y": 0.72
+          },
+          "scale": 1,
+          "emotion": "inspired",
+          "action": "talk",
+          "entrance": "fade_in",
+          "exit": "fade_out"
+        }
+      ],
+      "objects": [],
+      "camera": {
+        "preset": "slow_zoom_in",
+        "intensity": 1
+      }
+    },
+    {
+      "id": "scene_13",
+      "start": 295,
+      "end": 319,
+      "purpose": "narrative",
+      "title": "যখন কেউ দেখে না, তখন আল্লাহ দেখেন",
+      "body": "দৃশ্য 13: যখন কেউ দেখে না, তখন আল্লাহ দেখেন — সত্য ও সততার পথে অবিচল থাকার এক অনুপ্রেরণামূলক মুহূর্ত।",
+      "background": {
+        "assetId": "night_sky",
+        "fit": "cover",
+        "motion": "slow_pan",
+        "transition": "fade",
+        "transitionDuration": 1
+      },
+      "characters": [
+        {
+          "id": "narrator",
+          "position": {
+            "x": 0.5,
+            "y": 0.72
+          },
+          "scale": 1,
+          "emotion": "serious",
+          "action": "talk",
+          "entrance": "fade_in",
+          "exit": "fade_out"
+        }
+      ],
+      "objects": [],
+      "camera": {
+        "preset": "pan_up",
+        "intensity": 1
+      }
+    },
+    {
+      "id": "scene_14",
+      "start": 319,
+      "end": 341.89,
+      "purpose": "outro",
+      "title": "হেদায়েতের ডাক ও সমাপনী",
+      "body": "দৃশ্য 14: হেদায়েতের ডাক ও সমাপনী — সত্য ও সততার পথে অবিচল থাকার এক অনুপ্রেরণামূলক মুহূর্ত।",
+      "background": {
+        "assetId": "islamic_mosque",
+        "fit": "cover",
+        "motion": "slow_pan",
+        "transition": "fade",
+        "transitionDuration": 1
+      },
+      "characters": [
+        {
+          "id": "narrator",
+          "position": {
+            "x": 0.5,
+            "y": 0.72
+          },
+          "scale": 1,
+          "emotion": "happy",
+          "action": "point",
+          "entrance": "fade_in",
+          "exit": "fade_out"
+        }
+      ],
+      "objects": [],
+      "camera": {
+        "preset": "slow_zoom_out",
+        "intensity": 1
+      }
+    }
+  ],
+  "segments": [
+    {
+      "id": "seg_001",
+      "type": "speech",
+      "start": 0,
+      "end": 1.84,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #1 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_001",
+      "type": "pause",
+      "start": 1.84,
+      "end": 2.73
+    },
+    {
+      "id": "seg_002",
+      "type": "speech",
+      "start": 2.73,
+      "end": 4.57,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #3 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_002",
+      "type": "pause",
+      "start": 4.57,
+      "end": 5.46
+    },
+    {
+      "id": "seg_003",
+      "type": "speech",
+      "start": 5.46,
+      "end": 7.3,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #5 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_003",
+      "type": "pause",
+      "start": 7.3,
+      "end": 8.19
+    },
+    {
+      "id": "seg_004",
+      "type": "speech",
+      "start": 8.19,
+      "end": 10.03,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #7 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_004",
+      "type": "pause",
+      "start": 10.03,
+      "end": 10.92
+    },
+    {
+      "id": "seg_005",
+      "type": "speech",
+      "start": 10.92,
+      "end": 12.76,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #9 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_005",
+      "type": "pause",
+      "start": 12.76,
+      "end": 13.65
+    },
+    {
+      "id": "seg_006",
+      "type": "speech",
+      "start": 13.65,
+      "end": 15.49,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #11 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_006",
+      "type": "pause",
+      "start": 15.49,
+      "end": 16.38
+    },
+    {
+      "id": "seg_007",
+      "type": "speech",
+      "start": 16.38,
+      "end": 18.22,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #13 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_007",
+      "type": "pause",
+      "start": 18.22,
+      "end": 19.11
+    },
+    {
+      "id": "seg_008",
+      "type": "speech",
+      "start": 19.11,
+      "end": 20.95,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #15 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_008",
+      "type": "pause",
+      "start": 20.95,
+      "end": 21.84
+    },
+    {
+      "id": "seg_009",
+      "type": "speech",
+      "start": 21.84,
+      "end": 23.68,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #17 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_009",
+      "type": "pause",
+      "start": 23.68,
+      "end": 24.57
+    },
+    {
+      "id": "seg_010",
+      "type": "speech",
+      "start": 24.57,
+      "end": 26.41,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #19 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_010",
+      "type": "pause",
+      "start": 26.41,
+      "end": 27.3
+    },
+    {
+      "id": "seg_011",
+      "type": "speech",
+      "start": 27.3,
+      "end": 29.14,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #21 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_011",
+      "type": "pause",
+      "start": 29.14,
+      "end": 30.03
+    },
+    {
+      "id": "seg_012",
+      "type": "speech",
+      "start": 30.03,
+      "end": 31.87,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #23 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_012",
+      "type": "pause",
+      "start": 31.87,
+      "end": 32.76
+    },
+    {
+      "id": "seg_013",
+      "type": "speech",
+      "start": 32.76,
+      "end": 34.6,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #25 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_013",
+      "type": "pause",
+      "start": 34.6,
+      "end": 35.49
+    },
+    {
+      "id": "seg_014",
+      "type": "speech",
+      "start": 35.49,
+      "end": 37.33,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #27 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_014",
+      "type": "pause",
+      "start": 37.33,
+      "end": 38.22
+    },
+    {
+      "id": "seg_015",
+      "type": "speech",
+      "start": 38.22,
+      "end": 40.06,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #29 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_015",
+      "type": "pause",
+      "start": 40.06,
+      "end": 40.95
+    },
+    {
+      "id": "seg_016",
+      "type": "speech",
+      "start": 40.95,
+      "end": 42.79,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #31 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_016",
+      "type": "pause",
+      "start": 42.79,
+      "end": 43.68
+    },
+    {
+      "id": "seg_017",
+      "type": "speech",
+      "start": 43.68,
+      "end": 45.52,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #33 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_017",
+      "type": "pause",
+      "start": 45.52,
+      "end": 46.41
+    },
+    {
+      "id": "seg_018",
+      "type": "speech",
+      "start": 46.41,
+      "end": 48.25,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #35 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_018",
+      "type": "pause",
+      "start": 48.25,
+      "end": 49.14
+    },
+    {
+      "id": "seg_019",
+      "type": "speech",
+      "start": 49.14,
+      "end": 50.98,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #37 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_019",
+      "type": "pause",
+      "start": 50.98,
+      "end": 51.87
+    },
+    {
+      "id": "seg_020",
+      "type": "speech",
+      "start": 51.87,
+      "end": 53.71,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #39 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_020",
+      "type": "pause",
+      "start": 53.71,
+      "end": 54.6
+    },
+    {
+      "id": "seg_021",
+      "type": "speech",
+      "start": 54.6,
+      "end": 56.44,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #41 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_021",
+      "type": "pause",
+      "start": 56.44,
+      "end": 57.33
+    },
+    {
+      "id": "seg_022",
+      "type": "speech",
+      "start": 57.33,
+      "end": 59.17,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #43 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_022",
+      "type": "pause",
+      "start": 59.17,
+      "end": 60.06
+    },
+    {
+      "id": "seg_023",
+      "type": "speech",
+      "start": 60.06,
+      "end": 61.9,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #45 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_023",
+      "type": "pause",
+      "start": 61.9,
+      "end": 62.79
+    },
+    {
+      "id": "seg_024",
+      "type": "speech",
+      "start": 62.79,
+      "end": 64.63,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #47 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_024",
+      "type": "pause",
+      "start": 64.63,
+      "end": 65.52
+    },
+    {
+      "id": "seg_025",
+      "type": "speech",
+      "start": 65.52,
+      "end": 67.36,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #49 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_025",
+      "type": "pause",
+      "start": 67.36,
+      "end": 68.25
+    },
+    {
+      "id": "seg_026",
+      "type": "speech",
+      "start": 68.25,
+      "end": 70.09,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #51 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_026",
+      "type": "pause",
+      "start": 70.09,
+      "end": 70.98
+    },
+    {
+      "id": "seg_027",
+      "type": "speech",
+      "start": 70.98,
+      "end": 72.82,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #53 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_027",
+      "type": "pause",
+      "start": 72.82,
+      "end": 73.71
+    },
+    {
+      "id": "seg_028",
+      "type": "speech",
+      "start": 73.71,
+      "end": 75.55,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #55 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_028",
+      "type": "pause",
+      "start": 75.55,
+      "end": 76.44
+    },
+    {
+      "id": "seg_029",
+      "type": "speech",
+      "start": 76.44,
+      "end": 78.28,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #57 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_029",
+      "type": "pause",
+      "start": 78.28,
+      "end": 79.17
+    },
+    {
+      "id": "seg_030",
+      "type": "speech",
+      "start": 79.17,
+      "end": 81.01,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #59 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_030",
+      "type": "pause",
+      "start": 81.01,
+      "end": 81.9
+    },
+    {
+      "id": "seg_031",
+      "type": "speech",
+      "start": 81.9,
+      "end": 83.74,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #61 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_031",
+      "type": "pause",
+      "start": 83.74,
+      "end": 84.63
+    },
+    {
+      "id": "seg_032",
+      "type": "speech",
+      "start": 84.63,
+      "end": 86.47,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #63 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_032",
+      "type": "pause",
+      "start": 86.47,
+      "end": 87.36
+    },
+    {
+      "id": "seg_033",
+      "type": "speech",
+      "start": 87.36,
+      "end": 89.2,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #65 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_033",
+      "type": "pause",
+      "start": 89.2,
+      "end": 90.09
+    },
+    {
+      "id": "seg_034",
+      "type": "speech",
+      "start": 90.09,
+      "end": 91.93,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #67 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_034",
+      "type": "pause",
+      "start": 91.93,
+      "end": 92.82
+    },
+    {
+      "id": "seg_035",
+      "type": "speech",
+      "start": 92.82,
+      "end": 94.66,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #69 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_035",
+      "type": "pause",
+      "start": 94.66,
+      "end": 95.55
+    },
+    {
+      "id": "seg_036",
+      "type": "speech",
+      "start": 95.55,
+      "end": 97.39,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #71 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_036",
+      "type": "pause",
+      "start": 97.39,
+      "end": 98.28
+    },
+    {
+      "id": "seg_037",
+      "type": "speech",
+      "start": 98.28,
+      "end": 100.12,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #73 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_037",
+      "type": "pause",
+      "start": 100.12,
+      "end": 101.01
+    },
+    {
+      "id": "seg_038",
+      "type": "speech",
+      "start": 101.01,
+      "end": 102.85,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #75 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_038",
+      "type": "pause",
+      "start": 102.85,
+      "end": 103.74
+    },
+    {
+      "id": "seg_039",
+      "type": "speech",
+      "start": 103.74,
+      "end": 105.58,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #77 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_039",
+      "type": "pause",
+      "start": 105.58,
+      "end": 106.47
+    },
+    {
+      "id": "seg_040",
+      "type": "speech",
+      "start": 106.47,
+      "end": 108.31,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #79 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_040",
+      "type": "pause",
+      "start": 108.31,
+      "end": 109.2
+    },
+    {
+      "id": "seg_041",
+      "type": "speech",
+      "start": 109.2,
+      "end": 111.04,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #81 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_041",
+      "type": "pause",
+      "start": 111.04,
+      "end": 111.93
+    },
+    {
+      "id": "seg_042",
+      "type": "speech",
+      "start": 111.93,
+      "end": 113.77,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #83 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_042",
+      "type": "pause",
+      "start": 113.77,
+      "end": 114.66
+    },
+    {
+      "id": "seg_043",
+      "type": "speech",
+      "start": 114.66,
+      "end": 116.5,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #85 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_043",
+      "type": "pause",
+      "start": 116.5,
+      "end": 117.39
+    },
+    {
+      "id": "seg_044",
+      "type": "speech",
+      "start": 117.39,
+      "end": 119.23,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #87 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_044",
+      "type": "pause",
+      "start": 119.23,
+      "end": 120.12
+    },
+    {
+      "id": "seg_045",
+      "type": "speech",
+      "start": 120.12,
+      "end": 121.96,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #89 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_045",
+      "type": "pause",
+      "start": 121.96,
+      "end": 122.85
+    },
+    {
+      "id": "seg_046",
+      "type": "speech",
+      "start": 122.85,
+      "end": 124.69,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #91 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_046",
+      "type": "pause",
+      "start": 124.69,
+      "end": 125.58
+    },
+    {
+      "id": "seg_047",
+      "type": "speech",
+      "start": 125.58,
+      "end": 127.42,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #93 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_047",
+      "type": "pause",
+      "start": 127.42,
+      "end": 128.31
+    },
+    {
+      "id": "seg_048",
+      "type": "speech",
+      "start": 128.31,
+      "end": 130.15,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #95 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_048",
+      "type": "pause",
+      "start": 130.15,
+      "end": 131.04
+    },
+    {
+      "id": "seg_049",
+      "type": "speech",
+      "start": 131.04,
+      "end": 132.88,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #97 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_049",
+      "type": "pause",
+      "start": 132.88,
+      "end": 133.77
+    },
+    {
+      "id": "seg_050",
+      "type": "speech",
+      "start": 133.77,
+      "end": 135.61,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #99 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_050",
+      "type": "pause",
+      "start": 135.61,
+      "end": 136.5
+    },
+    {
+      "id": "seg_051",
+      "type": "speech",
+      "start": 136.5,
+      "end": 138.34,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #101 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_051",
+      "type": "pause",
+      "start": 138.34,
+      "end": 139.23
+    },
+    {
+      "id": "seg_052",
+      "type": "speech",
+      "start": 139.23,
+      "end": 141.07,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #103 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_052",
+      "type": "pause",
+      "start": 141.07,
+      "end": 141.96
+    },
+    {
+      "id": "seg_053",
+      "type": "speech",
+      "start": 141.96,
+      "end": 143.8,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #105 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_053",
+      "type": "pause",
+      "start": 143.8,
+      "end": 144.69
+    },
+    {
+      "id": "seg_054",
+      "type": "speech",
+      "start": 144.69,
+      "end": 146.53,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #107 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_054",
+      "type": "pause",
+      "start": 146.53,
+      "end": 147.42
+    },
+    {
+      "id": "seg_055",
+      "type": "speech",
+      "start": 147.42,
+      "end": 149.26,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #109 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_055",
+      "type": "pause",
+      "start": 149.26,
+      "end": 150.15
+    },
+    {
+      "id": "seg_056",
+      "type": "speech",
+      "start": 150.15,
+      "end": 151.99,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #111 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_056",
+      "type": "pause",
+      "start": 151.99,
+      "end": 152.88
+    },
+    {
+      "id": "seg_057",
+      "type": "speech",
+      "start": 152.88,
+      "end": 154.72,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #113 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_057",
+      "type": "pause",
+      "start": 154.72,
+      "end": 155.61
+    },
+    {
+      "id": "seg_058",
+      "type": "speech",
+      "start": 155.61,
+      "end": 157.45,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #115 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_058",
+      "type": "pause",
+      "start": 157.45,
+      "end": 158.34
+    },
+    {
+      "id": "seg_059",
+      "type": "speech",
+      "start": 158.34,
+      "end": 160.18,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #117 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_059",
+      "type": "pause",
+      "start": 160.18,
+      "end": 161.07
+    },
+    {
+      "id": "seg_060",
+      "type": "speech",
+      "start": 161.07,
+      "end": 162.91,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #119 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_060",
+      "type": "pause",
+      "start": 162.91,
+      "end": 163.8
+    },
+    {
+      "id": "seg_061",
+      "type": "speech",
+      "start": 163.8,
+      "end": 165.64,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #121 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_061",
+      "type": "pause",
+      "start": 165.64,
+      "end": 166.53
+    },
+    {
+      "id": "seg_062",
+      "type": "speech",
+      "start": 166.53,
+      "end": 168.37,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #123 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_062",
+      "type": "pause",
+      "start": 168.37,
+      "end": 169.26
+    },
+    {
+      "id": "seg_063",
+      "type": "speech",
+      "start": 169.26,
+      "end": 171.1,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #125 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_063",
+      "type": "pause",
+      "start": 171.1,
+      "end": 171.99
+    },
+    {
+      "id": "seg_064",
+      "type": "speech",
+      "start": 171.99,
+      "end": 173.83,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #127 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_064",
+      "type": "pause",
+      "start": 173.83,
+      "end": 174.72
+    },
+    {
+      "id": "seg_065",
+      "type": "speech",
+      "start": 174.72,
+      "end": 176.56,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #129 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_065",
+      "type": "pause",
+      "start": 176.56,
+      "end": 177.45
+    },
+    {
+      "id": "seg_066",
+      "type": "speech",
+      "start": 177.45,
+      "end": 179.29,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #131 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_066",
+      "type": "pause",
+      "start": 179.29,
+      "end": 180.18
+    },
+    {
+      "id": "seg_067",
+      "type": "speech",
+      "start": 180.18,
+      "end": 182.02,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #133 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_067",
+      "type": "pause",
+      "start": 182.02,
+      "end": 182.91
+    },
+    {
+      "id": "seg_068",
+      "type": "speech",
+      "start": 182.91,
+      "end": 184.75,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #135 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_068",
+      "type": "pause",
+      "start": 184.75,
+      "end": 185.64
+    },
+    {
+      "id": "seg_069",
+      "type": "speech",
+      "start": 185.64,
+      "end": 187.48,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #137 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_069",
+      "type": "pause",
+      "start": 187.48,
+      "end": 188.37
+    },
+    {
+      "id": "seg_070",
+      "type": "speech",
+      "start": 188.37,
+      "end": 190.21,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #139 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_070",
+      "type": "pause",
+      "start": 190.21,
+      "end": 191.1
+    },
+    {
+      "id": "seg_071",
+      "type": "speech",
+      "start": 191.1,
+      "end": 192.94,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #141 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_071",
+      "type": "pause",
+      "start": 192.94,
+      "end": 193.83
+    },
+    {
+      "id": "seg_072",
+      "type": "speech",
+      "start": 193.83,
+      "end": 195.67,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #143 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_072",
+      "type": "pause",
+      "start": 195.67,
+      "end": 196.56
+    },
+    {
+      "id": "seg_073",
+      "type": "speech",
+      "start": 196.56,
+      "end": 198.4,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #145 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_073",
+      "type": "pause",
+      "start": 198.4,
+      "end": 199.29
+    },
+    {
+      "id": "seg_074",
+      "type": "speech",
+      "start": 199.29,
+      "end": 201.13,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #147 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_074",
+      "type": "pause",
+      "start": 201.13,
+      "end": 202.02
+    },
+    {
+      "id": "seg_075",
+      "type": "speech",
+      "start": 202.02,
+      "end": 203.86,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #149 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_075",
+      "type": "pause",
+      "start": 203.86,
+      "end": 204.75
+    },
+    {
+      "id": "seg_076",
+      "type": "speech",
+      "start": 204.75,
+      "end": 206.59,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #151 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_076",
+      "type": "pause",
+      "start": 206.59,
+      "end": 207.48
+    },
+    {
+      "id": "seg_077",
+      "type": "speech",
+      "start": 207.48,
+      "end": 209.32,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #153 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_077",
+      "type": "pause",
+      "start": 209.32,
+      "end": 210.21
+    },
+    {
+      "id": "seg_078",
+      "type": "speech",
+      "start": 210.21,
+      "end": 212.05,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #155 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_078",
+      "type": "pause",
+      "start": 212.05,
+      "end": 212.94
+    },
+    {
+      "id": "seg_079",
+      "type": "speech",
+      "start": 212.94,
+      "end": 214.78,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #157 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_079",
+      "type": "pause",
+      "start": 214.78,
+      "end": 215.67
+    },
+    {
+      "id": "seg_080",
+      "type": "speech",
+      "start": 215.67,
+      "end": 217.51,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #159 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_080",
+      "type": "pause",
+      "start": 217.51,
+      "end": 218.4
+    },
+    {
+      "id": "seg_081",
+      "type": "speech",
+      "start": 218.4,
+      "end": 220.24,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #161 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_081",
+      "type": "pause",
+      "start": 220.24,
+      "end": 221.13
+    },
+    {
+      "id": "seg_082",
+      "type": "speech",
+      "start": 221.13,
+      "end": 222.97,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #163 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_082",
+      "type": "pause",
+      "start": 222.97,
+      "end": 223.86
+    },
+    {
+      "id": "seg_083",
+      "type": "speech",
+      "start": 223.86,
+      "end": 225.7,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #165 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_083",
+      "type": "pause",
+      "start": 225.7,
+      "end": 226.59
+    },
+    {
+      "id": "seg_084",
+      "type": "speech",
+      "start": 226.59,
+      "end": 228.43,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #167 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_084",
+      "type": "pause",
+      "start": 228.43,
+      "end": 229.32
+    },
+    {
+      "id": "seg_085",
+      "type": "speech",
+      "start": 229.32,
+      "end": 231.16,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #169 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_085",
+      "type": "pause",
+      "start": 231.16,
+      "end": 232.05
+    },
+    {
+      "id": "seg_086",
+      "type": "speech",
+      "start": 232.05,
+      "end": 233.89,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #171 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_086",
+      "type": "pause",
+      "start": 233.89,
+      "end": 234.78
+    },
+    {
+      "id": "seg_087",
+      "type": "speech",
+      "start": 234.78,
+      "end": 236.62,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #173 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_087",
+      "type": "pause",
+      "start": 236.62,
+      "end": 237.51
+    },
+    {
+      "id": "seg_088",
+      "type": "speech",
+      "start": 237.51,
+      "end": 239.35,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #175 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_088",
+      "type": "pause",
+      "start": 239.35,
+      "end": 240.24
+    },
+    {
+      "id": "seg_089",
+      "type": "speech",
+      "start": 240.24,
+      "end": 242.08,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #177 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_089",
+      "type": "pause",
+      "start": 242.08,
+      "end": 242.97
+    },
+    {
+      "id": "seg_090",
+      "type": "speech",
+      "start": 242.97,
+      "end": 244.81,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #179 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_090",
+      "type": "pause",
+      "start": 244.81,
+      "end": 245.7
+    },
+    {
+      "id": "seg_091",
+      "type": "speech",
+      "start": 245.7,
+      "end": 247.54,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #181 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_091",
+      "type": "pause",
+      "start": 247.54,
+      "end": 248.43
+    },
+    {
+      "id": "seg_092",
+      "type": "speech",
+      "start": 248.43,
+      "end": 250.27,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #183 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_092",
+      "type": "pause",
+      "start": 250.27,
+      "end": 251.16
+    },
+    {
+      "id": "seg_093",
+      "type": "speech",
+      "start": 251.16,
+      "end": 253,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #185 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_093",
+      "type": "pause",
+      "start": 253,
+      "end": 253.89
+    },
+    {
+      "id": "seg_094",
+      "type": "speech",
+      "start": 253.89,
+      "end": 255.73,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #187 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_094",
+      "type": "pause",
+      "start": 255.73,
+      "end": 256.62
+    },
+    {
+      "id": "seg_095",
+      "type": "speech",
+      "start": 256.62,
+      "end": 258.46,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #189 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_095",
+      "type": "pause",
+      "start": 258.46,
+      "end": 259.35
+    },
+    {
+      "id": "seg_096",
+      "type": "speech",
+      "start": 259.35,
+      "end": 261.19,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #191 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_096",
+      "type": "pause",
+      "start": 261.19,
+      "end": 262.08
+    },
+    {
+      "id": "seg_097",
+      "type": "speech",
+      "start": 262.08,
+      "end": 263.92,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #193 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_097",
+      "type": "pause",
+      "start": 263.92,
+      "end": 264.81
+    },
+    {
+      "id": "seg_098",
+      "type": "speech",
+      "start": 264.81,
+      "end": 266.65,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #195 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_098",
+      "type": "pause",
+      "start": 266.65,
+      "end": 267.54
+    },
+    {
+      "id": "seg_099",
+      "type": "speech",
+      "start": 267.54,
+      "end": 269.38,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #197 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_099",
+      "type": "pause",
+      "start": 269.38,
+      "end": 270.27
+    },
+    {
+      "id": "seg_100",
+      "type": "speech",
+      "start": 270.27,
+      "end": 272.11,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #199 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_100",
+      "type": "pause",
+      "start": 272.11,
+      "end": 273
+    },
+    {
+      "id": "seg_101",
+      "type": "speech",
+      "start": 273,
+      "end": 274.84,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #201 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_101",
+      "type": "pause",
+      "start": 274.84,
+      "end": 275.73
+    },
+    {
+      "id": "seg_102",
+      "type": "speech",
+      "start": 275.73,
+      "end": 277.57,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #203 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_102",
+      "type": "pause",
+      "start": 277.57,
+      "end": 278.46
+    },
+    {
+      "id": "seg_103",
+      "type": "speech",
+      "start": 278.46,
+      "end": 280.3,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #205 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_103",
+      "type": "pause",
+      "start": 280.3,
+      "end": 281.19
+    },
+    {
+      "id": "seg_104",
+      "type": "speech",
+      "start": 281.19,
+      "end": 283.03,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #207 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_104",
+      "type": "pause",
+      "start": 283.03,
+      "end": 283.92
+    },
+    {
+      "id": "seg_105",
+      "type": "speech",
+      "start": 283.92,
+      "end": 285.76,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #209 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_105",
+      "type": "pause",
+      "start": 285.76,
+      "end": 286.65
+    },
+    {
+      "id": "seg_106",
+      "type": "speech",
+      "start": 286.65,
+      "end": 288.49,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #211 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_106",
+      "type": "pause",
+      "start": 288.49,
+      "end": 289.38
+    },
+    {
+      "id": "seg_107",
+      "type": "speech",
+      "start": 289.38,
+      "end": 291.22,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #213 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_107",
+      "type": "pause",
+      "start": 291.22,
+      "end": 292.11
+    },
+    {
+      "id": "seg_108",
+      "type": "speech",
+      "start": 292.11,
+      "end": 293.95,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #215 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_108",
+      "type": "pause",
+      "start": 293.95,
+      "end": 294.84
+    },
+    {
+      "id": "seg_109",
+      "type": "speech",
+      "start": 294.84,
+      "end": 296.68,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #217 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_109",
+      "type": "pause",
+      "start": 296.68,
+      "end": 297.57
+    },
+    {
+      "id": "seg_110",
+      "type": "speech",
+      "start": 297.57,
+      "end": 299.41,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #219 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_110",
+      "type": "pause",
+      "start": 299.41,
+      "end": 300.3
+    },
+    {
+      "id": "seg_111",
+      "type": "speech",
+      "start": 300.3,
+      "end": 302.14,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #221 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_111",
+      "type": "pause",
+      "start": 302.14,
+      "end": 303.03
+    },
+    {
+      "id": "seg_112",
+      "type": "speech",
+      "start": 303.03,
+      "end": 304.87,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #223 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_112",
+      "type": "pause",
+      "start": 304.87,
+      "end": 305.76
+    },
+    {
+      "id": "seg_113",
+      "type": "speech",
+      "start": 305.76,
+      "end": 307.6,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #225 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_113",
+      "type": "pause",
+      "start": 307.6,
+      "end": 308.49
+    },
+    {
+      "id": "seg_114",
+      "type": "speech",
+      "start": 308.49,
+      "end": 310.33,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #227 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_114",
+      "type": "pause",
+      "start": 310.33,
+      "end": 311.22
+    },
+    {
+      "id": "seg_115",
+      "type": "speech",
+      "start": 311.22,
+      "end": 313.06,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #229 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_115",
+      "type": "pause",
+      "start": 313.06,
+      "end": 313.95
+    },
+    {
+      "id": "seg_116",
+      "type": "speech",
+      "start": 313.95,
+      "end": 315.79,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #231 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_116",
+      "type": "pause",
+      "start": 315.79,
+      "end": 316.68
+    },
+    {
+      "id": "seg_117",
+      "type": "speech",
+      "start": 316.68,
+      "end": 318.52,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #233 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_117",
+      "type": "pause",
+      "start": 318.52,
+      "end": 319.41
+    },
+    {
+      "id": "seg_118",
+      "type": "speech",
+      "start": 319.41,
+      "end": 321.25,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #235 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_118",
+      "type": "pause",
+      "start": 321.25,
+      "end": 322.14
+    },
+    {
+      "id": "seg_119",
+      "type": "speech",
+      "start": 322.14,
+      "end": 323.98,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #237 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_119",
+      "type": "pause",
+      "start": 323.98,
+      "end": 324.87
+    },
+    {
+      "id": "seg_120",
+      "type": "speech",
+      "start": 324.87,
+      "end": 326.71,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #239 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_120",
+      "type": "pause",
+      "start": 326.71,
+      "end": 327.6
+    },
+    {
+      "id": "seg_121",
+      "type": "speech",
+      "start": 327.6,
+      "end": 329.44,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #241 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_121",
+      "type": "pause",
+      "start": 329.44,
+      "end": 330.33
+    },
+    {
+      "id": "seg_122",
+      "type": "speech",
+      "start": 330.33,
+      "end": 332.17,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #243 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_122",
+      "type": "pause",
+      "start": 332.17,
+      "end": 333.06
+    },
+    {
+      "id": "seg_123",
+      "type": "speech",
+      "start": 333.06,
+      "end": 334.9,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #245 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_123",
+      "type": "pause",
+      "start": 334.9,
+      "end": 335.79
+    },
+    {
+      "id": "seg_124",
+      "type": "speech",
+      "start": 335.79,
+      "end": 337.63,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #247 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_124",
+      "type": "pause",
+      "start": 337.63,
+      "end": 338.52
+    },
+    {
+      "id": "seg_125",
+      "type": "speech",
+      "start": 338.52,
+      "end": 340.36,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #249 — সততা ও ঈমানের আলো"
+    },
+    {
+      "id": "pause_125",
+      "type": "pause",
+      "start": 340.36,
+      "end": 341.25
+    },
+    {
+      "id": "seg_126",
+      "type": "speech",
+      "start": 341.25,
+      "end": 341.89,
+      "text": "ইসলামিক ভয়েস গল্প পর্ব #251 — সততা ও ঈমানের আলো"
+    }
+  ],
+  "captions": [
+    {
+      "id": "cap_01",
+      "start": 1.5,
+      "end": 15,
+      "text": "বন্ধ দরজার ওপাশে কী ছিল? এক অদ্ভুত সত্য...",
+      "style": {
+        "animation": "fade"
+      }
+    },
+    {
+      "id": "cap_02",
+      "start": 25,
+      "end": 42,
+      "text": "শহরের নির্জন রাতে এক তরুণের কঠিন পরীক্ষা...",
+      "style": {
+        "animation": "typewriter"
+      }
+    },
+    {
+      "id": "cap_03",
+      "start": 52,
+      "end": 68,
+      "text": "সামনে একটি বন্ধ দরজা, যেখানে কেউ দেখার নেই...",
+      "style": {
+        "animation": "slide"
+      }
+    },
+    {
+      "id": "cap_04",
+      "start": 78,
+      "end": 92,
+      "text": "কিন্তু মুমিনের অন্তর জানে—আল্লাহ সর্বদা দেখছেন!",
+      "style": {
+        "animation": "scale"
+      }
+    },
+    {
+      "id": "cap_05",
+      "start": 102,
+      "end": 118,
+      "text": "শয়তান প্ররোচনা দিল, তবুও সে পা বাড়াল না...",
+      "style": {
+        "animation": "fade"
+      }
+    },
+    {
+      "id": "cap_06",
+      "start": 125,
+      "end": 140,
+      "text": "আল্লাহর ভয়ে যে ব্যক্তি কোনো পাপ ত্যাগ করে...",
+      "style": {
+        "animation": "typewriter"
+      }
+    },
+    {
+      "id": "cap_07",
+      "start": 148,
+      "end": 165,
+      "text": "আল্লাহ তাকে তার চেয়েও উত্তম নিয়ামত দান করেন!",
+      "style": {
+        "animation": "scale"
+      }
+    },
+    {
+      "id": "cap_08",
+      "start": 175,
+      "end": 190,
+      "text": "হঠাৎ অলৌকিকভাবে দরজার ওপাশে আলো ছড়িয়ে পড়ল...",
+      "style": {
+        "animation": "slide"
+      }
+    },
+    {
+      "id": "cap_09",
+      "start": 200,
+      "end": 215,
+      "text": "সততার পুরস্কার কখনো বৃথা যায় না...",
+      "style": {
+        "animation": "fade"
+      }
+    },
+    {
+      "id": "cap_10",
+      "start": 225,
+      "end": 240,
+      "text": "অন্ধকার ভেদ করে নূর উজ্জ্বল হয়ে উঠল...",
+      "style": {
+        "animation": "typewriter"
+      }
+    },
+    {
+      "id": "cap_11",
+      "start": 250,
+      "end": 268,
+      "text": "মানুষ যখন একা থাকে, তখন তার আসল চরিত্র প্রকাশ পায়...",
+      "style": {
+        "animation": "scale"
+      }
+    },
+    {
+      "id": "cap_12",
+      "start": 278,
+      "end": 295,
+      "text": "তাকওয়া হলো গোপনে এবং প্রকাশ্যে আল্লাহর ভয়...",
+      "style": {
+        "animation": "fade"
+      }
+    },
+    {
+      "id": "cap_13",
+      "start": 305,
+      "end": 320,
+      "text": "হেদায়েতের এই আলো ছড়িয়ে দিন সবার মাঝে...",
+      "style": {
+        "animation": "slide"
+      }
+    },
+    {
+      "id": "cap_14",
+      "start": 325,
+      "end": 341.89,
+      "text": "জাযাকাল্লাহু খাইরান! সাবস্ক্রাইব করে সাথে থাকুন।",
+      "style": {
+        "animation": "scale"
+      }
+    }
+  ],
+  "assets": [
+    {
+      "id": "narrator",
+      "type": "character",
+      "name": "Narrator (Islamic Voice)"
+    },
+    {
+      "id": "salman",
+      "type": "character",
+      "name": "Salman"
+    },
+    {
+      "id": "night_sky",
+      "type": "background",
+      "name": "Night Sky"
+    },
+    {
+      "id": "rainy_street",
+      "type": "background",
+      "name": "Rainy Street"
+    },
+    {
+      "id": "old_mysterious_door",
+      "type": "background",
+      "name": "Mysterious Door"
+    },
+    {
+      "id": "islamic_mosque",
+      "type": "background",
+      "name": "Islamic Mosque"
+    },
+    {
+      "id": "village",
+      "type": "background",
+      "name": "Peaceful Village"
+    },
+    {
+      "id": "lantern",
+      "type": "object",
+      "name": "Lantern"
+    },
+    {
+      "id": "book",
+      "type": "object",
+      "name": "Holy Quran"
+    }
+  ],
+  "export": {
+    "format": "mp4",
+    "videoCodec": "h264",
+    "audioCodec": "aac"
+  }
+}

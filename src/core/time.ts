@@ -65,3 +65,38 @@ export function formatDuration(seconds: number): string {
 export function clamp(v: number, min: number, max: number): number {
   return Math.min(Math.max(v, min), max);
 }
+
+/**
+ * Parses timecode string (MM:SS, HH:MM:SS, MM:SS:FF, HH:MM:SS:FF) into seconds.
+ */
+export function timecodeToSeconds(timecode: string, fps: number = DEFAULT_FPS): number {
+  if (!timecode || typeof timecode !== "string") return 0;
+  const parts = timecode.trim().split(":").map(Number);
+  if (parts.some((p) => Number.isNaN(p))) return 0;
+
+  if (parts.length === 2) {
+    // MM:SS
+    const [m, s] = parts;
+    return m * 60 + s;
+  } else if (parts.length === 3) {
+    // HH:MM:SS or MM:SS:FF
+    const [a, b, c] = parts;
+    // If last part looks like frame (< fps) and first part < 60, it could be MM:SS:FF
+    if (a < 60 && c < fps) {
+      return a * 60 + b + c / fps;
+    }
+    return a * 3600 + b * 60 + c;
+  } else if (parts.length === 4) {
+    // HH:MM:SS:FF
+    const [h, m, s, f] = parts;
+    return h * 3600 + m * 60 + s + f / fps;
+  }
+  return 0;
+}
+
+/**
+ * Compares two timestamps with explicit floating point tolerance.
+ */
+export function isTimeEqual(a: number, b: number, tolerance: number = 0.001): boolean {
+  return Math.abs(a - b) <= tolerance;
+}

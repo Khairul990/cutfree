@@ -6,7 +6,7 @@
  */
 
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { VideoBlueprint, BlueprintScene, BlueprintAsset } from "./types/blueprint";
+import { VideoBlueprint, BlueprintScene, BlueprintAsset, CaptionItem } from "./types/blueprint";
 import { DEFAULT_BLUEPRINT } from "./core/default-blueprint";
 import { validateBlueprint, repairBlueprint } from "./core/validator";
 import { createHistory } from "./core/history";
@@ -20,22 +20,59 @@ import { BlueprintModal } from "./ui/BlueprintModal";
 import { ExportModal } from "./ui/ExportModal";
 import { ProjectModal } from "./ui/ProjectModal";
 import { assetResolver } from "./core/asset-resolver";
+import { mediaImportEngine } from "./core/media-import-engine";
+import {
+  trimScene,
+  moveScene,
+  splitSceneAtTime,
+  duplicateScene,
+  deleteScenes,
+  trimCaption,
+  moveCaption,
+  splitCaptionAtTime,
+  duplicateCaption,
+  deleteCaptions,
+  addMarker,
+  deleteMarker,
+} from "./core/timeline-engine";
 
 export default function App() {
   // ---------------------------------------------------------------------------
-  // Core Authoritative Blueprint State
+  // Core Authoritative Blueprint State (with safe localStorage hydration)
   // ---------------------------------------------------------------------------
-  const [blueprint, setBlueprint] = useState<VideoBlueprint>(DEFAULT_BLUEPRINT);
-  const [duration, setDuration] = useState<number>(DEFAULT_BLUEPRINT.timeline.duration || 341.89);
+  const [blueprint, setBlueprint] = useState<VideoBlueprint>(() => {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        const saved = localStorage.getItem("cutfree_blueprint_saved");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.assets && Array.isArray(parsed.assets)) {
+            parsed.assets = parsed.assets.map((a: any) => ({
+              ...a,
+              src: a.src?.startsWith("blob:") ? undefined : a.src,
+            }));
+          }
+          const check = validateBlueprint(parsed, { autoRepair: true });
+          if (check.repairedBlueprint) return check.repairedBlueprint;
+          if (check.valid) return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn("Could not load blueprint from localStorage:", e);
+    }
+    return DEFAULT_BLUEPRINT;
+  });
+
+  const [duration, setDuration] = useState<number>(() => blueprint.timeline.duration || 341.89);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [selectedSceneId, setSelectedSceneId] = useState<string | null>(
-    DEFAULT_BLUEPRINT.scenes[0]?.id || null
+    () => blueprint.scenes[0]?.id || null
   );
 
   // Aspect Ratio (16:9, 9:16, 1:1)
   const [aspect, setAspect] = useState<"16:9" | "9:16" | "1:1">(
-    (DEFAULT_BLUEPRINT.project.aspectRatio as any) || "16:9"
+    () => (blueprint.project.aspectRatio as any) || "16:9"
   );
 
   // Navigation & Panels
@@ -79,6 +116,28 @@ export default function App() {
     },
     [blueprint]
   );
+
+  // Synchronize asset registry whenever blueprint assets are loaded or updated
+  useEffect(() => {
+    if (blueprint?.assets && Array.isArray(blueprint.assets)) {
+      assetResolver.syncWithBlueprint(blueprint.assets);
+    }
+  }, [blueprint?.assets]);
+
+  // Hydrate user assets from IndexedDB storage on initial load
+  useEffect(() => {
+    if (blueprint?.assets && Array.isArray(blueprint.assets)) {
+      mediaImportEngine.hydrateAssetsFromStorage(blueprint.assets).then((hydrated) => {
+        const hasFreshUrls = hydrated.some((h, idx) => h.src !== blueprint.assets[idx]?.src);
+        if (hasFreshUrls) {
+          setBlueprint((prev) => ({
+            ...prev,
+            assets: hydrated,
+          }));
+        }
+      });
+    }
+  }, []);
 
   // ---------------------------------------------------------------------------
   // Playback Loop & Clock
@@ -290,6 +349,399 @@ export default function App() {
     setSelectedSceneId(dup.id);
   }, [selectedScene, blueprint, commitBlueprint]);
 
+  const handleAddScene = useCallback(() => {
+    const lastScene = blueprint.scenes[blueprint.scenes.length - 1];
+    const startTime = lastScene ? lastScene.end : 0;
+    const newDuration = 10;
+    const newSceneId = `scene_${Date.now().toString().slice(-4)}`;
+    const newScene: BlueprintScene = {
+      id: newSceneId,
+      title: `Scene ${blueprint.scenes.length + 1}`,
+      start: startTime,
+      end: startTime + newDuration,
+      background: {
+        assetId: "mosque",
+        fit: "cover",
+        motion: "slow_pan",
+        transition: "fade",
+        transitionDuration: 1.0,
+      },
+      camera: {
+        preset: "slow_zoom_in",
+        intensity: 1.0,
+      },
+      characters: [
+        {
+          id: "nooruddin",
+          position: { x: 0.5, y: 0.72 },
+          scale: 1.0,
+          emotion: "happy",
+          action: "idle",
+          entrance: "fade_in",
+          exit: "fade_out",
+        },
+      ],
+      objects: [],
+    };
+
+    const newScenes = [...blueprint.scenes, newScene];
+    let cursor = 0;
+    const reconciled = newScenes.map((s) => {
+      const len = Math.max(0.5, s.end - s.start);
+      const res = { ...s, start: cursor, end: cursor + len };
+      cursor += len;
+      return res;
+    });
+
+    commitBlueprint({
+      ...blueprint,
+      scenes: reconciled,
+      timeline: {
+        ...blueprint.timeline,
+        duration: cursor,
+        totalScenes: reconciled.length,
+      },
+    });
+    setSelectedSceneId(newSceneId);
+    handleSeek(startTime + 0.1);
+  }, [blueprint, commitBlueprint, handleSeek]);
+
+  const handleMoveScene = useCallback(
+    (sceneId: string, direction: "earlier" | "later") => {
+      const idx = blueprint.scenes.findIndex((s) => s.id === sceneId);
+      if (idx === -1) return;
+      const targetIdx = direction === "earlier" ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= blueprint.scenes.length) return;
+
+      const newScenes = [...blueprint.scenes];
+      const temp = newScenes[idx];
+      newScenes[idx] = newScenes[targetIdx];
+      newScenes[targetIdx] = temp;
+
+      let cursor = 0;
+      const reconciled = newScenes.map((s) => {
+        const len = Math.max(0.5, s.end - s.start);
+        const res = { ...s, start: cursor, end: cursor + len };
+        cursor += len;
+        return res;
+      });
+
+      commitBlueprint({
+        ...blueprint,
+        scenes: reconciled,
+        timeline: {
+          ...blueprint.timeline,
+          duration: cursor,
+        },
+      });
+      const movedScene = reconciled[targetIdx];
+      if (movedScene) {
+        handleSeek(movedScene.start + 0.05);
+      }
+    },
+    [blueprint, commitBlueprint, handleSeek]
+  );
+
+  // ---------------------------------------------------------------------------
+  // Caption Editing Handlers
+  // ---------------------------------------------------------------------------
+  const handleUpdateCaption = useCallback(
+    (captionId: string, text: string, style?: any) => {
+      const existing = blueprint.captions || [];
+      const updatedCaptions = existing.map((c) => {
+        if (c.id === captionId) {
+          return {
+            ...c,
+            text,
+            ...(style ? { style: { ...(c.style || {}), ...style } } : {}),
+          };
+        }
+        return c;
+      });
+      commitBlueprint({
+        ...blueprint,
+        captions: updatedCaptions,
+      });
+    },
+    [blueprint, commitBlueprint]
+  );
+
+  const handleAddCaption = useCallback(
+    (time: number, text?: string) => {
+      const existing = blueprint.captions || [];
+      const newCap: CaptionItem = {
+        id: `cap_${Date.now().toString().slice(-4)}`,
+        start: Math.max(0, time),
+        end: Math.min(duration, time + 4),
+        text: text || "New caption narration text...",
+        style: {
+          fontFamily: "Inter, sans-serif",
+          fontSize: 24,
+          color: "#ffffff",
+          backgroundColor: "rgba(0,0,0,0.6)",
+          position: "bottom",
+          animation: "fade",
+        },
+      };
+      const updated = [...existing, newCap].sort((a, b) => a.start - b.start);
+      commitBlueprint({
+        ...blueprint,
+        captions: updated,
+      });
+    },
+    [blueprint, duration, commitBlueprint]
+  );
+
+  const handleDeleteCaption = useCallback(
+    (captionId: string) => {
+      const existing = blueprint.captions || [];
+      const updated = existing.filter((c) => c.id !== captionId);
+      commitBlueprint({
+        ...blueprint,
+        captions: updated,
+      });
+    },
+    [blueprint, commitBlueprint]
+  );
+
+  // ---------------------------------------------------------------------------
+  // Timeline 2.0 Handlers (Trimming, Moving, Splitting, Markers, Save)
+  // ---------------------------------------------------------------------------
+  const handleSaveProject = useCallback(() => {
+    try {
+      const cleanBlueprint = {
+        ...blueprint,
+        assets: blueprint.assets?.map((a) => ({
+          ...a,
+          src: a.src?.startsWith("blob:") || (a.src?.startsWith("data:") && a.src.length > 50000) ? undefined : a.src,
+        })),
+      };
+      localStorage.setItem("cutfree_blueprint_saved", JSON.stringify(cleanBlueprint));
+    } catch (e) {
+      console.warn("Save failed:", e);
+    }
+  }, [blueprint]);
+
+  const handleTrimScene = useCallback(
+    (sceneId: string, edge: "start" | "end", newTime: number) => {
+      const updated = trimScene(blueprint.scenes, sceneId, edge, newTime);
+      let maxEnd = 0;
+      updated.forEach((s) => {
+        if (s.end > maxEnd) maxEnd = s.end;
+      });
+      commitBlueprint({
+        ...blueprint,
+        scenes: updated,
+        timeline: {
+          ...blueprint.timeline,
+          duration: Math.max(duration, maxEnd),
+        },
+      });
+    },
+    [blueprint, duration, commitBlueprint]
+  );
+
+  const handleMoveSceneToTime = useCallback(
+    (sceneId: string, newStart: number) => {
+      const updated = moveScene(blueprint.scenes, sceneId, newStart);
+      let maxEnd = 0;
+      updated.forEach((s) => {
+        if (s.end > maxEnd) maxEnd = s.end;
+      });
+      commitBlueprint({
+        ...blueprint,
+        scenes: updated,
+        timeline: {
+          ...blueprint.timeline,
+          duration: Math.max(duration, maxEnd),
+        },
+      });
+    },
+    [blueprint, duration, commitBlueprint]
+  );
+
+  const handleTrimCaption = useCallback(
+    (captionId: string, edge: "start" | "end", newTime: number) => {
+      const updated = trimCaption(blueprint.captions || [], captionId, edge, newTime);
+      commitBlueprint({
+        ...blueprint,
+        captions: updated,
+      });
+    },
+    [blueprint, commitBlueprint]
+  );
+
+  const handleMoveCaption = useCallback(
+    (captionId: string, newStart: number) => {
+      const updated = moveCaption(blueprint.captions || [], captionId, newStart, duration);
+      commitBlueprint({
+        ...blueprint,
+        captions: updated,
+      });
+    },
+    [blueprint, duration, commitBlueprint]
+  );
+
+  const handleSplitCaption = useCallback(
+    (captionId: string, splitTime: number) => {
+      const res = splitCaptionAtTime(blueprint.captions || [], captionId, splitTime);
+      if (!res) return;
+      commitBlueprint({
+        ...blueprint,
+        captions: res.captions,
+      });
+    },
+    [blueprint, commitBlueprint]
+  );
+
+  const handleDuplicateCaption = useCallback(
+    (captionId: string) => {
+      const res = duplicateCaption(blueprint.captions || [], captionId);
+      if (!res) return;
+      commitBlueprint({
+        ...blueprint,
+        captions: res.captions,
+      });
+    },
+    [blueprint, commitBlueprint]
+  );
+
+  const handleAddMarker = useCallback(
+    (time: number, label?: string, color?: string) => {
+      const updated = addMarker(blueprint.markers || [], time, label, color);
+      commitBlueprint({
+        ...blueprint,
+        markers: updated,
+      });
+    },
+    [blueprint, commitBlueprint]
+  );
+
+  const handleDeleteMarker = useCallback(
+    (markerId: string) => {
+      const updated = deleteMarker(blueprint.markers || [], markerId);
+      commitBlueprint({
+        ...blueprint,
+        markers: updated,
+      });
+    },
+    [blueprint, commitBlueprint]
+  );
+
+  // ---------------------------------------------------------------------------
+  // Template Application
+  // ---------------------------------------------------------------------------
+  const handleApplyTemplate = useCallback(
+    (templateId: string) => {
+      let aspectTarget: "16:9" | "9:16" | "1:1" = "16:9";
+      let defaultMotion: any = "slow_pan";
+      let defaultAnim: any = "fade";
+      let defaultCam: any = "slow_zoom_in";
+
+      if (templateId === "viral_shorts") {
+        aspectTarget = "9:16";
+        defaultMotion = "zoom_in";
+        defaultAnim = "scale";
+        defaultCam = "camera_push";
+      } else if (templateId === "cinematic_doc") {
+        aspectTarget = "16:9";
+        defaultMotion = "drift";
+        defaultAnim = "typewriter";
+        defaultCam = "slow_zoom_in";
+      } else if (templateId === "minimal_explainer") {
+        aspectTarget = "1:1";
+        defaultMotion = "static";
+        defaultAnim = "slide";
+        defaultCam = "static";
+      } else {
+        // islamic_epic
+        aspectTarget = "16:9";
+        defaultMotion = "slow_pan";
+        defaultAnim = "fade";
+        defaultCam = "pan_right";
+      }
+
+      setAspect(aspectTarget);
+
+      const updatedScenes = blueprint.scenes.map((s) => ({
+        ...s,
+        background: {
+          ...s.background,
+          motion: defaultMotion,
+          transition: "dissolve" as const,
+          transitionDuration: 1.0,
+        },
+        camera: {
+          preset: defaultCam,
+          intensity: 1.0,
+        },
+      }));
+
+      const updatedCaptions = (blueprint.captions || []).map((c) => ({
+        ...c,
+        style: {
+          ...(c.style || {}),
+          animation: defaultAnim,
+        },
+      }));
+
+      commitBlueprint({
+        ...blueprint,
+        project: {
+          ...blueprint.project,
+          aspectRatio: aspectTarget,
+        },
+        scenes: updatedScenes,
+        captions: updatedCaptions,
+      });
+    },
+    [blueprint, commitBlueprint]
+  );
+
+  const handleImportSubtitles = useCallback(
+    (importedCaptions: CaptionItem[]) => {
+      if (!importedCaptions || importedCaptions.length === 0) return;
+      commitBlueprint({
+        ...blueprint,
+        captions: importedCaptions,
+      });
+    },
+    [blueprint, commitBlueprint]
+  );
+
+  const handleImportAudioFromUrl = useCallback(
+    (audioMediaUrl: string, mediaTitle: string) => {
+      setAudioUrl(audioMediaUrl);
+      const audioAsset: BlueprintAsset = {
+        id: `audio_${Date.now().toString().slice(-4)}`,
+        type: "audio",
+        name: mediaTitle || "Imported Audio Track",
+      };
+      commitBlueprint({
+        ...blueprint,
+        assets: [...(blueprint.assets || []), audioAsset],
+      });
+    },
+    [blueprint, commitBlueprint]
+  );
+
+  // ---------------------------------------------------------------------------
+  // Autosave Debounce Effect
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        if (typeof window !== "undefined" && window.localStorage) {
+          localStorage.setItem("cutfree_blueprint_saved", JSON.stringify(blueprint));
+        }
+      } catch (e) {
+        console.warn("Autosave failed:", e);
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [blueprint]);
+
+
   // ---------------------------------------------------------------------------
   // Asset Insertion to Scene
   // ---------------------------------------------------------------------------
@@ -297,7 +749,7 @@ export default function App() {
     (asset: BlueprintAsset) => {
       if (!selectedScene) return;
 
-      if (asset.type === "background") {
+      if (asset.type === "background" || asset.type === "image" || asset.type === "thumbnail") {
         handleUpdateScene({
           ...selectedScene,
           background: {
@@ -324,7 +776,7 @@ export default function App() {
           ...selectedScene,
           characters: [...existingChars, newChar],
         });
-      } else if (asset.type === "object") {
+      } else if (asset.type === "object" || asset.type === "prop") {
         const existingObjs = selectedScene.objects || [];
         const newObj = {
           id: `${asset.id}_${Date.now().toString().slice(-4)}`,
@@ -338,9 +790,27 @@ export default function App() {
           ...selectedScene,
           objects: [...existingObjs, newObj],
         });
+      } else if (asset.type === "audio" || asset.type === "music" || asset.type === "sfx") {
+        if (asset.src) {
+          setAudioUrl(asset.src);
+          if (asset.metadata?.duration) {
+            setDuration(asset.metadata.duration);
+          }
+        }
       }
     },
     [selectedScene, handleUpdateScene]
+  );
+
+  const handleUpdateAssets = useCallback(
+    (updatedAssets: BlueprintAsset[]) => {
+      assetResolver.syncWithBlueprint(updatedAssets);
+      commitBlueprint({
+        ...blueprint,
+        assets: updatedAssets,
+      });
+    },
+    [blueprint, commitBlueprint]
   );
 
   const handleCustomImageUpload = useCallback(
@@ -431,7 +901,7 @@ export default function App() {
     }
   }, [blueprint]);
 
-  // Keyboard Shortcuts (Space, Arrow keys, Ctrl+Z, Ctrl+Y)
+  // Keyboard Shortcuts (Space, Arrow keys, Ctrl+Z, Ctrl+Y, J, K, L, S, M, Home, End, Del)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore if typing in text input
@@ -439,15 +909,27 @@ export default function App() {
         return;
       }
 
-      if (e.code === "Space") {
+      if (e.code === "Space" || (e.code === "KeyK" && !e.ctrlKey && !e.metaKey)) {
         e.preventDefault();
         togglePlay();
-      } else if (e.code === "ArrowLeft") {
+      } else if (e.code === "KeyJ" && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         handleSeek(currentTime - (e.shiftKey ? 5 : 1));
-      } else if (e.code === "ArrowRight") {
+      } else if (e.code === "KeyL" && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         handleSeek(currentTime + (e.shiftKey ? 5 : 1));
+      } else if (e.code === "ArrowLeft") {
+        e.preventDefault();
+        handleSeek(currentTime - (e.shiftKey ? 5 : 1 / 30));
+      } else if (e.code === "ArrowRight") {
+        e.preventDefault();
+        handleSeek(currentTime + (e.shiftKey ? 5 : 1 / 30));
+      } else if (e.code === "Home") {
+        e.preventDefault();
+        handleSeek(0);
+      } else if (e.code === "End") {
+        e.preventDefault();
+        handleSeek(duration);
       } else if ((e.ctrlKey || e.metaKey) && e.code === "KeyZ") {
         e.preventDefault();
         if (e.shiftKey) handleRedo();
@@ -455,15 +937,42 @@ export default function App() {
       } else if ((e.ctrlKey || e.metaKey) && e.code === "KeyY") {
         e.preventDefault();
         handleRedo();
+      } else if ((e.ctrlKey || e.metaKey) && e.code === "KeyS") {
+        e.preventDefault();
+        handleSaveProject();
+      } else if ((e.ctrlKey || e.metaKey) && e.code === "KeyD") {
+        e.preventDefault();
+        handleDuplicateSelectedScene();
       } else if (e.code === "KeyS" && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         handleSplitScene();
+      } else if (e.code === "KeyM" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        handleAddMarker(currentTime);
+      } else if (e.code === "Delete" || e.code === "Backspace") {
+        if (selectedScene) {
+          e.preventDefault();
+          handleDeleteScene(selectedScene.id);
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [togglePlay, handleSeek, currentTime, handleUndo, handleRedo, handleSplitScene]);
+  }, [
+    togglePlay,
+    handleSeek,
+    currentTime,
+    duration,
+    handleUndo,
+    handleRedo,
+    handleSplitScene,
+    handleDuplicateSelectedScene,
+    handleSaveProject,
+    handleAddMarker,
+    selectedScene,
+    handleDeleteScene,
+  ]);
 
   return (
     <div className="h-screen w-screen bg-[#07101A] text-[#EEF4FB] flex flex-col overflow-hidden select-none font-sans">
@@ -492,11 +1001,9 @@ export default function App() {
         onOpenProjectModal={() => setIsProjectModalOpen(true)}
         onImportAudioClick={() => audioInputRef.current?.click()}
         onImportJsonClick={() => setIsBlueprintModalOpen(true)}
-        onSave={() => {
-          localStorage.setItem("cutfree_blueprint_saved", JSON.stringify(blueprint));
-        }}
-        canUndo={historyRef.current.canUndo()}
-        canRedo={historyRef.current.canRedo()}
+        onSave={handleSaveProject}
+        canUndo={typeof historyRef.current?.canUndo === "function" ? historyRef.current.canUndo() : Boolean(historyRef.current?.canUndo)}
+        canRedo={typeof historyRef.current?.canRedo === "function" ? historyRef.current.canRedo() : Boolean(historyRef.current?.canRedo)}
         onUndo={handleUndo}
         onRedo={handleRedo}
         isPlaying={isPlaying}
@@ -520,8 +1027,13 @@ export default function App() {
         {/* Assets Library Panel */}
         {isAssetPanelOpen && (
           <AssetPanel
+            blueprint={blueprint}
             onInsertAsset={handleInsertAsset}
             onCustomImageUpload={handleCustomImageUpload}
+            onApplyTemplate={handleApplyTemplate}
+            onImportSubtitles={handleImportSubtitles}
+            onImportAudioFromUrl={handleImportAudioFromUrl}
+            onUpdateAssets={handleUpdateAssets}
             activeNavTab={leftNavTab}
           />
         )}
@@ -557,6 +1069,11 @@ export default function App() {
             currentTime={currentTime}
             onUpdateScene={handleUpdateScene}
             onDeleteScene={handleDeleteScene}
+            onMoveSceneEarlier={(id) => handleMoveScene(id, "earlier")}
+            onMoveSceneLater={(id) => handleMoveScene(id, "later")}
+            onUpdateCaption={handleUpdateCaption}
+            onAddCaption={handleAddCaption}
+            onDeleteCaption={handleDeleteCaption}
             onClose={() => setIsInspectorOpen(false)}
           />
         )}
@@ -572,9 +1089,19 @@ export default function App() {
         onTogglePlay={togglePlay}
         onSelectScene={(id) => setSelectedSceneId(id)}
         selectedSceneId={selectedSceneId}
+        onAddScene={handleAddScene}
         onSplitScene={handleSplitScene}
         onDeleteScene={() => selectedScene && handleDeleteScene(selectedScene.id)}
         onDuplicateScene={handleDuplicateSelectedScene}
+        onTrimScene={handleTrimScene}
+        onMoveScene={handleMoveSceneToTime}
+        onTrimCaption={handleTrimCaption}
+        onMoveCaption={handleMoveCaption}
+        onSplitCaption={handleSplitCaption}
+        onDuplicateCaption={handleDuplicateCaption}
+        onDeleteCaption={handleDeleteCaption}
+        onAddMarker={handleAddMarker}
+        onDeleteMarker={handleDeleteMarker}
       />
 
       {/* 4. STATUS BAR (Very bottom, compact 24px) */}
@@ -613,6 +1140,7 @@ export default function App() {
         onClose={() => setIsExportModalOpen(false)}
         blueprint={blueprint}
         audioBuffer={audioBuffer}
+        audioElement={audioRef.current}
       />
 
       {/* Project Settings Modal */}

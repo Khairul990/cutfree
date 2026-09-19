@@ -43,6 +43,17 @@ export class VideoCompositor {
     this.noiseCanvas = c;
   }
 
+  public renderFrame(
+    canvas: HTMLCanvasElement,
+    blueprint: VideoBlueprint,
+    currentTime: number,
+    isShorts: boolean = false
+  ) {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    this.render(ctx, blueprint, currentTime, { isShorts });
+  }
+
   public render(
     ctx: CanvasRenderingContext2D,
     blueprint: VideoBlueprint,
@@ -142,6 +153,11 @@ export class VideoCompositor {
       this.renderWatermark(ctx, watermark, width, height);
     }
 
+    // 10. Scene Transition Overlay
+    if (currentScene) {
+      this.renderTransition(ctx, currentScene, sceneElapsed, width, height);
+    }
+
     ctx.restore();
   }
 
@@ -153,6 +169,12 @@ export class VideoCompositor {
     timeSec: number,
     sceneProgress: number
   ) {
+    ctx.save();
+    const opacity = scene?.background?.opacity !== undefined
+      ? (scene.background.opacity <= 1 ? scene.background.opacity : scene.background.opacity / 100)
+      : 1.0;
+    ctx.globalAlpha = Math.max(0, Math.min(1, opacity));
+
     const bgAssetId = scene?.background?.assetId || "night_sky";
     const resolved = assetResolver.resolve(bgAssetId, "background");
 
@@ -193,6 +215,7 @@ export class VideoCompositor {
       // Scenic vector silhouettes (Mosque, Village, Forest)
       this.renderScenicSilhouette(ctx, bgAssetId, width, height, timeSec);
     }
+    ctx.restore();
   }
 
   private renderScenicSilhouette(ctx: CanvasRenderingContext2D, bgAssetId: string, width: number, height: number, timeSec: number) {
@@ -373,32 +396,98 @@ export class VideoCompositor {
     const active = captions.find((c) => currentTime >= c.start && currentTime <= c.end);
     if (!active || !active.text) return;
 
+    const capElapsed = Math.max(0, currentTime - active.start);
+    const capDuration = Math.max(0.1, active.end - active.start);
+    const capProgress = Math.min(1.0, capElapsed / capDuration);
+
+    const style = (active as any).style || {};
+    const fontFamily = style.fontFamily || "Noto Sans Bengali";
+    const fontWeight = style.fontWeight || "800";
+    const animStyle = style.animation || "fade";
+
+    let animScale = 1.0;
+    let animOffsetY = 0;
+    let animOpacity = 1.0;
+    let displayText = active.text;
+
+    if (animStyle === "typewriter") {
+      const charCount = Math.max(1, Math.floor(active.text.length * Math.min(1.0, capProgress * 2.2)));
+      displayText = active.text.slice(0, charCount);
+    } else if (animStyle === "slide") {
+      if (capElapsed < 0.25) {
+        animOffsetY = (1 - capElapsed / 0.25) * 20;
+        animOpacity = capElapsed / 0.25;
+      }
+    } else if (animStyle === "scale") {
+      if (capElapsed < 0.2) {
+        animScale = 0.85 + 0.15 * (capElapsed / 0.2);
+      }
+    } else {
+      if (capElapsed < 0.2) {
+        animOpacity = capElapsed / 0.2;
+      }
+    }
+
     ctx.save();
-    const capY = isShorts ? height * 0.78 : height * 0.86;
+    const capY = (isShorts ? height * 0.78 : height * 0.86) + animOffsetY;
     const fontSize = isShorts ? Math.round(width * 0.048) : Math.round(width * 0.028);
 
-    ctx.font = `800 ${fontSize}px "Noto Sans Bengali", "Hind Siliguri", system-ui, sans-serif`;
+    ctx.globalAlpha = Math.max(0, Math.min(1, animOpacity));
+    ctx.font = `${fontWeight} ${fontSize}px "${fontFamily}", "Hind Siliguri", system-ui, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
     // Caption Box Background
-    const textWidth = ctx.measureText(active.text).width;
+    const textWidth = ctx.measureText(displayText).width;
     const padX = fontSize * 0.8;
     const padY = fontSize * 0.45;
 
+    ctx.translate(width / 2, capY);
+    ctx.scale(animScale, animScale);
+
     ctx.fillStyle = "rgba(9, 14, 28, 0.78)";
     ctx.beginPath();
-    ctx.roundRect(width / 2 - textWidth / 2 - padX, capY - padY, textWidth + padX * 2, padY * 2, 12);
+    ctx.roundRect(-textWidth / 2 - padX, -padY, textWidth + padX * 2, padY * 2, 12);
     ctx.fill();
 
     ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Text rendering with optional karaoke highlight
-    ctx.fillStyle = "#38bdf8";
-    ctx.fillText(active.text, width / 2, capY);
+    // Text rendering
+    ctx.fillStyle = style.color || "#38bdf8";
+    ctx.fillText(displayText, 0, 0);
 
+    ctx.restore();
+  }
+
+  private renderTransition(
+    ctx: CanvasRenderingContext2D,
+    scene: BlueprintScene,
+    elapsed: number,
+    width: number,
+    height: number
+  ) {
+    const duration = Math.max(0.1, scene.transitionDuration ?? 1.0);
+    if (elapsed >= duration) return;
+
+    const progress = elapsed / duration;
+    const transition = scene.transition || "fade";
+
+    ctx.save();
+    if (transition === "fade") {
+      const alpha = Math.max(0, 1 - progress);
+      ctx.fillStyle = `rgba(5, 7, 15, ${alpha.toFixed(3)})`;
+      ctx.fillRect(0, 0, width, height);
+    } else if (transition === "dissolve") {
+      const alpha = Math.max(0, 1 - progress);
+      ctx.fillStyle = `rgba(15, 23, 42, ${(alpha * 0.85).toFixed(3)})`;
+      ctx.fillRect(0, 0, width, height);
+    } else if (transition === "slide") {
+      const slideOffset = (1 - progress) * width;
+      ctx.fillStyle = "#07101A";
+      ctx.fillRect(width - slideOffset, 0, slideOffset, height);
+    }
     ctx.restore();
   }
 
